@@ -20,15 +20,23 @@ Dieses Dokument beschreibt die zentrale Registrierungsstruktur vor der Implement
 - Stub-Dateien pro Tool
 - zentrale Definitionsschicht (`definitions.ts`)
 - zentrale Registry (`registry.ts`)
-- Plugin-Entry mit Registry-Referenz (nur Struktur/Logging)
+- Input-Schemaobjekte pro Tool (`schemas.ts`)
+- lokale Registry-Konsistenzprüfung (`validate-registry.ts`)
+- Plugin-Entry mit echter stub-basierter `registerTool(...)`-Struktur
+
+## Aktueller Laufzeitfluss (stub-basiert)
+
+1. `index.ts` ruft `validateToolRegistry()` auf.
+2. `index.ts` iteriert über `TOOL_REGISTRY`.
+3. Je Registry-Entry wird `api.registerTool(...)` mit Name, Beschreibung, Input-Schema und Stub-`execute` registriert.
+4. `execute` delegiert an den Stub und gibt nur strukturierte `NOT_IMPLEMENTED`-Ergebnisse zurück.
 
 ## Was erst in der Implementierungsphase folgt
 
-- echte Tool-Registrierung über Plugin-API
-- Input-/Output-Schemaobjekte pro Tool (laufzeitnah)
-- fachliche Logik (RIS/JUSLINE/Cache)
+- echte fachliche Tool-Logik (RIS/JUSLINE/Cache)
 - Netzwerkzugriff, Parsing, Normalisierung
 - persistenter Cache-Zugriff
+- feinere Laufzeitvalidierung und Output-Schemata
 
 ## Leitplanke
 

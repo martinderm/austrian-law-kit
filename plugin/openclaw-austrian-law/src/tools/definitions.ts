@@ -1,11 +1,12 @@
 import type { ToolName, ToolSourceKind, ToolDefinitionStatus } from "../types/shared.js";
+import { TOOL_SCHEMA_REFS } from "./schemas.js";
 
 export interface ToolDefinition {
   name: ToolName;
   sourceKind: ToolSourceKind;
   status: ToolDefinitionStatus;
   description: string;
-  inputSchemaRef?: string;
+  inputSchemaRef: string;
   outputSchemaRef?: string;
 }
 
@@ -15,7 +16,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "ris",
     status: "stub",
     description: "Sucht RIS-Treffer (Primärquelle).",
-    inputSchemaRef: "contracts:RisSearchInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.ris_search,
     outputSchemaRef: "contracts:RisSearchOutput",
   },
   {
@@ -23,7 +24,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "ris",
     status: "stub",
     description: "Lädt ein RIS-Normsegment (Primärquelle).",
-    inputSchemaRef: "contracts:RisFetchSegmentInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.ris_fetch_segment,
     outputSchemaRef: "contracts:RisFetchSegmentOutput",
   },
   {
@@ -31,7 +32,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "ris",
     status: "stub",
     description: "Lädt ein RIS-Gesamtdokument (Primärquelle).",
-    inputSchemaRef: "contracts:RisFetchWholeLawInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.ris_fetch_whole_law,
     outputSchemaRef: "contracts:RisFetchWholeLawOutput",
   },
   {
@@ -39,7 +40,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "jusline",
     status: "stub",
     description: "Lädt optionale Diskussionen/Kommentare aus JUSLINE (Sekundärquelle).",
-    inputSchemaRef: "contracts:JuslineFetchDiscussionsInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.jusline_fetch_discussions,
     outputSchemaRef: "contracts:JuslineFetchDiscussionsOutput",
   },
   {
@@ -47,7 +48,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "jusline",
     status: "stub",
     description: "Listet optionale JUSLINE-Entscheidungen (Sekundärquelle).",
-    inputSchemaRef: "contracts:JuslineListDecisionsInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.jusline_list_decisions,
     outputSchemaRef: "contracts:JuslineListDecisionsOutput",
   },
   {
@@ -55,7 +56,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "internal",
     status: "stub",
     description: "Liest Law-Cache-Artefakte per Stable ID.",
-    inputSchemaRef: "contracts:LawCacheGetInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.law_cache_get,
     outputSchemaRef: "contracts:LawCacheGetOutput",
   },
   {
@@ -63,7 +64,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     sourceKind: "internal",
     status: "stub",
     description: "Schreibt/aktualisiert Law-Cache-Artefakte.",
-    inputSchemaRef: "contracts:LawCachePutInput",
+    inputSchemaRef: TOOL_SCHEMA_REFS.law_cache_put,
     outputSchemaRef: "contracts:LawCachePutOutput",
   },
 ] as const;

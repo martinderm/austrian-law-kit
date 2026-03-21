@@ -1,18 +1,35 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
+import { validateToolRegistry } from "./src/tools/validate-registry.js";
 
 export default definePluginEntry({
   id: "openclaw-austrian-law",
   name: "OpenClaw Austrian Law Plugin",
   description: "Skeleton entry for Austrian law plugin (no tools registered yet).",
   register(api: OpenClawPluginApi) {
-    const toolNames = TOOL_REGISTRY.map((entry) => entry.definition.name);
-    const stubCount = TOOL_REGISTRY.filter((entry) => entry.definition.status === "stub").length;
+    const validation = validateToolRegistry();
+    if (!validation.ok) {
+      api.logger.warn(
+        `[openclaw-austrian-law] registry validation issues: ${validation.errors.join(" | ")}`,
+      );
+    }
+
+    for (const entry of TOOL_REGISTRY) {
+      api.registerTool({
+        name: entry.definition.name,
+        description: `${entry.definition.description} [${entry.definition.status}]`,
+        parameters: entry.inputSchema,
+        execute: async (_toolCallId, params) => {
+          const result = await entry.stub(params);
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          };
+        },
+      });
+    }
 
     api.logger.info(
-      `[openclaw-austrian-law] skeleton loaded; registryTools=${toolNames.join(", ")}; stubs=${stubCount}`,
+      `[openclaw-austrian-law] registered ${TOOL_REGISTRY.length} stub tools (no productive logic).`,
     );
-
-    // TODO(next step): wire TOOL_REGISTRY into api.registerTool(...) as non-productive stubs.
   },
 });
