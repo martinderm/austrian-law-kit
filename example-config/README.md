@@ -2,11 +2,16 @@
 
 Dieses Verzeichnis enthält **Vorlagen** für die Einbindung des Repositories in OpenClaw-Instanzen.
 
+## Enthalten
+
+- `openclaw.skill-wiring.example.json`
+  - zeigt exemplarisch, wie der Skill `skills/austrian-law/` in einer Instanz referenziert werden kann.
+
 ## Ziel
 
-- Skill-Wiring dokumentieren
+- Skill-Wiring transparent machen
 - später Plugin-Wiring ergänzen
-- Instanzspezifische Werte getrennt halten
+- instanzspezifische Werte getrennt halten
 
 ## Hinweise
 

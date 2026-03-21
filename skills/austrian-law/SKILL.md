@@ -1,31 +1,47 @@
+---
+name: austrian-law
+description: Workspace-Skill für die strukturierte, quellenklare Arbeit mit österreichischen Rechtstexten (RIS primär, JUSLINE sekundär/opt-in).
+---
+
 # Skill: austrian-law
 
 ## Zweck
 
-Dieser Skill steuert die fachliche Orchestrierung für österreichische Rechtstexte mit klarer Quellenpolitik und vorsichtiger Einordnung.
+Dieser Skill steuert die fachliche Orchestrierung für österreichische Rechtstexte mit klarer Quellenhierarchie, transparenter Unsicherheitskommunikation und sauberer Trennung von Wortlaut vs. Einordnung.
 
-## Quellenpolitik (verbindlich)
+## Verbindliche Quellenpolitik
 
 1. **RIS ist Primärquelle** für Normtext und Metadaten.
-2. **JUSLINE ist Sekundärquelle** für optionale Zusatzinformationen.
-3. Inhalte/Entscheidungen aus JUSLINE nur bei **ausdrücklicher Nachfrage** laden oder zusammenfassen.
+2. **JUSLINE ist Sekundärquelle** für optionalen Zusatzkontext.
+3. Inhalte (insbesondere Entscheidungen) aus JUSLINE nur bei **ausdrücklicher Nachfrage** laden oder zusammenfassen.
 4. Standardmäßig mit der **konsolidierten RIS-Fassung** arbeiten.
-5. **Arbeitsfassung** und **rechtlich verbindliche Fassung** klar unterscheiden.
+5. **Arbeitsfassung** und **rechtlich verbindliche Fassung** immer explizit unterscheiden.
 6. Bei Konflikten zwischen RIS und JUSLINE gilt **RIS**.
 
-## Antwortvertrag
+## Antwortstruktur (immer 4 Schichten)
 
-Jede Antwort im Rechtskontext soll:
-- Quelle transparent ausweisen (`RIS`, optional `JUSLINE`)
-- Fassungstyp explizit benennen
-- Unsicherheiten und Grenzen klar markieren
-- Keine verbindliche Rechtsberatung behaupten
+A) **Fundstelle / Wortlaut**
+- Nenne die konkrete Fundstelle und gib den relevanten Wortlaut bzw. einen präzisen Auszug wieder.
+
+B) **Verständliche Zusammenfassung**
+- Erkläre den Inhalt in klarer, nicht-juristischer Sprache.
+
+C) **Auslegungsfragen / Grenzen**
+- Markiere, wo Interpretationsspielraum, Anwendungsgrenzen oder fehlender Kontext bestehen.
+
+D) **Quellenlage / Unsicherheit**
+- Weise aus, welche Quelle(n) genutzt wurden und wie sicher die Aussage ist.
+
+## Rechtsberatungsgrenze
+
+- Keine Behauptung verbindlicher Rechtsberatung.
+- Der Skill liefert Wortlaut, Quellenlage und vorsichtige Einordnung.
 
 ## Tool-Orchestrierung (MVP)
 
-- Primär RIS abfragen.
-- JUSLINE nur opt-in bei expliziter Anforderung.
-- Bei fehlender Klarheit über Quellenlage: erst Quellenstatus klären, dann interpretieren.
+- Primär RIS nutzen.
+- JUSLINE nur opt-in bei ausdrücklicher Anforderung.
+- Bei unklarer Quellenlage zuerst Quellenstatus klären, dann interpretieren.
 
 ## Caching-/Memory-Hinweis
 

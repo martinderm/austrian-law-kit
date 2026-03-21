@@ -22,6 +22,22 @@
 6. Keine Behauptung verbindlicher Rechtsberatung.
 7. Wortlaut, Quellenlage und Unsicherheit werden sauber getrennt.
 
+## Wann JUSLINE verwendet werden darf
+
+JUSLINE darf verwendet werden, wenn:
+- ausdrücklich nach ergänzendem Kontext gefragt wird,
+- eine sekundäre Einordnung oder Diskussion gewünscht ist,
+- und die RIS-Basis bereits klar benannt ist.
+
+## Wann JUSLINE ausdrücklich nicht als RIS-Ersatz verwendet werden darf
+
+JUSLINE darf **nicht** als Ersatz für RIS verwendet werden:
+- bei der Feststellung von Normwortlaut,
+- bei maßgeblichen Metadaten (Fassung, Fundstelle, Identifikatoren),
+- oder bei Konflikten zwischen Quellen.
+
+In diesen Fällen ist RIS verbindlich zu priorisieren.
+
 ## Ausgabe-Mindestbestandteile
 
 Jede inhaltliche Antwort im Rechtskontext soll mindestens enthalten:

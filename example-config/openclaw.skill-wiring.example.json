@@ -1,0 +1,17 @@
+{
+  "$schema": "https://example.invalid/openclaw.skill-wiring.schema.json",
+  "note": "Beispielvorlage: Werte an Zielinstanz anpassen.",
+  "skills": [
+    {
+      "id": "austrian-law",
+      "path": "./skills/austrian-law",
+      "enabled": true,
+      "purpose": "Österreichische Rechtstexte mit RIS-first Quellenpolitik"
+    }
+  ],
+  "policy": {
+    "sourcePriority": ["ris", "jusline"],
+    "juslineRequiresExplicitRequest": true,
+    "noBindingLegalAdviceClaims": true
+  }
+}
