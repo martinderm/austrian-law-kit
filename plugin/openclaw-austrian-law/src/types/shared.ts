@@ -7,6 +7,10 @@ export type ToolName =
   | "law_cache_get"
   | "law_cache_put";
 
+export type ToolSourceKind = "ris" | "jusline" | "internal";
+
+export type ToolDefinitionStatus = "stub";
+
 export type ToolErrorCode =
   | "VALIDATION_ERROR"
   | "NOT_FOUND"
@@ -25,7 +29,7 @@ export interface ToolError {
 
 export interface ToolMeta {
   tool: ToolName;
-  source: "ris" | "jusline" | "internal";
+  source: ToolSourceKind;
   timestamp?: string;
 }
 
