@@ -7,39 +7,59 @@ Absichern, dass Stable IDs reproduzierbar, quellstabil und typkonsistent gebilde
 ## Fall 1: RIS Normsegment mit vollständigen Feldern
 
 **Input:**
-- doc-id vorhanden
-- segment-id vorhanden
-- version-id vorhanden
+- `doc-id` vorhanden
+- `segment-id` vorhanden
+- `version-id` vorhanden
 
 **Erwartung:**
-- ID-Format: `ris:normseg:<doc-id>:<segment-id>:<version-id>`
-- keine Verwendung von Freitext-Titeln
+- Format: `ris:normseg:<doc-id>:<segment-id>:<version-id>`
+- Ergebnis ist lowercase/dateisicher
 
-## Fall 2: RIS Gesamtdokument ohne version-id
+## Fall 2: RIS Normsegment ohne version-id
 
 **Input:**
-- doc-id vorhanden
-- version-id fehlt
+- `doc-id` vorhanden
+- `segment-id` vorhanden
+- `version-id` fehlt
 
 **Erwartung:**
-- ID-Format: `ris:doc:<doc-id>`
-- `version_label` im Frontmatter muss gesetzt sein
+- Format: `ris:normseg:<doc-id>:<segment-id>`
+- `version_label` muss im Frontmatter gesetzt werden
 
-## Fall 3: JUSLINE Material ohne stabilen Material-Identifier
+## Fall 3: RIS Gesamtdokument ohne version-id
 
 **Input:**
-- kein material-id
+- `doc-id` vorhanden
+- `version-id` fehlt
+
+**Erwartung:**
+- Format: `ris:doc:<doc-id>`
+- keine künstliche Versionskennung erzeugen
+
+## Fall 4: JUSLINE Material ohne material-id
+
+**Input:**
+- kein `material-id`
 - kanonischer URL-Slug vorhanden
 
 **Erwartung:**
-- ID-Format: `jusline:mat:<slug>`
-- slug ist normalisiert (lowercase, dateisicher)
+- Format: `jusline:mat:<slug>`
+- slug wird normalisiert
 
-## Fall 4: Verbotene Bestandteile
+## Fall 5: Entscheidungen
 
 **Input:**
-- nur Seitentitel oder UI-Label verfügbar
+- `decision-id` vorhanden
 
 **Erwartung:**
-- keine Stable-ID-Erzeugung aus Seitentitel/UI-Label
-- Fall wird als Lücke markiert
+- RIS: `ris:dec:<decision-id>`
+- JUSLINE: `jusline:dec:<decision-id-or-slug>`
+
+## Fall 6: Verbotene Bestandteile
+
+**Input:**
+- nur Überschrift/UI-Label/Seitentitel vorhanden
+
+**Erwartung:**
+- keine ID-Erzeugung aus diesen Werten
+- Fall als Lücke markieren

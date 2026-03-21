@@ -33,34 +33,43 @@ memory/
             └─ <stable-id>.json
 ```
 
-## Welche Dateitypen wohin gehören
+## Dateitypen nach Quelle
 
 ### `ris/`
-- `norms/`: RIS-Normsegmente (z. B. Paragraphen/Artikel als einzelne Markdown-Dateien)
-- `documents/`: RIS-Gesamtdokumente (vollständige konsolidierte Fassungen)
-- `decisions/`: RIS-Entscheidungen (sofern im Scope)
-- `metadata/`: JSON-Metadaten pro `stable_id`
+- `norms/`: RIS-Normsegmente (z. B. Paragraph/Artikel)
+- `documents/`: RIS-Gesamtdokumente (volle Fassung)
+- `decisions/`: RIS-Entscheidungen (wenn im Scope)
+- `metadata/`: technische JSON-Metadaten pro Stable ID
 
 ### `jusline/`
-- `materials/`: Diskussionen/Kommentare/Zusatzmaterialien
-- `decisions/`: JUSLINE-Entscheidungen nur bei expliziter Nachfrage
-- `metadata/`: JSON-Metadaten pro `stable_id`
+- `materials/`: Diskussionen, Kommentare, Zusatzmaterial
+- `decisions/`: JUSLINE-Entscheidungen nur bei ausdrücklicher Nachfrage
+- `metadata/`: technische JSON-Metadaten pro Stable ID
 
-## Zusammenhang Markdown und JSON-Metadaten
+## Beziehung zwischen `.md` und `.json`
 
-- Für jede `<stable-id>.md` soll es eine korrespondierende `<stable-id>.json` in `metadata/` geben.
-- Markdown enthält den nutzbaren Inhalt + YAML-Frontmatter.
-- JSON enthält technische Zusatzdaten (Normalisierungsdetails, Rohquellen-Referenzen, ggf. Hashes), die nicht in den Fließtext gehören.
+- Für jede inhaltliche Datei `<stable-id>.md` ist eine korrespondierende Metadatei `<stable-id>.json` vorgesehen.
+- `.md` enthält:
+  - YAML-Frontmatter gemäß `docs/frontmatter-schema.md`
+  - normalisierten, lesbaren Inhalt
+- `.json` enthält:
+  - technische Zusatzdaten (z. B. Normalisierungsdetails, Rohquellen-Referenzen, Checksums, Parsing-Hinweise)
 
-## Index-Dateien und Stable-ID-Verweise
+## Index-Dateien und Verweise auf Stable IDs
 
 - `index/by-stable-id.json`
-  - mappt `stable_id` → relativer Markdown-Pfad
-  - Beispiel: `ris:doc:bundesrecht.xyz:v2026-01-01` → `ris/documents/ris:doc:bundesrecht.xyz:v2026-01-01.md`
+  - Mapping: `stable_id` → relativer Pfad zur `.md`
+  - Beispiel: `ris:doc:bundesrecht.bgbli_2000_100:v2026-01-01` → `ris/documents/ris:doc:bundesrecht.bgbli_2000_100:v2026-01-01.md`
 
 - `index/by-source-id.json`
-  - mappt quellspezifische IDs (`source_id`) → `stable_id`
-  - dient der Wiederauffindung bei erneutem Abruf derselben Quelle
+  - Mapping: `source_id` → `stable_id`
+  - dient Reconciliation bei erneutem Abruf derselben Quelle
 
-Stable-ID-Regeln: siehe `docs/stable-id-strategy.md`.
-Frontmatter-Regeln: siehe `docs/frontmatter-schema.md`.
+## Optionale Artefakte
+
+- `decisions/` unter `ris/` und `jusline/` sind optional, solange Entscheidungen noch nicht im Scope sind.
+- zusätzliche JSON-Felder in `metadata/` sind optional, solange Pflichtfelder aus dem Frontmatter-Vertrag abgedeckt bleiben.
+- templates unter `templates/memory/` sind optional und nur Initialisierungshilfe, nicht Runtime-Quelle.
+
+Stable-ID-Regeln: `docs/stable-id-strategy.md`
+Frontmatter-Vertrag: `docs/frontmatter-schema.md`
