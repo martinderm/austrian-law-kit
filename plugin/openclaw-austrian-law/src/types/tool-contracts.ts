@@ -1,4 +1,5 @@
 import type { ToolResult } from "./shared.js";
+import type { FrontmatterBase } from "./frontmatter.js";
 
 export interface SearchHit {
   stable_id: string;
@@ -10,7 +11,7 @@ export interface SearchHit {
 
 export interface CachedArtifact {
   stable_id: string;
-  frontmatter: Record<string, unknown>;
+  frontmatter: FrontmatterBase;
   content: string;
   metadata?: Record<string, unknown>;
 }
@@ -55,7 +56,7 @@ export type LawCacheGetOutput = ToolResult<{ artifact: CachedArtifact }>;
 
 export interface LawCachePutInput {
   stableId: string;
-  frontmatter: Record<string, unknown>;
+  frontmatter: FrontmatterBase;
   content: string;
   metadata?: Record<string, unknown>;
 }

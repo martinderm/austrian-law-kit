@@ -69,9 +69,35 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     additionalProperties: false,
     properties: {
       stableId: { type: "string" },
-      frontmatter: { type: "object" },
+      frontmatter: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          stable_id: { type: "string" },
+          source: { type: "string", enum: ["ris", "jusline"] },
+          source_url: { type: "string" },
+          doc_type: {
+            type: "string",
+            enum: ["norm_segment", "norm_document", "discussion", "commentary", "decision"],
+          },
+          title: { type: "string" },
+          fetched_at: { type: "string" },
+          version_label: { type: "string" },
+          fassung_typ: { type: "string", enum: ["Arbeitsfassung", "verbindliche Fassung"] },
+        },
+        required: [
+          "stable_id",
+          "source",
+          "source_url",
+          "doc_type",
+          "title",
+          "fetched_at",
+          "version_label",
+          "fassung_typ"
+        ],
+      },
       content: { type: "string" },
-      metadata: { type: "object" },
+      metadata: { type: "object", additionalProperties: true },
     },
     required: ["stableId", "frontmatter", "content"],
   },

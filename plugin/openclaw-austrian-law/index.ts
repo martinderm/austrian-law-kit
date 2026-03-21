@@ -1,5 +1,6 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
+import { formatToolResult } from "./src/tools/format-result.js";
 import { validateToolRegistry } from "./src/tools/validate-registry.js";
 
 export default definePluginEntry({
@@ -21,9 +22,7 @@ export default definePluginEntry({
         parameters: entry.inputSchema,
         execute: async (_toolCallId, params) => {
           const result = await entry.stub(params);
-          return {
-            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-          };
+          return formatToolResult(result);
         },
       });
     }
