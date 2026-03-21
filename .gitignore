@@ -1,0 +1,14 @@
+# Node / TS
+node_modules/
+dist/
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local runtime artifacts
+*.log
+.tmp/
