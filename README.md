@@ -41,6 +41,33 @@ Nicht enthalten (absichtlich):
 - `tests/`, `fixtures/` Platzhalter für testbare Entwicklung
 - `templates/memory/` optionale Vorlagen für Instanzen
 
+## 🚦 Projektstatus (Übergabe)
+
+### Bereits abgeschlossene Phasen
+- Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
+- Datenvertrag: Stable ID, Frontmatter, Memory-Layout
+- OpenClaw-formnahes Plugin-Skelett (Manifest + `openclaw.extensions` + Entry)
+- Zentrale Tool-Registry mit stub-basierter Tool-Registrierung
+- Lokale Cache-Helfer (Stable-ID, Pfadableitung, Serialisierung), **ohne I/O/Netzwerk**
+
+### Nächster empfohlener Schritt
+- Lokale Cache-I/O-Schicht einführen und `law_cache_get` / `law_cache_put` von reinem Stub auf lokale Dateiverarbeitung umstellen (weiterhin ohne Netzlogik).
+
+### Bewusst noch nicht implementiert
+- RIS-/JUSLINE-Fetching
+- HTML/XML-Parser
+- inhaltliche Extraktion/Normalisierung
+- produktive Cache-Engine mit I/O-Layer
+
+### Wichtigste Doku zum Weitermachen
+- `docs/current-status.md`
+- `docs/next-session.md`
+- `docs/tool-contracts.md`
+- `docs/tool-registration-plan.md`
+- `docs/cache-implementation-plan.md`
+- `docs/stable-id-strategy.md`
+- `docs/frontmatter-schema.md`
+
 ## Nächste Schritte
 
 1. Antwortvertrag und Zitationsschema schärfen
