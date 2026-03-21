@@ -1,10 +1,10 @@
 # Example Config
 
-Dieses Verzeichnis enthält **rein illustrative Vorlagen** für die Einbindung des Repositories in OpenClaw-Instanzen.
+Dieses Verzeichnis enthält **rein illustrative Pseudo-Vorlagen** für die Einbindung des Repositories in OpenClaw-Instanzen.
 
 ## Wichtig
 
-Diese Dateien sind **keine garantierte produktive OpenClaw-Konfiguration**. Sie zeigen nur Struktur und Intention.
+Diese Dateien sind **keine garantierte produktive OpenClaw-Konfiguration** und auch **kein verbindlich gültiges OpenClaw-Config-Format**. Sie zeigen nur Struktur und Intention.
 
 ## Enthalten
 

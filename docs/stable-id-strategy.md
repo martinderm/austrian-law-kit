@@ -24,6 +24,16 @@ Nicht zulässig für Stable IDs:
 - instabile UI-Labels
 - bloße Seitentitel
 
+## Geplantes Feld-Mapping aus realen Quellen (vorläufig)
+
+Geplante Zielzuordnung auf interne Felder:
+- `doc-id`: bevorzugt aus offiziellen RIS-Dokumentkennungen (bei JUSLINE nur wenn eindeutig referenzierbar)
+- `segment-id`: bevorzugt aus strukturierten Segmentangaben (Paragraph/Artikel/Absatz)
+- `version-id`: bevorzugt aus quellengebundener Fassungskennung bzw. eindeutigem Standmerkmal
+- `material-id`: bevorzugt aus stabiler JUSLINE-Materialkennung, sonst kanonisierter URL-Slug
+
+**Risiko:** Feldnamen und Verfügbarkeit können je nach RIS-/JUSLINE-Darstellung variieren; das Mapping muss bei echter Implementierung gegen reale Antworten validiert werden.
+
 ## Bevorzugte Quellfelder und Fallback-Reihenfolge
 
 ## 1) RIS Normsegmente

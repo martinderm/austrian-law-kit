@@ -10,8 +10,8 @@ Diese Spezifikation gilt für gecachte Markdown-Dateien unter `memory/references
 - `doc_type` (enum: `norm_segment` | `norm_document` | `discussion` | `commentary` | `decision`) — Dokumenttyp
 - `title` (string) — sachlicher Dokumenttitel (nur Anzeige, nie für ID-Bildung)
 - `fetched_at` (string, ISO-8601 datetime) — Abrufzeitpunkt
-- `version_label` (string) — Fassungslabel (z. B. `konsolidiert`, `nicht-amtlich`)
-- `fassung_typ` (enum: `Arbeitsfassung` | `verbindliche Fassung`) — rechtlicher Fassungsstatus
+- `version_label` (string) — **technische/inhaltliche Fassungsbezeichnung** (z. B. `konsolidiert`, `nicht-amtlich`, `stand-2026-03`)
+- `fassung_typ` (enum: `Arbeitsfassung` | `verbindliche Fassung`) — **rechtlicher Status der Fassung**
 
 ## Optionale Felder
 
@@ -26,6 +26,11 @@ Diese Spezifikation gilt für gecachte Markdown-Dateien unter `memory/references
 - `supersedes` (string) — stable_id einer ersetzten älteren Fassung
 - `checksum` (string) — Hash des normalisierten Inhalts
 - `notes` (string) — kurze Zusatzhinweise
+
+## Bedeutungsabgrenzung (kritisch)
+
+- `version_label` beschreibt **was** inhaltlich/technisch vorliegt (z. B. konsolidierter Stand, nicht-amtliche Aufbereitung).
+- `fassung_typ` beschreibt **welchen rechtlichen Status** diese Fassung hat (Arbeitsfassung vs. verbindliche Fassung).
 
 ## Beispiel-Frontmatter: RIS Normsegment
 

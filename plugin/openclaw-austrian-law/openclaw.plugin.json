@@ -1,0 +1,32 @@
+{
+  "id": "openclaw-austrian-law",
+  "name": "OpenClaw Austrian Law Plugin",
+  "description": "Plugin-Skelett für österreichische Rechtsquellen (ohne Parser/Fetching-Implementierung).",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "cacheRoot": {
+        "type": "string",
+        "description": "Pfad zur Cache-Zielstruktur unter memory/references/austrian-law"
+      },
+      "risBaseUrl": {
+        "type": "string",
+        "description": "Basis-URL für RIS (Platzhalter, noch ungenutzt)",
+        "default": "https://www.ris.bka.gv.at"
+      },
+      "juslineBaseUrl": {
+        "type": "string",
+        "description": "Basis-URL für JUSLINE (Platzhalter, noch ungenutzt)",
+        "default": "https://www.jusline.at"
+      },
+      "enableJusline": {
+        "type": "boolean",
+        "description": "Sekundärquelle aktivieren (fachlich weiterhin nur opt-in)",
+        "default": true
+      }
+    },
+    "required": ["cacheRoot"]
+  }
+}

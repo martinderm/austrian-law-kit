@@ -1,16 +1,50 @@
-# openclaw-austrian-law (Plugin Placeholder)
+# openclaw-austrian-law (Plugin Skeleton)
 
-Platzhalter für ein späteres **natives OpenClaw-Plugin**.
+Natives OpenClaw-Plugin-Skelett für den Austrian-Law-Stack.
 
-## Zielbild (später)
+## Korrigierte Struktur (OpenClaw-konform)
 
-Das Plugin soll strukturierte Tools für den Rechts-Agenten bereitstellen (z. B. URL-Bildung, Fetching, Parsing, Normalisierung, Caching).
+- `openclaw.plugin.json`
+  - Manifest für Discovery + Config-Validierung (manifest-first)
+- `package.json`
+  - enthält `openclaw.extensions` mit Extension-Entry
+- `index.ts`
+  - Root-Entry-Point der Plugin-Extension (wird über `openclaw.extensions` geladen)
+  - nutzt die dokumentierte `definePluginEntry`-Form aus `openclaw/plugin-sdk/core`
+- `src/index.ts`
+  - interne Konstante/Typen für geplante Toolnamen
+- `src/tools/`, `src/cache/`, `src/types/`
+  - reine Platzhalterstruktur
 
-## Geplante Plugin-Metadaten
+## Geplante Tools (noch ohne Implementierung)
 
-Für die native Einbindung wird später eine `openclaw.plugin.json` benötigt.
+- `ris_search`
+- `ris_fetch_segment`
+- `ris_fetch_whole_law`
+- `jusline_fetch_discussions`
+- `jusline_list_decisions`
+- `law_cache_get`
+- `law_cache_put`
 
-## Status
+## Datenvertrag als Voraussetzung
 
-- In diesem Schritt: nur Struktur-/Dokumentationsplatzhalter.
-- Tools und Implementierung folgen in einem späteren Schritt.
+Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
+- `docs/stable-id-strategy.md`
+- `docs/frontmatter-schema.md`
+- `docs/memory-layout.md`
+
+## Aktueller Status
+
+- Root-Entry-Point vorhanden
+- Manifest + Paketmetadaten vorhanden
+- noch keine Tool-Registrierung
+- keine Parser-/Fetch-/RIS-/JUSLINE-Implementierung
+
+## SDK-/Abhängigkeits-Hinweis
+
+Für dieses reine Skeleton sind im Paket keine zusätzlichen Runtime-Abhängigkeiten nötig.
+Der Import `openclaw/plugin-sdk/core` wird im OpenClaw-Plugin-Laufzeitkontext aufgelöst.
+
+## Nächster Schritt
+
+Im nächsten Schritt wird die Tool-Registrierung vorbereitet (weiterhin ohne echte Fetch-/Parserlogik).

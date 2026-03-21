@@ -39,7 +39,8 @@ D) **Quellenlage / Unsicherheit**
 
 ## Datenintegrität
 
-Fehlende Informationen dürfen nicht erfunden oder glatt ergänzt werden; Lücken sind ausdrücklich zu benennen.
+- Fehlende Informationen dürfen nicht erfunden oder glatt ergänzt werden.
+- Lücken müssen ausdrücklich benannt werden.
 
 ## Tool-Orchestrierung (MVP)
 

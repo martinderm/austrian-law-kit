@@ -1,7 +1,9 @@
 {
   "$schema": "https://example.invalid/openclaw.skill-wiring.schema.json",
-  "note": "Illustrative Vorlage ohne Gewähr; nicht als produktive Konfiguration übernehmen.",
+  "note": "Illustrative Pseudo-Vorlage ohne Gewähr; nicht als produktive OpenClaw-Konfiguration übernehmen.",
   "illustrativeOnly": true,
+  "notProductionReady": true,
+  "formatWarning": "Kein garantiert gültiges produktives OpenClaw-Config-Format",
   "skills": [
     {
       "id": "austrian-law",
