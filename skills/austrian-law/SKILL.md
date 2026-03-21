@@ -15,7 +15,7 @@ Dieser Skill steuert die fachliche Orchestrierung für österreichische Rechtste
 2. **JUSLINE ist Sekundärquelle** für optionalen Zusatzkontext.
 3. Inhalte (insbesondere Entscheidungen) aus JUSLINE nur bei **ausdrücklicher Nachfrage** laden oder zusammenfassen.
 4. Standardmäßig mit der **konsolidierten RIS-Fassung** arbeiten.
-5. **Arbeitsfassung** und **rechtlich verbindliche Fassung** immer explizit unterscheiden.
+5. **Arbeitsfassung** und **verbindliche Fassung** immer explizit unterscheiden.
 6. Bei Konflikten zwischen RIS und JUSLINE gilt **RIS**.
 
 ## Antwortstruktur (immer 4 Schichten)
@@ -36,6 +36,10 @@ D) **Quellenlage / Unsicherheit**
 
 - Keine Behauptung verbindlicher Rechtsberatung.
 - Der Skill liefert Wortlaut, Quellenlage und vorsichtige Einordnung.
+
+## Datenintegrität
+
+Fehlende Informationen dürfen nicht erfunden oder glatt ergänzt werden; Lücken sind ausdrücklich zu benennen.
 
 ## Tool-Orchestrierung (MVP)
 

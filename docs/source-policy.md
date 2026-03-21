@@ -17,7 +17,7 @@
 1. RIS ist Primärquelle für Wortlaut und Metadaten.
 2. JUSLINE ist Sekundärquelle und opt-in.
 3. Konsolidierte Fassung aus RIS ist im Regelfall die bevorzugte Arbeitsfassung.
-4. Arbeitsfassung und rechtlich verbindliche Fassung werden klar getrennt benannt.
+4. Arbeitsfassung und verbindliche Fassung werden klar getrennt benannt.
 5. Bei Konflikten gilt RIS.
 6. Keine Behauptung verbindlicher Rechtsberatung.
 7. Wortlaut, Quellenlage und Unsicherheit werden sauber getrennt.

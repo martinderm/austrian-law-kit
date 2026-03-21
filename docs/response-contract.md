@@ -7,7 +7,7 @@ Dieser Vertrag definiert, wie Antworten des Austrian-Law-Skills strukturiert sei
 ### 1) Fundstelle / Wortlaut
 - Konkrete Quelle nennen (bevorzugt RIS).
 - Relevanten Wortlaut oder engen Auszug wiedergeben.
-- Fassungstyp markieren: **Arbeitsfassung** oder **rechtlich verbindliche Fassung**.
+- Fassungstyp markieren: **Arbeitsfassung** oder **verbindliche Fassung**.
 
 ### 2) Verständliche Zusammenfassung
 - Inhalt in klarer Alltagssprache erklären.

@@ -1,6 +1,7 @@
 {
   "$schema": "https://example.invalid/openclaw.skill-wiring.schema.json",
-  "note": "Beispielvorlage: Werte an Zielinstanz anpassen.",
+  "note": "Illustrative Vorlage ohne Gewähr; nicht als produktive Konfiguration übernehmen.",
+  "illustrativeOnly": true,
   "skills": [
     {
       "id": "austrian-law",
