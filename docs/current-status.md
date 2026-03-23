@@ -99,6 +99,7 @@ Relevante Dateien:
 - Cache-Root wird beim Plugin-Register aus `api.pluginConfig.cacheRoot` gebunden und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
 - `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
+- RIS-Fetch-Tools nutzen optionales write-through Caching (Best-Effort, kein Hard-Fail auf Cache-Schreibfehler).
 
 ## Wichtigste Architekturentscheidungen
 

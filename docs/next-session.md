@@ -23,15 +23,14 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach `ris_fetch_whole_law`-MVP: Cache-Anbindung für RIS-Artefakte aktivieren (ohne Refactor):**
-- `law_cache_put` nach erfolgreichem RIS-Fetch gezielt nutzen
-- `law_cache_get` für schnelle Wiederverwendung nutzen
-- klare Trennung zwischen Fetch- und Cache-Verantwortung beibehalten
+**Nach write-through Cache-Anbindung: gezielte Cache-Read-Nutzung evaluieren (ohne Cache-First-Umbau):**
+- prüfen, wo `law_cache_get` für Wiederverwendung sinnvoll ist
+- weiterhin Fetch- und Cache-Verantwortung klar getrennt halten
 
 ## Abnahmekriterien für diesen Schritt
 
 - bestehende RIS-MVP-Tools bleiben stabil nutzbar.
-- Cache-Nutzung ist optional und robust (kein Hard-Fail bei Cache-Problemen).
+- keine neue RIS-Funktion in diesem Schritt.
 - Keine JUSLINE-Produktivlogik eingeführt.
 
 ## Ausdrücklich noch NICHT machen

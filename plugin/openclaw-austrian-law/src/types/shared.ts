@@ -31,6 +31,7 @@ export interface ToolMeta {
   tool: ToolName;
   source: ToolSourceKind;
   timestamp?: string;
+  warnings?: string[];
 }
 
 export type ToolResult<TData> = {

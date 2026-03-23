@@ -1,3 +1,4 @@
+import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
 import {
   buildRisWholeLawUrl,
@@ -103,26 +104,35 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     const parsed = parseRisWholeLawHtml(html);
     const stableId = normalizeWholeLawStableIdFromSourceId(sourceId);
 
+    const artifact = {
+      stable_id: stableId,
+      frontmatter: {
+        stable_id: stableId,
+        source: "ris",
+        source_url: sourceUrl,
+        doc_type: "norm_document" as const,
+        title: parsed.title,
+        fetched_at: new Date().toISOString(),
+        version_label: "unknown",
+        fassung_typ: "Arbeitsfassung" as const,
+        source_id: sourceId,
+      },
+      content: parsed.content,
+    };
+
+    const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
+
     return {
       ok: true,
       data: {
-        artifact: {
-          stable_id: stableId,
-          frontmatter: {
-            stable_id: stableId,
-            source: "ris",
-            source_url: sourceUrl,
-            doc_type: "norm_document",
-            title: parsed.title,
-            fetched_at: new Date().toISOString(),
-            version_label: "unknown",
-            fassung_typ: "Arbeitsfassung",
-            source_id: sourceId,
-          },
-          content: parsed.content,
-        },
+        artifact,
       },
-      meta: { tool: "ris_fetch_whole_law", source: "ris", timestamp: new Date().toISOString() },
+      meta: {
+        tool: "ris_fetch_whole_law",
+        source: "ris",
+        timestamp: new Date().toISOString(),
+        ...(cacheWrite.cached ? {} : { warnings: [`cache_write_failed: ${cacheWrite.cacheError}`] }),
+      },
     };
   } catch (error) {
     return {
