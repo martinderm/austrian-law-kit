@@ -25,7 +25,7 @@ Dann Code:
 
 **Nach gezielter Cache-Read-Nutzung: Stabilisierung + Telemetrie-Feinschliff (ohne neue RIS-Funktionen):**
 - Cache-Hit/Miss/Conflict-Signale in Tests weiter absichern
-- Warncodes bei Bedarf konsolidieren (ohne Vertragsaufblähung)
+- Meta-Signale bei Bedarf weiter strukturieren (notices vs warnings, ohne Vertragsaufblähung)
 
 ## Abnahmekriterien für diesen Schritt
 

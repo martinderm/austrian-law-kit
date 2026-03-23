@@ -50,7 +50,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         tool: "ris_fetch_whole_law",
         source: "ris",
         timestamp: new Date().toISOString(),
-        warnings: ["cache_hit: reused cached artifact"],
+        notices: ["cache_hit: reused cached artifact"],
       },
     };
   }

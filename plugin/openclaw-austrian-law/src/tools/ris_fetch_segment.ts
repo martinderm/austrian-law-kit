@@ -61,7 +61,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         tool: "ris_fetch_segment",
         source: "ris",
         timestamp: new Date().toISOString(),
-        warnings: ["cache_hit: reused cached artifact"],
+        notices: ["cache_hit: reused cached artifact"],
       },
     };
   }

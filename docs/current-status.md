@@ -101,6 +101,7 @@ Relevante Dateien:
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 - RIS-Fetch-Tools nutzen optionales write-through Caching (Best-Effort, kein Hard-Fail auf Cache-Schreibfehler).
 - RIS-Fetch-Tools nutzen gezielte Cache-Read-Wiederverwendung bei eindeutigem Stable-ID-Match (kein globales Cache-First).
+- Meta-Signale: `cache_hit` als `notices`, Cache-Probleme (`cache_conflict`/`cache_read_failed`/`cache_write_failed`) als `warnings`.
 
 ## Wichtigste Architekturentscheidungen
 
