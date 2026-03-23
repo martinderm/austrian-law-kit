@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.10.0 - JUSLINE Discussions MVP
+- `jusline_fetch_discussions` als erste produktive JUSLINE-MVP-Funktion ergänzt (Sekundärquelle)
+- JUSLINE URL-/Pfad-Auflösung ergänzt (`src/jusline/url-builder.ts`)
+- Diskussionen/Kommentare-Parser ergänzt (`src/jusline/discussions-parser.ts`)
+- reale Snapshot-Extrakt-Fixtures (positiv/negativ) + Testplan ergänzt
+- Entscheidungen in diesem Schritt bewusst ignoriert
+
+## 0.9.1 - JUSLINE Fixture-Härtung
+- JUSLINE-Fixtures als reduzierte Snapshot-Extrakte klar dokumentiert
+- Relevante/weggelassene Sektionen transparent gemacht (`fixtures/jusline/README.md`)
+
+## 0.9.0 - RIS Parser Härtung (MVP)
+- robustere HTML-Entity-Decodierung und Tag-Stripping in RIS-Parsern
+- robustere Titel-/Content-Fallbacks in Segment/Whole-Law-Parsern
+- tolerantere Link-Erkennung im RIS-Search-Parser
+
+## 0.8.0 - RIS MVP Hardening (kleine Konsolidierungen)
+- gemeinsame Mini-Helfer für Source-ID-Auflösung und Cache-Meta ergänzt
+- Duplikate in `ris_fetch_segment`/`ris_fetch_whole_law` reduziert (ohne Vertragsänderung)
+
+## 0.7.0 - Meta-Signale geschärft
+- `meta.notices` und `meta.warnings` semantisch getrennt
+- `cache_hit` als Notice, Cache-Probleme als Warning geführt
+
+## 0.6.0 - Cache-Read Wiederverwendung für RIS-Tools
+- gezielte cache-read Wiederverwendung bei eindeutigem Stable-ID-Match ergänzt
+- Cache-Miss/Cache-Konflikt als Nebenpfad, Hauptpfad bleibt stabil
+
+## 0.5.0 - Write-Through Caching für RIS-Tools
+- optionales write-through Caching nach erfolgreichen RIS-Fetches ergänzt
+- Cache-Schreibfehler entkoppelt vom RIS-Hauptpfad (`ok: true` bleibt erhalten)
+
 ## 0.4.0 - Lokale Cache-Helfer (ohne I/O)
 - Stable-ID-Helfer ergänzt (`src/cache/stable-id.ts`)
 - Cache-Pfad-Ableitung ergänzt (`src/cache/cache-paths.ts`)

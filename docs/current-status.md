@@ -1,6 +1,6 @@
 # Current Status
 
-Stand: 2026-03-21 (Pause/Übergabepunkt)
+Stand: 2026-03-23 (laufend aktualisiert)
 
 ## Was bereits umgesetzt ist
 
@@ -131,6 +131,6 @@ Relevante Dateien:
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)
 
-1. **Cache-Anbindung für RIS-Artefakte** schrittweise nutzen (`law_cache_put`/`law_cache_get` ohne Refactor).
-2. **Parser-Härtung inkrementell** (robustere Titel-/Content-Erkennung, weiterhin ohne inhaltliche Interpretation).
-3. **Gezielte automatisierte Tests ergänzen** (RIS-MVP-Funktionen + Cache-I/O Zusammenspiel).
+1. **`jusline_list_decisions` optional evaluieren** (klar getrennt von `jusline_fetch_discussions`, weiterhin Sekundärquelle).
+2. **Parser mittelfristig auf DOM-/Selektor-Basis umstellen** (Regex nur als MVP-Übergang).
+3. **Gezielte automatisierte Tests erweitern** (JUSLINE-MVP + Cache-/Meta-Signal-Edge-Cases).

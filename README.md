@@ -21,24 +21,30 @@ Dieses Repository liefert eine übertragbare Grundstruktur für:
 ## Scope (aktueller Stand)
 
 Enthalten sind:
-- Dokumentationsgerüst
+- Dokumentations- und Vertragsbasis
 - Skill-Gerüst unter `skills/austrian-law/`
-- Beispiel-Config-Gerüst
-- Platzhalter für Plugin, Tests und Fixtures
+- produktive RIS-MVP-Tools:
+  - `ris_search`
+  - `ris_fetch_segment`
+  - `ris_fetch_whole_law`
+- erste produktive JUSLINE-MVP-Funktion:
+  - `jusline_fetch_discussions` (Sekundärquelle)
+- lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
+- Tests, Fixtures und Beispiel-Config
 - optionale Templates für spätere Memory-Initialisierung
 
-Nicht enthalten (absichtlich):
-- produktiver Plugin-Code
-- Parser-/Normalizer-Implementierung
-- produktive Netz-/Fetch-Logik
+Bewusst noch eingeschränkt:
+- `jusline_list_decisions` ist noch Stub
+- Parser sind MVP-regex-basiert (noch kein DOM-/Selektor-Parser)
+- keine inhaltliche juristische Interpretation/Normalisierung
 
 ## Strukturüberblick
 
-- `docs/` Architektur, Quellenpolitik, Memory-Layout, Install/Migration
+- `docs/` Architektur, Quellenpolitik, Memory-Layout, Status/Übergaben
 - `skills/austrian-law/` fachliches Skill-Gerüst
 - `example-config/` übertragbare Konfigurationsbeispiele
-- `plugin/` Platzhalterstruktur für spätere native Tools
-- `tests/`, `fixtures/` Platzhalter für testbare Entwicklung
+- `plugin/` native Plugin-Implementierung (MVP + Stubs)
+- `tests/`, `fixtures/` testbare Entwicklung inkl. realitätsnaher Snapshot-Extrakte
 - `templates/memory/` optionale Vorlagen für Instanzen
 
 ## 🚦 Projektstatus (Übergabe)
@@ -47,17 +53,18 @@ Nicht enthalten (absichtlich):
 - Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
 - Datenvertrag: Stable ID, Frontmatter, Memory-Layout
 - OpenClaw-formnahes Plugin-Skelett (Manifest + `openclaw.extensions` + Entry)
-- Zentrale Tool-Registry mit stub-basierter Tool-Registrierung
-- Lokale Cache-Helfer (Stable-ID, Pfadableitung, Serialisierung), **ohne I/O/Netzwerk**
+- Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
+- Erste produktive JUSLINE-MVP-Funktion (`jusline_fetch_discussions`) als Sekundärquelle
+- Lokale Cache-I/O inkl. write-through + gezielte cache-read Wiederverwendung
+- Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
 
 ### Nächster empfohlener Schritt
-- Lokale Cache-I/O-Schicht einführen und `law_cache_get` / `law_cache_put` von reinem Stub auf lokale Dateiverarbeitung umstellen (weiterhin ohne Netzlogik).
+- Optionales `jusline_list_decisions` als klar getrennte Sekundärquellen-Funktion evaluieren (ohne RIS-first aufzubrechen).
 
 ### Bewusst noch nicht implementiert
-- RIS-/JUSLINE-Fetching
-- HTML/XML-Parser
-- inhaltliche Extraktion/Normalisierung
-- produktive Cache-Engine mit I/O-Layer
+- Produktivlogik für `jusline_list_decisions`
+- DOM-/Selektor-basierter HTML-Parser (aktuell MVP-regex-basiert)
+- inhaltliche juristische Interpretation/Normalisierung
 
 ### Wichtigste Doku zum Weitermachen
 - `docs/current-status.md`
@@ -70,7 +77,7 @@ Nicht enthalten (absichtlich):
 
 ## Nächste Schritte
 
-1. Antwortvertrag und Zitationsschema schärfen
-2. Fixture-Sets für RIS/JUSLINE sammeln
-3. Testfälle für Quellenpolitik und Antwortstruktur ergänzen
-4. Plugin-Schnittstellen definieren (ohne Vollimplementierung)
+1. `jusline_list_decisions` als optionale, klar getrennte Sekundärquellen-Funktion evaluieren
+2. Parser mittelfristig von Regex auf DOM-/Selektor-Zugriff umstellen
+3. Fixture- und Testabdeckung für Edge-Cases (Cache/Parser/Meta-Signale) ausbauen
+4. Dokumentationspflege (`current-status`, `next-session`, `changelog`) pro Schritt strikt nachziehen

@@ -4,7 +4,7 @@
 
 1. Erst Verträge lesen.
 2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten lokalen Schritt umsetzen (Cache-I/O), ohne Netzlogik.
+3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: optionale JUSLINE-Entscheidungsfunktion), ohne Scope-Sprung.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 
@@ -19,7 +19,8 @@
 Dann Code:
 - `plugin/openclaw-austrian-law/index.ts`
 - `plugin/openclaw-austrian-law/src/tools/registry.ts`
-- `plugin/openclaw-austrian-law/src/cache/*`
+- `plugin/openclaw-austrian-law/src/tools/jusline_fetch_discussions.ts`
+- `plugin/openclaw-austrian-law/src/jusline/*`
 
 ## Nächster konkreter Implementierungsschritt
 
