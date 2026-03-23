@@ -41,6 +41,7 @@ Relevante Dateien:
 - `ris_search` ist als erste RIS-MVP-Funktion produktiv angebunden.
 - `ris_fetch_segment` ist als zweite RIS-MVP-Funktion produktiv angebunden.
 - `ris_fetch_whole_law` ist als dritte RIS-MVP-Funktion produktiv angebunden.
+- `jusline_fetch_discussions` ist als erste JUSLINE-MVP-Funktion (Sekundärquelle) produktiv angebunden.
 - übrige Tools sind weiterhin Stub-basiert.
 - Laufzeitnahe Input-Schemaobjekte vorhanden.
 - Lokale Registry-Konsistenzprüfung vorhanden.
@@ -69,7 +70,7 @@ Relevante Dateien:
 ## Was aktuell nur Scaffold/Stub ist
 
 - RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` + `ris_fetch_whole_law` (MVP).
-- JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
+- `jusline_list_decisions` bleibt Stub-basiert (`NOT_IMPLEMENTED`).
 - Keine tiefe Segment-/Unterstrukturmodellierung, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
@@ -92,6 +93,14 @@ Relevante Dateien:
 - `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
 - Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
 - `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
+
+## JUSLINE Discussions (MVP, neu)
+
+- `jusline_fetch_discussions` lädt Diskussionen/Kommentare von JUSLINE-Paragrafseiten.
+- Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.
+- Extrahiert nur Kommentar-/Diskussions-Hits (`title`, `source_url`, `source_id`, optional `snippet`).
+- Entscheidungen/Judikatur auf derselben Seite werden bewusst ignoriert.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
 ## Cache-Schicht (neu geschärft)

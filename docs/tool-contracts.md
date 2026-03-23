@@ -68,19 +68,20 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 
 ## Tool: `jusline_fetch_discussions` (Sekundärquelle)
 
-**Zweck:** Optionale Abrufe von Diskussionen/Kommentaren aus JUSLINE.
+**Zweck:** Optionale Abrufe von Diskussionen/Kommentaren aus JUSLINE (MVP).
 
-**Input (geplant):**
-- `query: string`
+**Input (MVP):**
+- `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
 
-**Output (geplant):**
-- Materialliste (`stable_id`, `source_id`, `title`, `source_url`, optional `summary`)
+**Output (MVP):**
+- Materialliste (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 
-**Fehlerklassen (geplant):**
+**Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
-- `POLICY_BLOCKED`
-- `NOT_IMPLEMENTED`
+- `NOT_FOUND`
+- `UPSTREAM_UNAVAILABLE`
+- `NOT_IMPLEMENTED` (nur außerhalb MVP)
 
 ## Tool: `jusline_list_decisions` (Sekundärquelle)
 

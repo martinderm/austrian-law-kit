@@ -38,8 +38,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     name: "jusline_fetch_discussions",
     sourceKind: "jusline",
-    status: "stub",
-    description: "Lädt optionale Diskussionen/Kommentare aus JUSLINE (Sekundärquelle).",
+    status: "mvp",
+    description: "Lädt optionale Diskussionen/Kommentare aus JUSLINE (Sekundärquelle, MVP).",
     inputSchemaRef: TOOL_SCHEMA_REFS.jusline_fetch_discussions,
     outputSchemaRef: "contracts:JuslineFetchDiscussionsOutput",
   },

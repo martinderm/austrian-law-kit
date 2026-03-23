@@ -1,5 +1,6 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { configureCacheRoot } from "./src/cache/cache-runtime.js";
+import { configureJuslineBaseUrl } from "./src/jusline/runtime.js";
 import { configureRisBaseUrl } from "./src/ris/runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
 import { formatToolResult } from "./src/tools/format-result.js";
@@ -15,6 +16,11 @@ function extractConfiguredRisBaseUrl(api: OpenClawPluginApi): string | undefined
   return typeof candidate === "string" ? candidate : undefined;
 }
 
+function extractConfiguredJuslineBaseUrl(api: OpenClawPluginApi): string | undefined {
+  const candidate = api.pluginConfig?.juslineBaseUrl;
+  return typeof candidate === "string" ? candidate : undefined;
+}
+
 export default definePluginEntry({
   id: "openclaw-austrian-law",
   name: "OpenClaw Austrian Law Plugin",
@@ -22,6 +28,7 @@ export default definePluginEntry({
   register(api: OpenClawPluginApi) {
     configureCacheRoot(extractConfiguredCacheRoot(api));
     configureRisBaseUrl(extractConfiguredRisBaseUrl(api));
+    configureJuslineBaseUrl(extractConfiguredJuslineBaseUrl(api));
 
     const validation = validateToolRegistry();
     if (!validation.ok) {
@@ -43,7 +50,7 @@ export default definePluginEntry({
     }
 
     api.logger.info(
-      `[openclaw-austrian-law] registered ${TOOL_REGISTRY.length} stub tools (no productive logic).`,
+      `[openclaw-austrian-law] registered ${TOOL_REGISTRY.length} tools (mixed MVP/stub status).`,
     );
   },
 });

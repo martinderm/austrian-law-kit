@@ -23,19 +23,18 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach RIS-MVP-Härtung: gezielte Qualitätsabsicherung fortsetzen (ohne neue RIS-Funktionen):**
-- Edge-Cases für Parser-/Meta-Signale in Tests weiter absichern
-- selektive Parser-Robustheit weiter verbessern, ohne Scope-Ausweitung
+**Nach `jusline_fetch_discussions`-MVP: optionale `jusline_list_decisions` evaluieren (weiterhin Sekundärquelle):**
+- klare Trennung Diskussionen vs. Entscheidungen beibehalten
+- RIS-first-Architektur unverändert lassen
 
 ## Abnahmekriterien für diesen Schritt
 
 - bestehende RIS-MVP-Tools bleiben stabil nutzbar.
 - keine neue RIS-Funktion in diesem Schritt.
-- Keine JUSLINE-Produktivlogik eingeführt.
+- JUSLINE bleibt klar Sekundärquelle und strikt getrennt von RIS-Primärlogik.
 
 ## Ausdrücklich noch NICHT machen
 
-- kein JUSLINE-Fetching
 - keine breite HTML/XML-Parser-Ausweitung
 - keine inhaltliche Normalisierung von Rechtstexten
 - keine produktive Interpretation/Extraction-Engine
