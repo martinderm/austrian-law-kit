@@ -22,8 +22,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     name: "ris_fetch_segment",
     sourceKind: "ris",
-    status: "stub",
-    description: "Lädt ein RIS-Normsegment (Primärquelle).",
+    status: "mvp",
+    description: "Lädt einen einzelnen RIS-Eintrag als norm_segment (MVP).",
     inputSchemaRef: TOOL_SCHEMA_REFS.ris_fetch_segment,
     outputSchemaRef: "contracts:RisFetchSegmentOutput",
   },

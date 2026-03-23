@@ -28,19 +28,23 @@ Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `openclaw
 
 ## Tool: `ris_fetch_segment` (Primärquelle)
 
-**Zweck:** Abruf eines einzelnen RIS-Normsegments.
+**Zweck:** Abruf eines einzelnen RIS-Eintrags als `norm_segment` (MVP).
 
-**Input (geplant):**
-- `docId: string`
-- `segmentId: string`
-- `versionId?: string`
+**Input (MVP):**
+- `sourceId?: string` (z. B. RIS-Dokumentnummer)
+- `sourceUrl?: string` (direkte RIS-Dokument-URL)
+- `segmentRef?: string` (derzeit außerhalb MVP, führt zu `NOT_IMPLEMENTED`)
 
-**Output (geplant):**
+Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
+
+**Output (MVP):**
 - segmentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
+- Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
 
-**Fehlerklassen (geplant):**
+**Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
 - `NOT_FOUND`
+- `UPSTREAM_UNAVAILABLE`
 - `NOT_IMPLEMENTED`
 
 ## Tool: `ris_fetch_whole_law` (Primärquelle)

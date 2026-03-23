@@ -39,6 +39,7 @@ Relevante Dateien:
 - Tool-Verträge sind typisiert (`src/types/tool-contracts.ts`).
 - Zentrale Definitions-/Registry-Schicht vorhanden.
 - `ris_search` ist als erste RIS-MVP-Funktion produktiv angebunden.
+- `ris_fetch_segment` ist als zweite RIS-MVP-Funktion produktiv angebunden.
 - übrige Tools sind weiterhin Stub-basiert.
 - Laufzeitnahe Input-Schemaobjekte vorhanden.
 - Lokale Registry-Konsistenzprüfung vorhanden.
@@ -66,17 +67,24 @@ Relevante Dateien:
 
 ## Was aktuell nur Scaffold/Stub ist
 
-- RIS-Produktivlogik ist aktuell auf `ris_search` begrenzt.
-- `ris_fetch_segment`/`ris_fetch_whole_law` sowie JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
-- Keine Segment-Extraktion, keine inhaltliche Norm-Parserlogik.
+- RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` (MVP).
+- `ris_fetch_whole_law` sowie JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
+- Keine Whole-Law-Extraktion, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
-## RIS Search (MVP, neu)
+## RIS Search (MVP)
 
 - `ris_search` baut eine RIS-Ergebnis-URL für Bundesnormen und ruft die Trefferliste via HTTP ab.
 - Ergebnis-Mapping liefert `title`, `source_url`, optional `source_id` und `stable_id` (nur wenn robust ableitbar).
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
+
+## RIS Fetch Segment (MVP, neu)
+
+- `ris_fetch_segment` lädt einen einzelnen RIS-Eintrag via `sourceId` oder `sourceUrl`.
+- Ergebnis ist ein `norm_segment`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
+- `segmentRef` ist bewusst außerhalb des MVP und liefert explizit `NOT_IMPLEMENTED`.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`.
 
 ## Cache-Schicht (neu geschärft)
 

@@ -23,14 +23,14 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach `ris_search`-MVP: `ris_fetch_segment` vorbereiten (weiterhin RIS-first, ohne JUSLINE):**
-- fokussiert auf technischen Segmentabruf und minimale Struktur
-- Cache-Anbindung nur über bestehende Schicht, keine Vermischung mit Suchlogik
+**Nach `ris_fetch_segment`-MVP: `ris_fetch_whole_law` vorbereiten (weiterhin RIS-first, ohne JUSLINE):**
+- fokussiert auf technischen Dokumentabruf
+- klare Trennung zu Segment-/Suchlogik beibehalten
 
 ## Abnahmekriterien für diesen Schritt
 
-- `ris_fetch_segment` folgt dem bestehenden Tool-Vertrag.
-- `ris_search` bleibt stabil und unverändert nutzbar.
+- `ris_fetch_whole_law` folgt dem bestehenden Tool-Vertrag.
+- `ris_search` und `ris_fetch_segment` bleiben stabil nutzbar.
 - Keine JUSLINE-Produktivlogik eingeführt.
 
 ## Ausdrücklich noch NICHT machen
