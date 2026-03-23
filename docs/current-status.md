@@ -71,7 +71,7 @@ Relevante Dateien:
 
 ## Cache-Schicht (neu geschärft)
 
-- Cache-Root wird beim Plugin-Register aus Plugin-Konfiguration gebunden (`cacheRoot`) und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
+- Cache-Root wird beim Plugin-Register aus `api.pluginConfig.cacheRoot` gebunden und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
 - `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 
