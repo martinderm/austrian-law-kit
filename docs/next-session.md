@@ -23,14 +23,14 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach der Cache-Härtung RIS-Logik starten (weiterhin ohne JUSLINE-Ausbau als Priorität):**
-- zuerst `ris_search` mit klarer Trennung zu Cache-Layer
-- weiterhin ohne HTML/XML-Parser-Ausweitung in diesem Schritt
+**Nach `ris_search`-MVP: `ris_fetch_segment` vorbereiten (weiterhin RIS-first, ohne JUSLINE):**
+- fokussiert auf technischen Segmentabruf und minimale Struktur
+- Cache-Anbindung nur über bestehende Schicht, keine Vermischung mit Suchlogik
 
 ## Abnahmekriterien für diesen Schritt
 
-- Cache-I/O bleibt entkoppelt und unverändert stabil.
-- `ris_search` liefert nur strukturierte Treffer-Referenzen im bestehenden Tool-Vertrag.
+- `ris_fetch_segment` folgt dem bestehenden Tool-Vertrag.
+- `ris_search` bleibt stabil und unverändert nutzbar.
 - Keine JUSLINE-Produktivlogik eingeführt.
 
 ## Ausdrücklich noch NICHT machen

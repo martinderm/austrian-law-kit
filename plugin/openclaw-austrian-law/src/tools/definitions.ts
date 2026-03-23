@@ -14,8 +14,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     name: "ris_search",
     sourceKind: "ris",
-    status: "stub",
-    description: "Sucht RIS-Treffer (Primärquelle).",
+    status: "mvp",
+    description: "Sucht RIS-Treffer (Primärquelle, MVP).",
     inputSchemaRef: TOOL_SCHEMA_REFS.ris_search,
     outputSchemaRef: "contracts:RisSearchOutput",
   },

@@ -22,11 +22,10 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     type: "object",
     additionalProperties: false,
     properties: {
-      docId: { type: "string" },
-      segmentId: { type: "string" },
-      versionId: { type: "string" },
+      sourceId: { type: "string" },
+      sourceUrl: { type: "string" },
+      segmentRef: { type: "string" },
     },
-    required: ["docId", "segmentId"],
   },
   ris_fetch_whole_law: {
     type: "object",

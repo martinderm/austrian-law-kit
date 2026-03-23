@@ -1,5 +1,6 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { configureCacheRoot } from "./src/cache/cache-runtime.js";
+import { configureRisBaseUrl } from "./src/ris/runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
 import { formatToolResult } from "./src/tools/format-result.js";
 import { validateToolRegistry } from "./src/tools/validate-registry.js";
@@ -9,12 +10,18 @@ function extractConfiguredCacheRoot(api: OpenClawPluginApi): string | undefined 
   return typeof candidate === "string" ? candidate : undefined;
 }
 
+function extractConfiguredRisBaseUrl(api: OpenClawPluginApi): string | undefined {
+  const candidate = api.pluginConfig?.risBaseUrl;
+  return typeof candidate === "string" ? candidate : undefined;
+}
+
 export default definePluginEntry({
   id: "openclaw-austrian-law",
   name: "OpenClaw Austrian Law Plugin",
   description: "Skeleton entry for Austrian law plugin (no tools registered yet).",
   register(api: OpenClawPluginApi) {
     configureCacheRoot(extractConfiguredCacheRoot(api));
+    configureRisBaseUrl(extractConfiguredRisBaseUrl(api));
 
     const validation = validateToolRegistry();
     if (!validation.ok) {

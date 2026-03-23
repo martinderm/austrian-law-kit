@@ -35,10 +35,11 @@ Relevante Dateien:
 - `plugin/openclaw-austrian-law/package.json`
 - `plugin/openclaw-austrian-law/index.ts`
 
-### 4) Tool-Verträge + Registry + Stub-Registrierung
+### 4) Tool-Verträge + Registry
 - Tool-Verträge sind typisiert (`src/types/tool-contracts.ts`).
 - Zentrale Definitions-/Registry-Schicht vorhanden.
-- Stub-Tools werden strukturell im Entry-Point registriert.
+- `ris_search` ist als erste RIS-MVP-Funktion produktiv angebunden.
+- übrige Tools sind weiterhin Stub-basiert.
 - Laufzeitnahe Input-Schemaobjekte vorhanden.
 - Lokale Registry-Konsistenzprüfung vorhanden.
 
@@ -65,9 +66,17 @@ Relevante Dateien:
 
 ## Was aktuell nur Scaffold/Stub ist
 
-- RIS-/JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
-- Kein Fetching, keine Parser, keine RIS-/JUSLINE-Netzlogik.
+- RIS-Produktivlogik ist aktuell auf `ris_search` begrenzt.
+- `ris_fetch_segment`/`ris_fetch_whole_law` sowie JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
+- Keine Segment-Extraktion, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
+
+## RIS Search (MVP, neu)
+
+- `ris_search` baut eine RIS-Ergebnis-URL für Bundesnormen und ruft die Trefferliste via HTTP ab.
+- Ergebnis-Mapping liefert `title`, `source_url`, optional `source_id` und `stable_id` (nur wenn robust ableitbar).
+- `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
 
 ## Cache-Schicht (neu geschärft)
 

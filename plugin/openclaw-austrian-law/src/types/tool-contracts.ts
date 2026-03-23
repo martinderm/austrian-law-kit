@@ -24,9 +24,9 @@ export interface RisSearchInput {
 export type RisSearchOutput = ToolResult<{ hits: SearchHit[] }>;
 
 export interface RisFetchSegmentInput {
-  docId: string;
-  segmentId: string;
-  versionId?: string;
+  sourceId?: string;
+  sourceUrl?: string;
+  segmentRef?: string;
 }
 export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
 

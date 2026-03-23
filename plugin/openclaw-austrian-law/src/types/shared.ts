@@ -9,7 +9,7 @@ export type ToolName =
 
 export type ToolSourceKind = "ris" | "jusline" | "internal";
 
-export type ToolDefinitionStatus = "stub";
+export type ToolDefinitionStatus = "stub" | "mvp";
 
 export type ToolErrorCode =
   | "VALIDATION_ERROR"
