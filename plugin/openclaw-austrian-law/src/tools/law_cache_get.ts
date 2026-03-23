@@ -4,6 +4,13 @@ import { buildCacheRelativePaths } from "../cache/cache-paths.js";
 import { readArtifactByStableId, toAbsoluteCachePath } from "../cache/cache-io.js";
 import type { LawCacheGetInput, LawCacheGetOutput } from "../types/tool-contracts.js";
 
+type LawCacheGetInputDocType =
+  | "norm_segment"
+  | "norm_document"
+  | "decision"
+  | "discussion"
+  | "commentary";
+
 const DOC_TYPE_CANDIDATES: LawCacheGetInputDocType[] = [
   "norm_segment",
   "norm_document",
@@ -11,13 +18,6 @@ const DOC_TYPE_CANDIDATES: LawCacheGetInputDocType[] = [
   "discussion",
   "commentary",
 ];
-
-type LawCacheGetInputDocType =
-  | "norm_segment"
-  | "norm_document"
-  | "decision"
-  | "discussion"
-  | "commentary";
 
 async function detectDocType(stableId: string, source: "ris" | "jusline"): Promise<LawCacheGetInputDocType | null> {
   for (const docType of DOC_TYPE_CANDIDATES) {
@@ -50,7 +50,9 @@ export async function lawCacheGetStub(input: LawCacheGetInput): Promise<LawCache
       };
     }
 
-    const docType = await detectDocType(stableId, source);
+    const requestedDocType = input.docType as LawCacheGetInputDocType | undefined;
+    const docType = requestedDocType ?? await detectDocType(stableId, source);
+
     if (!docType) {
       return {
         ok: false,
@@ -92,7 +94,11 @@ export async function lawCacheGetStub(input: LawCacheGetInput): Promise<LawCache
     return {
       ok: false,
       error: {
-        code: message.includes("ENOENT") ? "NOT_FOUND" : "INTERNAL_ERROR",
+        code: message.includes("ENOENT")
+          ? "NOT_FOUND"
+          : message.includes("Cache consistency mismatch")
+            ? "CONFLICT"
+            : "INTERNAL_ERROR",
         message,
       },
       meta: { tool: "law_cache_get", source: "internal" },

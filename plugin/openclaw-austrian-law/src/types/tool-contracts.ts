@@ -50,6 +50,7 @@ export type JuslineListDecisionsOutput = ToolResult<{ hits: SearchHit[] }>;
 
 export interface LawCacheGetInput {
   stableId: string;
+  docType?: "norm_segment" | "norm_document" | "decision" | "discussion" | "commentary";
   includeMetadata?: boolean;
 }
 export type LawCacheGetOutput = ToolResult<{ artifact: CachedArtifact }>;

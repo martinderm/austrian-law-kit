@@ -60,6 +60,10 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     additionalProperties: false,
     properties: {
       stableId: { type: "string" },
+      docType: {
+        type: "string",
+        enum: ["norm_segment", "norm_document", "decision", "discussion", "commentary"],
+      },
       includeMetadata: { type: "boolean" },
     },
     required: ["stableId"],

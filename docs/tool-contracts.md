@@ -97,6 +97,7 @@ Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `openclaw
 
 **Input (geplant):**
 - `stableId: string`
+- `docType?: "norm_segment" | "norm_document" | "decision" | "discussion" | "commentary"`
 - `includeMetadata?: boolean`
 
 **Output (geplant):**

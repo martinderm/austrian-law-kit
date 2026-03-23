@@ -23,21 +23,15 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Lokale Cache-I/O-Schicht einführen** (kein Netzwerk):
-- kleine File-Layer-Funktionen für
-  - Markdown-Artefakt schreiben/lesen
-  - Metadata-JSON schreiben/lesen
-- Nutzung der bestehenden Helfer:
-  - Stable-ID-Helfer
-  - Cache-Pfad-Ableitung
-  - Serialisierung/Parsing
+**Nach der Cache-Härtung RIS-Logik starten (weiterhin ohne JUSLINE-Ausbau als Priorität):**
+- zuerst `ris_search` mit klarer Trennung zu Cache-Layer
+- weiterhin ohne HTML/XML-Parser-Ausweitung in diesem Schritt
 
 ## Abnahmekriterien für diesen Schritt
 
-- `law_cache_get` / `law_cache_put` können lokal (Dateisystem) arbeiten.
-- Keine Fetch-/Parser-/RIS-/JUSLINE-Netzlogik eingeführt.
-- Frontmatter-Pflichtfelder bleiben konsistent mit Vertrag.
-- Fehlerfälle (Datei fehlt, ungültige stable_id, source mismatch) sind sauber behandelt.
+- Cache-I/O bleibt entkoppelt und unverändert stabil.
+- `ris_search` liefert nur strukturierte Treffer-Referenzen im bestehenden Tool-Vertrag.
+- Keine JUSLINE-Produktivlogik eingeführt.
 
 ## Ausdrücklich noch NICHT machen
 

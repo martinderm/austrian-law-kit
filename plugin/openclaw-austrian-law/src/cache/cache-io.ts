@@ -2,16 +2,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { CachedArtifact } from "../types/tool-contracts.js";
 import { buildCacheRelativePaths } from "./cache-paths.js";
+import { resolveCacheRoot } from "./cache-runtime.js";
 import { parseSerializedArtifactMarkdown } from "./parse-artifact.js";
 import { buildSerializedArtifact } from "./serialize-artifact.js";
-
-const CACHE_ROOT_ENV = "OPENCLAW_AUSTRIAN_LAW_CACHE_ROOT";
-const DEFAULT_CACHE_ROOT = path.join("memory", "references", "austrian-law");
-
-export function resolveCacheRoot(): string {
-  const fromEnv = process.env[CACHE_ROOT_ENV]?.trim();
-  return fromEnv && fromEnv.length > 0 ? fromEnv : path.resolve(process.cwd(), DEFAULT_CACHE_ROOT);
-}
 
 export function toAbsoluteCachePath(relativePath: string): string {
   return path.join(resolveCacheRoot(), relativePath);
@@ -35,6 +28,18 @@ export async function readArtifactByStableId(params: {
   const markdownPath = toAbsoluteCachePath(paths.markdownPath);
   const markdownRaw = await fs.readFile(markdownPath, "utf8");
   const parsed = parseSerializedArtifactMarkdown(markdownRaw);
+
+  if (parsed.frontmatter.source !== params.source) {
+    throw new Error(
+      `Cache consistency mismatch: frontmatter.source=${parsed.frontmatter.source} expected=${params.source}`,
+    );
+  }
+
+  if (parsed.frontmatter.doc_type !== params.docType) {
+    throw new Error(
+      `Cache consistency mismatch: frontmatter.doc_type=${parsed.frontmatter.doc_type} expected=${params.docType}`,
+    );
+  }
 
   let metadata: Record<string, unknown> | undefined;
   if (params.includeMetadata) {

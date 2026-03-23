@@ -48,23 +48,32 @@ Relevante Dateien:
 - `plugin/openclaw-austrian-law/src/tools/schemas.ts`
 - `plugin/openclaw-austrian-law/src/tools/validate-registry.ts`
 
-### 5) Lokale Cache-Helfer (ohne I/O)
+### 5) Lokale Cache-Schicht (mit I/O)
 - Stable-ID-Helfer implementiert.
 - Relative Cache-Pfade ableitbar.
 - Markdown+Frontmatter und Metadata-JSON serialisierbar.
-- Optionale Parse-Gegenfunktion vorhanden.
+- Lokale Dateisystem-I/O für Lesen/Schreiben vorhanden.
+- Konsistenzprüfung beim Lesen vorhanden (`source`/`doc_type` gegen Pfadkontext).
 
 Relevante Dateien:
 - `plugin/openclaw-austrian-law/src/cache/stable-id.ts`
 - `plugin/openclaw-austrian-law/src/cache/cache-paths.ts`
 - `plugin/openclaw-austrian-law/src/cache/serialize-artifact.ts`
 - `plugin/openclaw-austrian-law/src/cache/parse-artifact.ts`
+- `plugin/openclaw-austrian-law/src/cache/cache-runtime.ts`
+- `plugin/openclaw-austrian-law/src/cache/cache-io.ts`
 
 ## Was aktuell nur Scaffold/Stub ist
 
-- Alle registrierten Tools sind Stub-basiert (`NOT_IMPLEMENTED`).
+- RIS-/JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
 - Kein Fetching, keine Parser, keine RIS-/JUSLINE-Netzlogik.
-- Kein Dateisystem-I/O für Cache-Lesen/Schreiben.
+- `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
+
+## Cache-Schicht (neu geschärft)
+
+- Cache-Root wird beim Plugin-Register aus Plugin-Konfiguration gebunden (`cacheRoot`) und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
+- `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
+- Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 
 ## Wichtigste Architekturentscheidungen
 
@@ -78,10 +87,10 @@ Relevante Dateien:
 
 - Feldverfügbarkeit/Benennung in echten RIS-/JUSLINE-Antworten kann von Annahmen abweichen.
 - Vereinfachte YAML-Serialisierung ist absichtlich eingeschränkt.
-- Ohne I/O-Phase sind Pfad-/Serialisierungsannahmen noch nicht end-to-end verifiziert.
+- DocType-Heuristik in `law_cache_get` bleibt als Übergang aktiv, solange `docType` nicht immer explizit mitgegeben wird.
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)
 
-1. **Lokale Cache-I/O-Schicht ergänzen** (lesen/schreiben auf Basis bestehender Helfer, weiterhin ohne Netzwerk).
-2. **`law_cache_get` / `law_cache_put` auf echte lokale I/O umstellen** (Stub -> lokal funktionsfähig).
-3. **Erst danach** RIS-seitige Logik starten (`ris_search` zuerst, weiterhin ohne JUSLINE-Ausbau als Priorität).
+1. **`ris_search` als erste RIS-Produktivlogik starten** (weiterhin ohne JUSLINE-Ausbau als Priorität).
+2. **DocType-Heuristik weiter reduzieren**, indem Aufrufer `docType` konsequent mitgeben.
+3. **Gezielte automatisierte Tests ergänzen** (Cache-I/O + spätere RIS-Schnittstellen).

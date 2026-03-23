@@ -1,13 +1,30 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
+import { configureCacheRoot } from "./src/cache/cache-runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
 import { formatToolResult } from "./src/tools/format-result.js";
 import { validateToolRegistry } from "./src/tools/validate-registry.js";
+
+function extractConfiguredCacheRoot(api: OpenClawPluginApi): string | undefined {
+  const apiAny = api as unknown as {
+    config?: { cacheRoot?: unknown };
+    pluginConfig?: { cacheRoot?: unknown };
+    getConfig?: () => { cacheRoot?: unknown };
+  };
+
+  const candidate = apiAny.config?.cacheRoot
+    ?? apiAny.pluginConfig?.cacheRoot
+    ?? apiAny.getConfig?.().cacheRoot;
+
+  return typeof candidate === "string" ? candidate : undefined;
+}
 
 export default definePluginEntry({
   id: "openclaw-austrian-law",
   name: "OpenClaw Austrian Law Plugin",
   description: "Skeleton entry for Austrian law plugin (no tools registered yet).",
   register(api: OpenClawPluginApi) {
+    configureCacheRoot(extractConfiguredCacheRoot(api));
+
     const validation = validateToolRegistry();
     if (!validation.ok) {
       api.logger.warn(
