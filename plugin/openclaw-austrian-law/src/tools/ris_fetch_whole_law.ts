@@ -6,12 +6,12 @@ import {
   extractSourceIdFromWholeLawUrl,
   normalizeWholeLawStableIdFromSourceId,
 } from "../ris/whole-law-url.js";
+import {
+  buildCacheHitMeta,
+  buildCacheWarnings,
+  resolveSourceIdFromInputOrUrl,
+} from "./ris-fetch-common.js";
 import type { RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
-
-function resolveSourceId(input: RisFetchWholeLawInput, sourceUrl: string): string | null {
-  if (input.sourceId && input.sourceId.trim().length > 0) return input.sourceId.trim();
-  return extractSourceIdFromWholeLawUrl(sourceUrl);
-}
 
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
   let sourceUrl: string;
@@ -28,7 +28,11 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     };
   }
 
-  const sourceId = resolveSourceId(input, sourceUrl);
+  const sourceId = resolveSourceIdFromInputOrUrl({
+    sourceId: input.sourceId,
+    sourceUrl,
+    extractFromUrl: extractSourceIdFromWholeLawUrl,
+  });
   if (!sourceId) {
     return {
       ok: false,
@@ -46,12 +50,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     return {
       ok: true,
       data: { artifact: cacheRead.artifact },
-      meta: {
-        tool: "ris_fetch_whole_law",
-        source: "ris",
-        timestamp: new Date().toISOString(),
-        notices: ["cache_hit: reused cached artifact"],
-      },
+      meta: buildCacheHitMeta("ris_fetch_whole_law"),
     };
   }
 
@@ -137,9 +136,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
-    const warnings: string[] = [];
-    if (cacheRead.warning) warnings.push(cacheRead.warning);
-    if (!cacheWrite.cached) warnings.push(`cache_write_failed: ${cacheWrite.cacheError}`);
+    const warnings = buildCacheWarnings({ cacheRead, cacheWrite });
 
     return {
       ok: true,

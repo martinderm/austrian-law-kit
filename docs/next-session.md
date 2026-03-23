@@ -23,9 +23,9 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach gezielter Cache-Read-Nutzung: Stabilisierung + Telemetrie-Feinschliff (ohne neue RIS-Funktionen):**
-- Cache-Hit/Miss/Conflict-Signale in Tests weiter absichern
-- Meta-Signale bei Bedarf weiter strukturieren (notices vs warnings, ohne Vertragsaufblähung)
+**Nach RIS-MVP-Härtung: gezielte Qualitätsabsicherung fortsetzen (ohne neue RIS-Funktionen):**
+- Edge-Cases für Cache-Read/Write-Signale in Tests weiter absichern
+- Parser-Robustheit punktuell verbessern, ohne Scope-Ausweitung
 
 ## Abnahmekriterien für diesen Schritt
 

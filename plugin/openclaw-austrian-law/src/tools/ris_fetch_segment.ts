@@ -6,12 +6,12 @@ import {
   extractSourceIdFromRisUrl,
   normalizeStableIdFromSourceId,
 } from "../ris/segment-url.js";
+import {
+  buildCacheHitMeta,
+  buildCacheWarnings,
+  resolveSourceIdFromInputOrUrl,
+} from "./ris-fetch-common.js";
 import type { RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
-
-function resolveSourceId(input: RisFetchSegmentInput, sourceUrl: string): string | null {
-  if (input.sourceId && input.sourceId.trim().length > 0) return input.sourceId.trim();
-  return extractSourceIdFromRisUrl(sourceUrl);
-}
 
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
   if (input.segmentRef && input.segmentRef.trim().length > 0) {
@@ -39,7 +39,11 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
-  const sourceId = resolveSourceId(input, sourceUrl);
+  const sourceId = resolveSourceIdFromInputOrUrl({
+    sourceId: input.sourceId,
+    sourceUrl,
+    extractFromUrl: extractSourceIdFromRisUrl,
+  });
   if (!sourceId) {
     return {
       ok: false,
@@ -57,12 +61,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     return {
       ok: true,
       data: { artifact: cacheRead.artifact },
-      meta: {
-        tool: "ris_fetch_segment",
-        source: "ris",
-        timestamp: new Date().toISOString(),
-        notices: ["cache_hit: reused cached artifact"],
-      },
+      meta: buildCacheHitMeta("ris_fetch_segment"),
     };
   }
 
@@ -148,9 +147,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
-    const warnings: string[] = [];
-    if (cacheRead.warning) warnings.push(cacheRead.warning);
-    if (!cacheWrite.cached) warnings.push(`cache_write_failed: ${cacheWrite.cacheError}`);
+    const warnings = buildCacheWarnings({ cacheRead, cacheWrite });
 
     return {
       ok: true,
