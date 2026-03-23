@@ -23,9 +23,9 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach write-through Cache-Anbindung: gezielte Cache-Read-Nutzung evaluieren (ohne Cache-First-Umbau):**
-- prüfen, wo `law_cache_get` für Wiederverwendung sinnvoll ist
-- weiterhin Fetch- und Cache-Verantwortung klar getrennt halten
+**Nach gezielter Cache-Read-Nutzung: Stabilisierung + Telemetrie-Feinschliff (ohne neue RIS-Funktionen):**
+- Cache-Hit/Miss/Conflict-Signale in Tests weiter absichern
+- Warncodes bei Bedarf konsolidieren (ohne Vertragsaufblähung)
 
 ## Abnahmekriterien für diesen Schritt
 

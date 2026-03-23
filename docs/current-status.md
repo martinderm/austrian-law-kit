@@ -100,6 +100,7 @@ Relevante Dateien:
 - `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 - RIS-Fetch-Tools nutzen optionales write-through Caching (Best-Effort, kein Hard-Fail auf Cache-Schreibfehler).
+- RIS-Fetch-Tools nutzen gezielte Cache-Read-Wiederverwendung bei eindeutigem Stable-ID-Match (kein globales Cache-First).
 
 ## Wichtigste Architekturentscheidungen
 

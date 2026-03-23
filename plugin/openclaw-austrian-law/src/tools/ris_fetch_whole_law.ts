@@ -1,3 +1,4 @@
+import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
 import {
@@ -36,6 +37,21 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
+    };
+  }
+
+  const stableId = normalizeWholeLawStableIdFromSourceId(sourceId);
+  const cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
+  if (cacheRead.hit && cacheRead.artifact) {
+    return {
+      ok: true,
+      data: { artifact: cacheRead.artifact },
+      meta: {
+        tool: "ris_fetch_whole_law",
+        source: "ris",
+        timestamp: new Date().toISOString(),
+        warnings: ["cache_hit: reused cached artifact"],
+      },
     };
   }
 
@@ -102,7 +118,6 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   try {
     const parsed = parseRisWholeLawHtml(html);
-    const stableId = normalizeWholeLawStableIdFromSourceId(sourceId);
 
     const artifact = {
       stable_id: stableId,
@@ -122,6 +137,10 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
+    const warnings: string[] = [];
+    if (cacheRead.warning) warnings.push(cacheRead.warning);
+    if (!cacheWrite.cached) warnings.push(`cache_write_failed: ${cacheWrite.cacheError}`);
+
     return {
       ok: true,
       data: {
@@ -131,7 +150,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         tool: "ris_fetch_whole_law",
         source: "ris",
         timestamp: new Date().toISOString(),
-        ...(cacheWrite.cached ? {} : { warnings: [`cache_write_failed: ${cacheWrite.cacheError}`] }),
+        ...(warnings.length > 0 ? { warnings } : {}),
       },
     };
   } catch (error) {

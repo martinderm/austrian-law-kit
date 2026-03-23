@@ -1,3 +1,4 @@
+import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
 import {
@@ -47,6 +48,21 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
       },
       meta: { tool: "ris_fetch_segment", source: "ris" },
+    };
+  }
+
+  const stableId = normalizeStableIdFromSourceId(sourceId);
+  const cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
+  if (cacheRead.hit && cacheRead.artifact) {
+    return {
+      ok: true,
+      data: { artifact: cacheRead.artifact },
+      meta: {
+        tool: "ris_fetch_segment",
+        source: "ris",
+        timestamp: new Date().toISOString(),
+        warnings: ["cache_hit: reused cached artifact"],
+      },
     };
   }
 
@@ -113,7 +129,6 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   try {
     const parsed = parseRisSegmentHtml(html);
-    const stableId = normalizeStableIdFromSourceId(sourceId);
 
     const artifact = {
       stable_id: stableId,
@@ -133,6 +148,10 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
+    const warnings: string[] = [];
+    if (cacheRead.warning) warnings.push(cacheRead.warning);
+    if (!cacheWrite.cached) warnings.push(`cache_write_failed: ${cacheWrite.cacheError}`);
+
     return {
       ok: true,
       data: {
@@ -142,7 +161,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         tool: "ris_fetch_segment",
         source: "ris",
         timestamp: new Date().toISOString(),
-        ...(cacheWrite.cached ? {} : { warnings: [`cache_write_failed: ${cacheWrite.cacheError}`] }),
+        ...(warnings.length > 0 ? { warnings } : {}),
       },
     };
   } catch (error) {
