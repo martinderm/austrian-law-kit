@@ -23,20 +23,20 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach `ris_fetch_segment`-MVP: `ris_fetch_whole_law` vorbereiten (weiterhin RIS-first, ohne JUSLINE):**
-- fokussiert auf technischen Dokumentabruf
-- klare Trennung zu Segment-/Suchlogik beibehalten
+**Nach `ris_fetch_whole_law`-MVP: Cache-Anbindung für RIS-Artefakte aktivieren (ohne Refactor):**
+- `law_cache_put` nach erfolgreichem RIS-Fetch gezielt nutzen
+- `law_cache_get` für schnelle Wiederverwendung nutzen
+- klare Trennung zwischen Fetch- und Cache-Verantwortung beibehalten
 
 ## Abnahmekriterien für diesen Schritt
 
-- `ris_fetch_whole_law` folgt dem bestehenden Tool-Vertrag.
-- `ris_search` und `ris_fetch_segment` bleiben stabil nutzbar.
+- bestehende RIS-MVP-Tools bleiben stabil nutzbar.
+- Cache-Nutzung ist optional und robust (kein Hard-Fail bei Cache-Problemen).
 - Keine JUSLINE-Produktivlogik eingeführt.
 
 ## Ausdrücklich noch NICHT machen
 
-- kein RIS-Fetching
 - kein JUSLINE-Fetching
-- keine HTML/XML-Parser
+- keine breite HTML/XML-Parser-Ausweitung
 - keine inhaltliche Normalisierung von Rechtstexten
 - keine produktive Interpretation/Extraction-Engine

@@ -31,10 +31,9 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     type: "object",
     additionalProperties: false,
     properties: {
-      docId: { type: "string" },
-      versionId: { type: "string" },
+      sourceId: { type: "string" },
+      sourceUrl: { type: "string" },
     },
-    required: ["docId"],
   },
   jusline_fetch_discussions: {
     type: "object",

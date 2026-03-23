@@ -30,8 +30,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     name: "ris_fetch_whole_law",
     sourceKind: "ris",
-    status: "stub",
-    description: "Lädt ein RIS-Gesamtdokument (Primärquelle).",
+    status: "mvp",
+    description: "Lädt ein RIS-Gesamtdokument als norm_document (MVP).",
     inputSchemaRef: TOOL_SCHEMA_REFS.ris_fetch_whole_law,
     outputSchemaRef: "contracts:RisFetchWholeLawOutput",
   },

@@ -49,19 +49,22 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 
 ## Tool: `ris_fetch_whole_law` (Primärquelle)
 
-**Zweck:** Abruf eines RIS-Gesamtdokuments.
+**Zweck:** Abruf eines einzelnen RIS-Gesamtdokuments als `norm_document` (MVP).
 
-**Input (geplant):**
-- `docId: string`
-- `versionId?: string`
+**Input (MVP):**
+- `sourceId?: string` (z. B. RIS-Dokumentnummer)
+- `sourceUrl?: string` (direkte RIS-Dokument-URL)
 
-**Output (geplant):**
+Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
+
+**Output (MVP):**
 - dokumentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
+- Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
 
-**Fehlerklassen (geplant):**
+**Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
 - `NOT_FOUND`
-- `NOT_IMPLEMENTED`
+- `UPSTREAM_UNAVAILABLE`
 
 ## Tool: `jusline_fetch_discussions` (Sekundärquelle)
 

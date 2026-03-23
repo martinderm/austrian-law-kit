@@ -31,8 +31,8 @@ export interface RisFetchSegmentInput {
 export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
 
 export interface RisFetchWholeLawInput {
-  docId: string;
-  versionId?: string;
+  sourceId?: string;
+  sourceUrl?: string;
 }
 export type RisFetchWholeLawOutput = ToolResult<{ artifact: CachedArtifact }>;
 

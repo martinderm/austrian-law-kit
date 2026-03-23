@@ -40,6 +40,7 @@ Relevante Dateien:
 - Zentrale Definitions-/Registry-Schicht vorhanden.
 - `ris_search` ist als erste RIS-MVP-Funktion produktiv angebunden.
 - `ris_fetch_segment` ist als zweite RIS-MVP-Funktion produktiv angebunden.
+- `ris_fetch_whole_law` ist als dritte RIS-MVP-Funktion produktiv angebunden.
 - übrige Tools sind weiterhin Stub-basiert.
 - Laufzeitnahe Input-Schemaobjekte vorhanden.
 - Lokale Registry-Konsistenzprüfung vorhanden.
@@ -67,9 +68,9 @@ Relevante Dateien:
 
 ## Was aktuell nur Scaffold/Stub ist
 
-- RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` (MVP).
-- `ris_fetch_whole_law` sowie JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
-- Keine Whole-Law-Extraktion, keine inhaltliche Norm-Parserlogik.
+- RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` + `ris_fetch_whole_law` (MVP).
+- JUSLINE-Tools bleiben Stub-basiert (`NOT_IMPLEMENTED`).
+- Keine tiefe Segment-/Unterstrukturmodellierung, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
 ## RIS Search (MVP)
@@ -79,12 +80,19 @@ Relevante Dateien:
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
 
-## RIS Fetch Segment (MVP, neu)
+## RIS Fetch Segment (MVP)
 
 - `ris_fetch_segment` lädt einen einzelnen RIS-Eintrag via `sourceId` oder `sourceUrl`.
 - Ergebnis ist ein `norm_segment`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
 - `segmentRef` ist bewusst außerhalb des MVP und liefert explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`.
+
+## RIS Fetch Whole Law (MVP, neu)
+
+- `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
+- Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
+- `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
 ## Cache-Schicht (neu geschärft)
 
@@ -108,6 +116,6 @@ Relevante Dateien:
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)
 
-1. **`ris_search` als erste RIS-Produktivlogik starten** (weiterhin ohne JUSLINE-Ausbau als Priorität).
-2. **DocType-Heuristik weiter reduzieren**, indem Aufrufer `docType` konsequent mitgeben.
-3. **Gezielte automatisierte Tests ergänzen** (Cache-I/O + spätere RIS-Schnittstellen).
+1. **Cache-Anbindung für RIS-Artefakte** schrittweise nutzen (`law_cache_put`/`law_cache_get` ohne Refactor).
+2. **Parser-Härtung inkrementell** (robustere Titel-/Content-Erkennung, weiterhin ohne inhaltliche Interpretation).
+3. **Gezielte automatisierte Tests ergänzen** (RIS-MVP-Funktionen + Cache-I/O Zusammenspiel).
