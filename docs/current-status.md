@@ -103,6 +103,7 @@ Relevante Dateien:
 - RIS-Fetch-Tools nutzen gezielte Cache-Read-Wiederverwendung bei eindeutigem Stable-ID-Match (kein globales Cache-First).
 - Meta-Signale: `cache_hit` als `notices`, Cache-Probleme (`cache_conflict`/`cache_read_failed`/`cache_write_failed`) als `warnings`.
 - Kleine RIS-MVP-Härtung: gemeinsame Mini-Helfer für Source-ID-Auflösung/Cache-Meta reduzieren Duplikate ohne Verhaltensänderung.
+- Parser-Härtung: robustere Titel-/Content-Fallbacks und toleranteres HTML-Decoding bei kleinen Seitenvariationen.
 
 ## Wichtigste Architekturentscheidungen
 
@@ -117,6 +118,7 @@ Relevante Dateien:
 - Feldverfügbarkeit/Benennung in echten RIS-/JUSLINE-Antworten kann von Annahmen abweichen.
 - Vereinfachte YAML-Serialisierung ist absichtlich eingeschränkt.
 - DocType-Heuristik in `law_cache_get` bleibt als Übergang aktiv, solange `docType` nicht immer explizit mitgegeben wird.
+- Die naheliegende Alternative zu Regex ist ein echter HTML-Parser mit DOM-/Selektor-Zugriff; sollte eingebaut werden.
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)
 

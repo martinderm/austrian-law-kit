@@ -24,8 +24,8 @@ Dann Code:
 ## Nächster konkreter Implementierungsschritt
 
 **Nach RIS-MVP-Härtung: gezielte Qualitätsabsicherung fortsetzen (ohne neue RIS-Funktionen):**
-- Edge-Cases für Cache-Read/Write-Signale in Tests weiter absichern
-- Parser-Robustheit punktuell verbessern, ohne Scope-Ausweitung
+- Edge-Cases für Parser-/Meta-Signale in Tests weiter absichern
+- selektive Parser-Robustheit weiter verbessern, ohne Scope-Ausweitung
 
 ## Abnahmekriterien für diesen Schritt
 

@@ -2,17 +2,26 @@ import type { SearchHit } from "../types/tool-contracts.js";
 import { resolveRisBaseUrl } from "./runtime.js";
 
 function decodeHtml(text: string): string {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
+  const decoded = text
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#([0-9]+);?/g, (_, num) => String.fromCodePoint(parseInt(num, 10)))
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+
+  return decoded;
 }
 
 function stripTags(text: string): string {
-  return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function extractSourceIdFromUrl(url: URL): string | undefined {
@@ -37,20 +46,20 @@ function toStableIdFromSourceId(sourceId: string | undefined): string | undefine
 }
 
 export function parseRisSearchHtml(html: string, maxHits: number): SearchHit[] {
-  const linkRegex = /<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  const linkRegex = /<a\b[^>]*href\s*=\s*(?:"([^"]+)"|'([^']+)')[^>]*>([\s\S]*?)<\/a>/gi;
   const hits: SearchHit[] = [];
   const seen = new Set<string>();
 
   let match: RegExpExecArray | null;
   while ((match = linkRegex.exec(html)) && hits.length < maxHits) {
-    const hrefRaw = decodeHtml(match[1]);
+    const hrefRaw = decodeHtml(match[1] ?? match[2] ?? "");
     if (!/Dokument\.wxe/i.test(hrefRaw)) continue;
 
     const sourceUrl = new URL(hrefRaw, resolveRisBaseUrl());
     const sourceUrlString = sourceUrl.toString();
     if (seen.has(sourceUrlString)) continue;
 
-    const titleRaw = stripTags(decodeHtml(match[2]));
+    const titleRaw = stripTags(decodeHtml(match[3] ?? ""));
     if (!titleRaw) continue;
 
     const sourceId = extractSourceIdFromUrl(sourceUrl);
