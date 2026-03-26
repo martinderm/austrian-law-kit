@@ -98,7 +98,7 @@ Ziel: `ris_fetch_whole_law` als dritte produktive RIS-Funktion prüfen, ohne Seg
 
 ---
 
-### 7) Keine Segment-Extraktion in diesem Schritt
+### 7) Keine Segment-Logik in diesem Schritt
 
 **Given**
 - erfolgreicher Run

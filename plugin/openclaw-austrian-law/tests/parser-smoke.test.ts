@@ -27,7 +27,7 @@ function test(name: string, fn: () => void): void {
   }
 }
 
-test("RIS search parser returns non-empty hits with titles and stable IDs", () => {
+test("RIS search parser returns non-empty results with titles and stable IDs", () => {
   const html = fixture("fixtures/ris/search-result-sample.html");
   const hits = parseRisSearchHtml(html, 10);
 
@@ -39,7 +39,7 @@ test("RIS search parser returns non-empty hits with titles and stable IDs", () =
   }
 });
 
-test("RIS segment parser returns non-empty title/content and no not-found signal", () => {
+test("RIS segment parser returns non-empty title and content without a not-found signal", () => {
   const html = fixture("fixtures/ris/segment-detail-sample.html");
   const parsed = parseRisSegmentHtml(html);
 
@@ -48,7 +48,7 @@ test("RIS segment parser returns non-empty title/content and no not-found signal
   assert.equal(looksLikeRisNotFound(html), false);
 });
 
-test("RIS search parser deduplicates identical document links", () => {
+test("RIS search parser deduplicates identical result links", () => {
   const html = `
     <table>
       <tr><td><a href="/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR12082462">ABGB § 1</a></td></tr>
@@ -61,7 +61,7 @@ test("RIS search parser deduplicates identical document links", () => {
   assert.equal(hits[0]?.source_id, "NOR12082462");
 });
 
-test("RIS segment parser falls back from title to body content on small HTML variations", () => {
+test("RIS segment parser falls back from title extraction to body content on small HTML variations", () => {
   const html = `
     <!doctype html>
     <html lang="de">
@@ -79,7 +79,7 @@ test("RIS segment parser falls back from title to body content on small HTML var
   assert.ok(parsed.content.includes("Jedermann ist fähig"));
 });
 
-test("RIS whole-law parser returns non-empty title/content and no not-found signal", () => {
+test("RIS whole-law parser returns non-empty title and content without a not-found signal", () => {
   const html = fixture("fixtures/ris/whole-law-detail-sample.html");
   const parsed = parseRisWholeLawHtml(html);
 
@@ -88,7 +88,7 @@ test("RIS whole-law parser returns non-empty title/content and no not-found sign
   assert.equal(looksLikeRisWholeLawNotFound(html), false);
 });
 
-test("JUSLINE discussions parser extracts only discussion links from the reliable variant fixture", () => {
+test("JUSLINE discussions parser extracts only discussion/comment links from the reliable variant fixture", () => {
   const html = fixture("fixtures/jusline/stgb-paragraf-111-discussions-variant.html");
   const hits = parseJuslineDiscussionsHtml(html, 10);
 
@@ -112,7 +112,7 @@ test("JUSLINE decisions parser extracts only decision links from the reliable va
   }
 });
 
-test("JUSLINE discussions parser ignores decision links and keeps snippet optional", () => {
+test("JUSLINE discussions parser ignores decision links and keeps snippets optional", () => {
   const html = `
     <h2><span class="capitalize">2</span> Kommentare zu § 111 StGB</h2>
     <a href="/gesetzeskommentare/456492721">Kommentar zum § 111 StGB</a>
@@ -125,7 +125,7 @@ test("JUSLINE discussions parser ignores decision links and keeps snippet option
   assert.equal("snippet" in (hits[0] ?? {}), false);
 });
 
-test("JUSLINE decisions parser deduplicates repeated decision links and ignores comment links", () => {
+test("JUSLINE decisions parser deduplicates repeated decision links and ignores discussion/comment links", () => {
   const html = `
     <div id="decissions">
       <a href="/entscheidungen/11/111/1">Entscheidungen des OGH</a>

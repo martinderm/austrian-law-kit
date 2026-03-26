@@ -25,7 +25,7 @@ Dann Code:
 ## Nächster konkreter Implementierungsschritt
 
 **Nach den erweiterten Parser-Smoke-Tests: nur noch sehr kleine Zusatzinvarianten oder gezielte Fixture-Klärungen ergänzen:**
-- klare Trennung Diskussionen vs. Entscheidungen beibehalten
+- klare Trennung von Diskussionen/Kommentaren und Entscheidungen beibehalten
 - RIS-first-Architektur unverändert lassen
 
 ## Abnahmekriterien für diesen Schritt

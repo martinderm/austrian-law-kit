@@ -61,7 +61,7 @@ Das zusätzliche No-Decisions-Fixture ist ein bewusst synthetischer Negativ-Extr
 - Parser läuft
 
 **Then**
-- keine Decision-Hits
+- keine Entscheidungs-Treffer
 - Tool liefert `NOT_FOUND`
 
 ---
@@ -75,7 +75,7 @@ Das zusätzliche No-Decisions-Fixture ist ein bewusst synthetischer Negativ-Extr
 - Parser läuft
 
 **Then**
-- keine Decision-Hits
+- keine Entscheidungs-Treffer
 - Tool liefert `NOT_FOUND`
 
 ---

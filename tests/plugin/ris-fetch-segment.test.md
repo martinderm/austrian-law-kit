@@ -111,7 +111,7 @@ Ziel: `ris_fetch_segment` als zweite produktive RIS-Funktion prüfen, ohne Whole
 
 ---
 
-### 8) Keine Whole-Law-Extraktion
+### 8) Keine Whole-Law-Logik in diesem Schritt
 
 **Given**
 - erfolgreicher Run

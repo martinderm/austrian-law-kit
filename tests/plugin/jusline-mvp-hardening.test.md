@@ -13,7 +13,7 @@ Ziel: kleine Robustheits- und Fixture-Härtungen für die bestehenden JUSLINE-MV
 
 ## Testfälle
 
-### 1) Diskussionen bleiben von Entscheidungen getrennt
+### 1) Diskussionen/Kommentare bleiben von Entscheidungen getrennt
 
 **Given**
 - Standard- oder Variant-Fixture für Diskussionen

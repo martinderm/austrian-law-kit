@@ -75,7 +75,7 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 - `limit?: number`
 
 **Output (MVP):**
-- Materialliste (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
+- Diskussions-/Kommentartreffer (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 
 **Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`

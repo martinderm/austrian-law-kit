@@ -68,10 +68,10 @@ Relevante Dateien:
 - `plugin/openclaw-austrian-law/src/cache/cache-runtime.ts`
 - `plugin/openclaw-austrian-law/src/cache/cache-io.ts`
 
-## Was aktuell nur Scaffold/Stub ist
+## Was aktuell noch eingeschränkt ist
 
 - RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` + `ris_fetch_whole_law` (MVP).
-- `jusline_list_decisions` liefert im MVP Entscheidungslisten von JUSLINE-Paragrafseiten.
+- JUSLINE-MVP umfasst aktuell `jusline_fetch_discussions` + `jusline_list_decisions` als klar getrennte Sekundärquellen-Funktionen.
 - Keine tiefe Segment-/Unterstrukturmodellierung, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
@@ -89,14 +89,14 @@ Relevante Dateien:
 - `segmentRef` ist bewusst außerhalb des MVP und liefert explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`.
 
-## RIS Fetch Whole Law (MVP, neu)
+## RIS Fetch Whole Law (MVP)
 
 - `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
 - Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
 - `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
-## JUSLINE Discussions (MVP, neu)
+## JUSLINE Discussions (MVP)
 
 - `jusline_fetch_discussions` lädt Diskussionen/Kommentare von JUSLINE-Paragrafseiten.
 - Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.
@@ -104,7 +104,7 @@ Relevante Dateien:
 - Entscheidungen/Judikatur auf derselben Seite werden bewusst ignoriert.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
-## JUSLINE Decisions (MVP, neu)
+## JUSLINE Decisions (MVP)
 
 - `jusline_list_decisions` lädt Entscheidungslisten von JUSLINE-Paragrafseiten.
 - Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.

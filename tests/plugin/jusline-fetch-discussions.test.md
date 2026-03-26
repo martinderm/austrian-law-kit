@@ -34,7 +34,7 @@ Volatiles Seiten-Drumherum (Navigation, Tracking, Layout-Overhead) ist bewusst e
 
 ---
 
-### 3) Positivbeispiel: Diskussionen vorhanden
+### 3) Positivbeispiel: Diskussions-/Kommentar-Treffer vorhanden
 
 **Given**
 - Fixture `stgb-paragraf-111.html`
@@ -59,7 +59,7 @@ Volatiles Seiten-Drumherum (Navigation, Tracking, Layout-Overhead) ist bewusst e
 - Parser läuft
 
 **Then**
-- keine Discussion-Hits
+- keine Diskussions-/Kommentar-Treffer
 - Tool liefert `NOT_FOUND`
 
 ---

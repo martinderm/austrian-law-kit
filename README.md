@@ -36,8 +36,8 @@ Enthalten sind:
 - optionale Templates für spätere Memory-Initialisierung
 
 Bewusst noch eingeschränkt:
-- `jusline_list_decisions` ist jetzt als kleine JUSLINE-MVP-Funktion produktiv angebunden
-- Parser sind MVP-regex-basiert (noch kein DOM-/Selektor-Parser)
+- JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle
+- Parser sind im MVP weiter regex-basiert (noch kein DOM-/Selektor-Parser)
 - keine inhaltliche juristische Interpretation/Normalisierung
 
 ## Strukturüberblick
@@ -61,11 +61,11 @@ Bewusst noch eingeschränkt:
 - Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
 
 ### Nächster empfohlener Schritt
-- kleine JUSLINE-MVP-Härtungen bei Parsern und Fixtures nachziehen, ohne RIS-Primärlogik anzutasten.
+- kleine Parser-Smoke-Edge-Cases oder minimale Fixture-Klärungen nachziehen, ohne RIS-Primärlogik anzutasten.
 
 ### Bewusst noch nicht implementiert
-- Produktivlogik für `jusline_list_decisions`
 - DOM-/Selektor-basierter HTML-Parser (aktuell MVP-regex-basiert)
+- breitere automatisierte Testabdeckung über die Smoke-Tests hinaus
 - inhaltliche juristische Interpretation/Normalisierung
 
 ### Wichtigste Doku zum Weitermachen
