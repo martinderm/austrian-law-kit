@@ -55,6 +55,23 @@ test("RIS segment parser extracts usable norm text from live-derived fixtures", 
   }
 });
 
+test("RIS segment parser extracts rich metadata for NOR40214078", () => {
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+  const parsed = parseRisSegmentHtml(html);
+
+  assert.equal(parsed.lawTitle, "Straßenverkehrsordnung 1960");
+  assert.equal(parsed.lawAbbreviation, "StVO 1960");
+  assert.equal(parsed.lawSlug, "stvo");
+  assert.equal(parsed.lawType, "BG");
+  assert.equal(parsed.effectiveDateRaw, "01.06.2019");
+  assert.equal(parsed.effectiveDate, "2019-06-01");
+  assert.equal(parsed.indexLabel, "90/01 Straßenverkehrsrecht");
+  assert.ok(parsed.promulgation?.includes("BGBl. Nr. 159/1960"));
+  assert.equal(parsed.segmentRef, "§ 4");
+  assert.equal(parsed.heading, "§ 4. Verkehrsunfälle.");
+  assert.ok(parsed.content.startsWith("§ 4. Verkehrsunfälle."));
+});
+
 test("RIS search parser deduplicates identical result links", () => {
   const html = `
     <table><tbody>

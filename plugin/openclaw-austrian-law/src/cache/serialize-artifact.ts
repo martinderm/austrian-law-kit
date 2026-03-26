@@ -41,9 +41,7 @@ export function serializeArtifactMetadataJson(artifact: CachedArtifact): string 
   return JSON.stringify(
     {
       stable_id: artifact.stable_id,
-      source: artifact.frontmatter.source,
-      doc_type: artifact.frontmatter.doc_type,
-      source_url: artifact.frontmatter.source_url,
+      frontmatter: artifact.frontmatter,
       metadata: artifact.metadata ?? {},
     },
     null,

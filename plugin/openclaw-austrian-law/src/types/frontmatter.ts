@@ -21,12 +21,20 @@ export interface FrontmatterBase {
   // optionale Felder (bewusst generisch gehalten in der Scaffold-Phase)
   source_id?: string;
   effective_date?: string;
+  effective_date_raw?: string;
   published_date?: string;
   language?: string;
   jurisdiction?: string;
   segment_ref?: string;
   norm_ref?: string;
   decision_ref?: string;
+  law_title?: string;
+  law_abbreviation?: string;
+  law_slug?: string;
+  law_type?: string;
+  index_label?: string;
+  promulgation?: string;
+  heading?: string;
   supersedes?: string;
   checksum?: string;
   notes?: string;

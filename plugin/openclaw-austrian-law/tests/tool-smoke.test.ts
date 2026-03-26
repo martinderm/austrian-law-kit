@@ -81,17 +81,30 @@ await test("ris_search returns VALIDATION_ERROR for too-short query", async () =
 });
 
 await test("ris_fetch_segment returns a usable artifact from a live-derived fixture-backed fetch", async () => {
-  const html = fixture("fixtures/ris/nor12018853-live.html");
+  const html = fixture("fixtures/ris/nor40214078-live.html");
 
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
-      const result = await risFetchSegmentStub({ sourceId: "NOR12082462" });
+      const result = await risFetchSegmentStub({ sourceId: "NOR40214078" });
 
       assert.equal(result.ok, true);
       if (!result.ok) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_segment");
       assert.ok(result.data.artifact.content.trim().length > 30);
       assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
+      assert.equal(result.data.artifact.frontmatter.law_title, "Straßenverkehrsordnung 1960");
+      assert.equal(result.data.artifact.frontmatter.law_abbreviation, "StVO 1960");
+      assert.equal(result.data.artifact.frontmatter.law_slug, "stvo");
+      assert.equal(result.data.artifact.frontmatter.law_type, "BG");
+      assert.equal(result.data.artifact.frontmatter.effective_date_raw, "01.06.2019");
+      assert.equal(result.data.artifact.frontmatter.effective_date, "2019-06-01");
+      assert.equal(result.data.artifact.frontmatter.index_label, "90/01 Straßenverkehrsrecht");
+      assert.ok(result.data.artifact.frontmatter.promulgation?.includes("BGBl. Nr. 159/1960"));
+      assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 4");
+      assert.equal(result.data.artifact.frontmatter.heading, "§ 4. Verkehrsunfälle.");
+      const extracted = (result.data.artifact.metadata?.ris_extracted ?? {}) as Record<string, unknown>;
+      assert.equal(extracted.law_slug, "stvo");
+      assert.equal(extracted.heading, "§ 4. Verkehrsunfälle.");
     });
   });
 });
