@@ -12,7 +12,8 @@
     "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/node": "^24.6.0"
   },
   "openclaw": {
     "extensions": [

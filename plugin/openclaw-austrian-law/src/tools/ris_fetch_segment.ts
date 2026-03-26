@@ -11,7 +11,7 @@ import {
   buildCacheWarnings,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
-import type { RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
+import type { CachedArtifact, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
 
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
   if (input.segmentRef && input.segmentRef.trim().length > 0) {
@@ -129,17 +129,17 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   try {
     const parsed = parseRisSegmentHtml(html);
 
-    const artifact = {
+    const artifact: CachedArtifact = {
       stable_id: stableId,
       frontmatter: {
         stable_id: stableId,
         source: "ris",
         source_url: sourceUrl,
-        doc_type: "norm_segment" as const,
+        doc_type: "norm_segment",
         title: parsed.title,
         fetched_at: new Date().toISOString(),
         version_label: "unknown",
-        fassung_typ: "Arbeitsfassung" as const,
+        fassung_typ: "Arbeitsfassung",
         source_id: sourceId,
       },
       content: parsed.content,

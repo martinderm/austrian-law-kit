@@ -11,7 +11,7 @@ import {
   buildCacheWarnings,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
-import type { RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
+import type { CachedArtifact, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
 
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
   let sourceUrl: string;
@@ -118,17 +118,17 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   try {
     const parsed = parseRisWholeLawHtml(html);
 
-    const artifact = {
+    const artifact: CachedArtifact = {
       stable_id: stableId,
       frontmatter: {
         stable_id: stableId,
         source: "ris",
         source_url: sourceUrl,
-        doc_type: "norm_document" as const,
+        doc_type: "norm_document",
         title: parsed.title,
         fetched_at: new Date().toISOString(),
         version_label: "unknown",
-        fassung_typ: "Arbeitsfassung" as const,
+        fassung_typ: "Arbeitsfassung",
         source_id: sourceId,
       },
       content: parsed.content,

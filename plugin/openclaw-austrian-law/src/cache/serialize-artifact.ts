@@ -33,7 +33,7 @@ export function serializeFrontmatterYaml(frontmatter: Record<string, unknown>): 
 }
 
 export function serializeArtifactMarkdown(artifact: CachedArtifact): string {
-  const yaml = serializeFrontmatterYaml(artifact.frontmatter as Record<string, unknown>);
+  const yaml = serializeFrontmatterYaml(artifact.frontmatter as unknown as Record<string, unknown>);
   return `---\n${yaml}\n---\n\n${artifact.content}`;
 }
 
