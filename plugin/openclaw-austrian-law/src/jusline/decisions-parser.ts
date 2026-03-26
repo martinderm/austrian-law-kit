@@ -43,10 +43,10 @@ function extractDecisionsSection(html: string): string {
   if (marker < 0) return html;
 
   const fromMarker = html.slice(marker);
-  const nextHeading = fromMarker.slice(1).search(/<h2\b/i);
-  if (nextHeading < 0) return fromMarker;
+  const nextHeading = fromMarker.search(/<h2\b[^>]*>\s*<span\b[^>]*class\s*=\s*["'][^"']*capitalize[^"']*["'][^>]*>\s*\d+\s*<\/span>\s*Kommentare\s+zu/iu);
+  if (nextHeading <= 0) return fromMarker;
 
-  return fromMarker.slice(0, nextHeading + 1);
+  return fromMarker.slice(0, nextHeading);
 }
 
 export function parseJuslineDecisionsHtml(html: string, limit: number): SearchHit[] {

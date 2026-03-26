@@ -5,9 +5,9 @@ Ziel: kleine Robustheits- und Fixture-Härtungen für die bestehenden JUSLINE-MV
 ## Fixtures
 
 - Diskussionen Standard: `fixtures/jusline/stgb-paragraf-111.html`
-- Diskussionen Variante: `fixtures/jusline/stgb-paragraf-111-discussions-variant.html`
+- Diskussionen Variante (belastbar für Verifikation): `fixtures/jusline/stgb-paragraf-111-discussions-variant.html`
 - Entscheidungen Standard: `fixtures/jusline/stgb-paragraf-111-decisions.html`
-- Entscheidungen Variante: `fixtures/jusline/stgb-paragraf-111-decisions-variant.html`
+- Entscheidungen Variante (belastbar für Verifikation): `fixtures/jusline/stgb-paragraf-111-decisions-variant.html`
 - Entscheidungen Negativ: `fixtures/jusline/stgb-paragraf-111-no-decisions.html`
 - Kommentare Negativ: `fixtures/jusline/stvo-paragraf-4.html`
 
@@ -40,11 +40,12 @@ Ziel: kleine Robustheits- und Fixture-Härtungen für die bestehenden JUSLINE-MV
 ### 3) Kleine HTML-Variationen brechen Parsing nicht sofort
 
 **Given**
-- Variant-Fixtures mit abweichender Groß-/Kleinschreibung, Attributreihenfolge, Zeilenumbrüchen und etwas lockerem Link-/Snippet-Markup
+- die beiden belastbaren Variant-Fixtures mit abweichender Groß-/Kleinschreibung, Attributreihenfolge, Zeilenumbrüchen und etwas lockerem Link-/Snippet-Markup
 
 **Then**
 - robuste Trefferextraktion bleibt erhalten
 - Titel und optionale Snippets bleiben nutzbar
+- die Verifikation stützt sich für diesen Schritt primär auf diese beiden UTF-8-sauberen Variant-Fixtures
 
 ---
 
