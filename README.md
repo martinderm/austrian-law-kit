@@ -59,10 +59,32 @@ Im Verzeichnis `plugin/openclaw-austrian-law/`:
 - Tool-Smoke-Tests: `npm run test:tool-smoke`
 - beide Smoke-Test-Sets zusammen: `npm run test:smoke`
 
+## Plugin lokal einbinden
+
+Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege:
+
+- normale Installation (OpenClaw legt eine Kopie unter `extensions/<plugin-id>` an):
+  `openclaw plugins install <pfad-zum-pluginordner>`
+- Entwicklung per Link (empfohlen während laufender Arbeit):
+  `openclaw plugins install --link <pfad-zum-pluginordner>`
+
+Aktuelle interne Plugin-ID: `austrian-law-kit`
+
+## Skill mit ausrollen
+
+Das Plugin allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill
+`skills/austrian-law/` in den Ziel-Agent-Workspace übernommen werden, damit Quellenhierarchie, Antwortstruktur,
+Rechtsberatungsgrenze und JUSLINE-Trennung auch promptseitig wirksam sind.
+
+Kurz gesagt:
+- **Plugin** = Tools, Cache, technische Laufzeit
+- **Skill** = fachliche Orchestrierung, Antwortdisziplin, Quellenpolitik
+
 ## 🚦 Projektstatus (Übergabe)
 
 ### Bereits abgeschlossene Phasen
 - Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
+- Workspace-Skill `skills/austrian-law/` auf aktuellen MVP-Stand nachgezogen
 - Datenvertrag: Stable ID, Frontmatter, Memory-Layout
 - OpenClaw-formnahes Plugin-Skelett (Manifest + `openclaw.extensions` + Entry)
 - Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)

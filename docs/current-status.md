@@ -9,6 +9,7 @@ Stand: 2026-03-23 (laufend aktualisiert)
 - Antwortvertrag mit 4 Schichten ist dokumentiert.
 - Trennung von **Arbeitsfassung** vs. **verbindliche Fassung** ist durchgezogen.
 - Rechtsberatungsgrenze ist explizit festgelegt.
+- Das Workspace-Skill `skills/austrian-law/` bildet den aktuellen MVP-Stand inkl. konkreter RIS-/JUSLINE-MVP-Tools und agentbezogener Cache-Ableitung ab.
 
 Relevante Dateien:
 - `skills/austrian-law/SKILL.md`
