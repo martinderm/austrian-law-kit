@@ -70,9 +70,13 @@ test("RIS segment parser extracts rich metadata for NOR40214078", () => {
   assert.ok(parsed.promulgation?.includes("BGBl. Nr. 159/1960"));
   assert.equal(parsed.segmentRef, "§ 4");
   assert.equal(parsed.heading, "§ 4. Verkehrsunfälle.");
-  assert.ok(parsed.content.startsWith("§ 4. Verkehrsunfälle."));
+  assert.ok(parsed.content.startsWith("## § 4. Verkehrsunfälle."));
   assert.equal(parsed.content.includes("(2)"), true);
   assert.equal(parsed.content.includes("Absatz 2"), false);
+  assert.match(parsed.content, /\(1\)Alle Personen, deren Verhalten am Unfallsort[\s\S]*?\n- a\) wenn sie ein Fahrzeug lenken, sofort anzuhalten,/);
+  assert.match(parsed.content, /mitzuwirken\.\n+\(2\)Sind bei einem Verkehrsunfall Personen verletzt worden/);
+  assert.match(parsed.content, /\n+\(5a\)Wenn nach einem Verkehrsunfall/);
+  assert.match(parsed.content, /\n+\(6\)Aus einer Verletzung der Hilfeleistungspflicht/);
 });
 
 test("RIS segment parser marks repealed ABGB segment as repealed", () => {

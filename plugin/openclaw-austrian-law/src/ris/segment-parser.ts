@@ -109,36 +109,123 @@ function cleanupVisibleText(text: string): string {
     .replace(/Zuletzt aktualisiert am[\s\S]*$/i, "")
     .replace(/Dokumentnummer[\s\S]*$/i, "")
     .replace(/Bitte klicken Sie auf einen der folgenden Links,[\s\S]*$/i, "")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n\s+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-function renderSegmentMarkdown(html: string): string {
-  const prepared = html
+function extractTextFromNodePreservingBlocks(html: string): string {
+  return decodeHtml(html)
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<span\b[^>]*class\s*=\s*["'][^"']*sr-only[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, "")
     .replace(/<span\b[^>]*aria-hidden\s*=\s*["']true["'][^>]*>([\s\S]*?)<\/span>/gi, "$1")
     .replace(/<span\b[^>]*>/gi, "")
     .replace(/<\/span>/gi, "")
-    .replace(/<h5\b[^>]*>([\s\S]*?)<\/h5>/gi, (_m, inner) => `## ${normalizeText(inner)}\n\n`)
-    .replace(/<h4\b[^>]*>([\s\S]*?)<\/h4>/gi, (_m, inner) => `## ${normalizeText(inner)}\n\n`)
-    .replace(/<p\b[^>]*>/gi, "")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<li\b[^>]*>/gi, "- ")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<ul\b[^>]*>/gi, "\n")
-    .replace(/<\/ul>/gi, "\n")
-    .replace(/<ol\b[^>]*>/gi, "\n")
-    .replace(/<\/ol>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<div\b[^>]*>/gi, "")
-    .replace(/<\/div>/gi, "\n\n");
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
-  const normalized = normalizeText(prepared)
+function collectTopLevelBlocks(html: string): string[] {
+  const blocks: string[] = [];
+
+  const headingPattern = /<h[45]\b[^>]*>[\s\S]*?<\/h[45]>/gi;
+  let headingMatch: RegExpExecArray | null;
+  while ((headingMatch = headingPattern.exec(html)) !== null) {
+    blocks.push(headingMatch[0]);
+  }
+
+  const absPattern = /<div\b[^>]*class\s*=\s*["'][^"']*Abs[^"']*AlignJustify[^"']*["'][^>]*>[\s\S]*?<\/div>/gi;
+  let absMatch: RegExpExecArray | null;
+  while ((absMatch = absPattern.exec(html)) !== null) {
+    blocks.push(absMatch[0]);
+  }
+
+  const paragraphPattern = /<p\b[^>]*>[\s\S]*?<\/p>/gi;
+  let paragraphMatch: RegExpExecArray | null;
+  while ((paragraphMatch = paragraphPattern.exec(html)) !== null) {
+    blocks.push(paragraphMatch[0]);
+  }
+
+  const listPattern = /<ol\b[^>]*class\s*=\s*["'][^"']*wai-list[^"']*["'][^>]*>[\s\S]*?<\/ol>/gi;
+  let listMatch: RegExpExecArray | null;
+  while ((listMatch = listPattern.exec(html)) !== null) {
+    blocks.push(listMatch[0]);
+  }
+
+  return blocks;
+}
+
+function renderList(html: string): string {
+  const itemPattern = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+  const rendered: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = itemPattern.exec(html)) !== null) {
+    const itemHtml = match[1] ?? "";
+    const markerMatch = itemHtml.match(/<div\b[^>]*class\s*=\s*["'][^"']*AufzaehlungE\d+[^"']*["'][^>]*>\s*(?:<span\b[^>]*aria-hidden\s*=\s*["']true["'][^>]*>)?\s*([a-z]\))/i);
+    const marker = markerMatch?.[1]?.trim();
+    const text = extractTextFromNodePreservingBlocks(itemHtml)
+      .replace(/^[a-z]\)\s*/i, "")
+      .trim();
+
+    if (!text) continue;
+    rendered.push(marker ? `- ${marker} ${text}` : `- ${text}`);
+  }
+
+  return rendered.join("\n");
+}
+
+function renderSegmentMarkdown(html: string): string {
+  const headingMatches = Array.from(html.matchAll(/<h[45]\b[^>]*>([\s\S]*?)<\/h[45]>/gi));
+  const absMatches = Array.from(html.matchAll(/<div\b[^>]*class\s*=\s*["'][^"']*Abs[^"']*AlignJustify[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi));
+  const listMatches = Array.from(html.matchAll(/<ol\b[^>]*class\s*=\s*["'][^"']*wai-list[^"']*["'][^>]*>([\s\S]*?)<\/ol>/gi));
+  const paragraphMatches = Array.from(html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi));
+
+  const rendered: string[] = [];
+
+  for (const match of headingMatches) {
+    const heading = extractTextFromNodePreservingBlocks(match[0]);
+    if (heading) rendered.push(`## ${heading}`);
+  }
+
+  if (absMatches.length > 0) {
+    for (let i = 0; i < absMatches.length; i += 1) {
+      const text = extractTextFromNodePreservingBlocks(absMatches[i]?.[0] ?? "")
+        .replace(/\n([a-z]\))/gi, "\n- $1")
+        .replace(/\n-\s+([a-z]\))/gi, "\n- $1")
+        .trim();
+      if (text) rendered.push(text);
+
+      if (i === 0 && listMatches[0]?.[0]) {
+        const list = renderList(listMatches[0][0]);
+        if (list) rendered.push(list);
+      }
+    }
+  } else {
+    for (const match of paragraphMatches) {
+      const text = extractTextFromNodePreservingBlocks(match[0]).trim();
+      if (text) rendered.push(text);
+    }
+  }
+
+  const normalized = rendered
+    .join("\n\n")
     .replace(/^##\s+/gm, "## ")
     .replace(/\n-\s+/g, "\n- ")
-    .replace(/\n\((\d+)\)/g, "\n\n($1)")
-    .replace(/\n([a-z]\))/gi, "\n- $1")
-    .replace(/\n-\s+([a-z]\))/gi, "\n- $1")
+    .replace(/(^|\n\n)(\((?:\d+[a-z]?)\))/g, "$1$2")
+    .replace(/([.!?])\s+(\((?:\d+[a-z]?)\))/g, "$1\n\n$2")
     .replace(/\n{3,}/g, "\n\n");
 
   return cleanupVisibleText(normalized);
@@ -175,25 +262,10 @@ function dedupeAdjacentParagraphs(text: string): string {
   const result: string[] = [];
 
   for (const block of blocks) {
-    const sentenceParts = block
-      .split(/(?<=[.!?;])\s+/)
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0);
-
-    const dedupedSentences: string[] = [];
-    const sentenceSeen = new Set<string>();
-    for (const sentence of sentenceParts) {
-      const normalizedSentence = normalizeForDedupe(sentence);
-      if (sentenceSeen.has(normalizedSentence)) continue;
-      sentenceSeen.add(normalizedSentence);
-      dedupedSentences.push(sentence);
-    }
-
-    const dedupedBlock = dedupedSentences.join(" ").trim();
-    const normalizedBlock = normalizeForDedupe(dedupedBlock);
+    const normalizedBlock = normalizeForDedupe(block);
     if (!normalizedBlock || normalizedSeen.has(normalizedBlock)) continue;
     normalizedSeen.add(normalizedBlock);
-    result.push(dedupedBlock);
+    result.push(block);
   }
 
   return result.join("\n\n");
