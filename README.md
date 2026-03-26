@@ -60,7 +60,7 @@ Bewusst noch eingeschränkt:
 - Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
 
 ### Nächster empfohlener Schritt
-- JUSLINE-MVP mit gezielten Parser-/Fixture-Tests nachschärfen, ohne RIS-Primärlogik anzutasten.
+- kleine JUSLINE-MVP-Härtungen bei Parsern und Fixtures nachziehen, ohne RIS-Primärlogik anzutasten.
 
 ### Bewusst noch nicht implementiert
 - Produktivlogik für `jusline_list_decisions`

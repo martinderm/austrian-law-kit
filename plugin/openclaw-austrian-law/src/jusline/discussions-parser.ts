@@ -24,8 +24,12 @@ function stripTags(html: string): string {
     .trim();
 }
 
+function normalizeSourceId(sourceId: string): string {
+  return sourceId.trim().replace(/[^0-9]+/g, "");
+}
+
 function buildStableId(sourceId: string): string {
-  return `jusline:comment:${sourceId}`;
+  return `jusline:comment:${normalizeSourceId(sourceId)}`;
 }
 
 function normalizeSummary(text: string): string | undefined {
@@ -35,7 +39,7 @@ function normalizeSummary(text: string): string | undefined {
 }
 
 export function parseJuslineDiscussionsHtml(html: string, limit: number): SearchHit[] {
-  const commentLinkRegex = /<a\b[^>]*href\s*=\s*["'](\/gesetzeskommentare\/(\d+))["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const commentLinkRegex = /<a\b[^>]*href\s*=\s*["'](\/gesetzeskommentare\/(\d+))(?:["'#?][^"']*)?["'][^>]*>([\s\S]*?)<\/a>/gi;
 
   const hits: SearchHit[] = [];
   const seen = new Set<string>();
@@ -43,15 +47,15 @@ export function parseJuslineDiscussionsHtml(html: string, limit: number): Search
   let match: RegExpExecArray | null;
   while ((match = commentLinkRegex.exec(html)) && hits.length < limit) {
     const href = match[1];
-    const sourceId = match[2];
+    const sourceId = normalizeSourceId(match[2] ?? "");
     const anchorText = stripTags(match[3] ?? "");
     if (!anchorText || !sourceId) continue;
 
     const sourceUrl = new URL(href, resolveJuslineBaseUrl()).toString();
     if (seen.has(sourceUrl)) continue;
 
-    const remainder = html.slice(match.index, Math.min(html.length, match.index + 1200));
-    const summaryMatch = remainder.match(/<p\b[^>]*>([\s\S]*?)<a\b[^>]*>\s*mehr\s+lesen/iu);
+    const remainder = html.slice(match.index, Math.min(html.length, match.index + 1600));
+    const summaryMatch = remainder.match(/<p\b[^>]*>([\s\S]*?)<a\b[^>]*>\s*mehr\s*lesen\s*\.{0,3}/iu);
     const snippet = summaryMatch?.[1] ? normalizeSummary(summaryMatch[1]) : undefined;
 
     hits.push({
@@ -70,5 +74,6 @@ export function parseJuslineDiscussionsHtml(html: string, limit: number): Search
 
 export function looksLikeJuslineNoDiscussions(html: string): boolean {
   const text = stripTags(html);
-  return /keine\s+kommentare\s+zu\s+diesen\s+paragrafen/i.test(text);
+  return /keine\s+kommentare\s+zu\s+diesen\s+paragrafen/i.test(text)
+    || /0\s+kommentare\s+zu/i.test(text);
 }

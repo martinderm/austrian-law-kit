@@ -38,13 +38,21 @@ function normalizeSnippet(text: string): string | undefined {
   return cleaned.length > 220 ? `${cleaned.slice(0, 217)}...` : cleaned;
 }
 
-export function parseJuslineDecisionsHtml(html: string, limit: number): SearchHit[] {
-  const decisionsSectionMatch = html.match(
-    /<div\b[^>]*id\s*=\s*["']decissions["'][^>]*>([\s\S]*?)<\/div>\s*<!--/i,
-  );
-  const decisionsSection = decisionsSectionMatch?.[1] ?? html;
+function extractDecisionsSection(html: string): string {
+  const marker = html.search(/<div\b[^>]*id\s*=\s*["']decissions["'][^>]*>/i);
+  if (marker < 0) return html;
 
-  const decisionLinkRegex = /<a\b[^>]*href\s*=\s*["'](\/entscheidungen\/([^"'#?]+))["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const fromMarker = html.slice(marker);
+  const nextHeading = fromMarker.slice(1).search(/<h2\b/i);
+  if (nextHeading < 0) return fromMarker;
+
+  return fromMarker.slice(0, nextHeading + 1);
+}
+
+export function parseJuslineDecisionsHtml(html: string, limit: number): SearchHit[] {
+  const decisionsSection = extractDecisionsSection(html);
+
+  const decisionLinkRegex = /<a\b[^>]*href\s*=\s*["'](\/entscheidungen\/([^"'#?]+))(?:["'#?][^"']*)?["'][^>]*>([\s\S]*?)<\/a>/gi;
 
   const hits: SearchHit[] = [];
   const seen = new Set<string>();
@@ -84,5 +92,6 @@ export function parseJuslineDecisionsHtml(html: string, limit: number): SearchHi
 
 export function looksLikeJuslineNoDecisions(html: string): boolean {
   const text = stripTags(html);
-  return /keine\s+entscheidungen\s+zu\s+diesen\s+paragrafen/i.test(text);
+  return /keine\s+entscheidungen\s+zu\s+diesen\s+paragrafen/i.test(text)
+    || /0\s+entscheidungen\s+zu/i.test(text);
 }
