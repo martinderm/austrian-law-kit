@@ -50,6 +50,14 @@ Bewusst noch eingeschränkt:
 - `tests/`, `fixtures/` testbare Entwicklung inkl. realitätsnaher Snapshot-Extrakte
 - `templates/memory/` optionale Vorlagen für Instanzen
 
+## Lokaler Smoke-Test-Workflow
+
+Im Verzeichnis `plugin/openclaw-austrian-law/`:
+
+- Parser-Smoke-Tests: `npm run test:parser-smoke`
+- Tool-Smoke-Tests: `npm run test:tool-smoke`
+- beide Smoke-Test-Sets zusammen: `npm run test:smoke`
+
 ## 🚦 Projektstatus (Übergabe)
 
 ### Bereits abgeschlossene Phasen

@@ -4,7 +4,7 @@
 
 1. Erst Verträge lesen.
 2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: höchstens noch 1-2 kleine Tool-/Parser-Smoke-Edge-Cases oder eine minimale Fixture-Ergänzung), ohne Scope-Sprung.
+3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: höchstens noch 1-2 kleine Tool-/Parser-Smoke-Edge-Cases oder eine minimale Fixture-Ergänzung), ohne Scope-Sprung. Vorher bei Bedarf `npm run test:smoke` im Plugin-Verzeichnis ausführen.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 

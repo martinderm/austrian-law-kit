@@ -8,7 +8,8 @@
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
     "test:parser-smoke": "npm exec --yes --package tsx -- tsx tests/parser-smoke.test.ts",
-    "test:tool-smoke": "npm exec --yes --package tsx -- tsx tests/tool-smoke.test.ts"
+    "test:tool-smoke": "npm exec --yes --package tsx -- tsx tests/tool-smoke.test.ts",
+    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

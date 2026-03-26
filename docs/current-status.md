@@ -125,6 +125,7 @@ Relevante Dateien:
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
 - Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
 - Kleine ausführbare Tool-Smoke-Tests decken jetzt die bestehenden RIS-/JUSLINE-MVP-Tools mit kontrollierten Fetch-Mocks ab.
+- Für die lokale Nutzung gibt es jetzt getrennte Skripte für Parser-/Tool-Smoke-Tests plus ein gemeinsames `test:smoke`-Skript.
 - Die Smoke-Tests prüfen zusätzlich einige gezielte Edge-Cases wie Deduplizierung, optionale Snippets und gemischte Linktypen.
 
 ## Wichtigste Architekturentscheidungen
