@@ -27,33 +27,46 @@ function test(name: string, fn: () => void): void {
   }
 }
 
-test("RIS search parser returns non-empty results with titles and stable IDs", () => {
-  const html = fixture("fixtures/ris/search-result-sample.html");
+test("RIS search parser returns non-empty results with titles and stable IDs from a live-derived fixture", () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
   const hits = parseRisSearchHtml(html, 10);
 
-  assert.ok(hits.length >= 2);
+  assert.ok(hits.length >= 5);
   for (const hit of hits) {
     assert.ok(hit.title.trim().length > 0);
-    assert.ok(hit.source_url.includes("Dokument.wxe"));
+    assert.ok(hit.source_url.includes("Dokument.wxe") || hit.source_url.includes("/eli/"));
     assert.ok((hit.stable_id ?? "").trim().length > 0);
   }
 });
 
-test("RIS segment parser returns non-empty title and content without a not-found signal", () => {
-  const html = fixture("fixtures/ris/segment-detail-sample.html");
-  const parsed = parseRisSegmentHtml(html);
+test("RIS segment parser extracts usable norm text from live-derived fixtures", () => {
+  for (const relPath of [
+    "fixtures/ris/nor12018853-live.html",
+    "fixtures/ris/nor12019064-live.html",
+    "fixtures/ris/nor40214078-live.html",
+  ]) {
+    const html = fixture(relPath);
+    const parsed = parseRisSegmentHtml(html);
 
-  assert.ok(parsed.title.trim().length > 0);
-  assert.ok(parsed.content.includes("Jeder Mensch"));
-  assert.equal(looksLikeRisNotFound(html), false);
+    assert.ok(parsed.title.trim().length > 0);
+    assert.ok(parsed.content.trim().length > 30);
+    assert.equal(parsed.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
+    assert.equal(looksLikeRisNotFound(html), false);
+  }
 });
 
 test("RIS search parser deduplicates identical result links", () => {
   const html = `
-    <table>
-      <tr><td><a href="/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR12082462">ABGB § 1</a></td></tr>
-      <tr><td><a href="/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR12082462">ABGB § 1 doppelt</a></td></tr>
-    </table>
+    <table><tbody>
+      <tr class="bocListDataRow odd">
+        <td><a href="/eli/jgs/1811/946/P1/NOR12082462">§ 1</a></td>
+        <td class="bocListTextContent">ABGB</td>
+      </tr>
+      <tr class="bocListDataRow even">
+        <td><a href="/eli/jgs/1811/946/P1/NOR12082462">§ 1 doppelt</a></td>
+        <td class="bocListTextContent">ABGB</td>
+      </tr>
+    </tbody></table>
   `;
   const hits = parseRisSearchHtml(html, 10);
 
@@ -79,12 +92,14 @@ test("RIS segment parser falls back from title extraction to body content on sma
   assert.ok(parsed.content.includes("Jedermann ist fähig"));
 });
 
-test("RIS whole-law parser returns non-empty title and content without a not-found signal", () => {
-  const html = fixture("fixtures/ris/whole-law-detail-sample.html");
+test("RIS whole-law parser returns non-empty title and content from a live-derived fixture", () => {
+  const html = fixture("fixtures/ris/abgb-whole-law-live.html");
   const parsed = parseRisWholeLawHtml(html);
 
   assert.ok(parsed.title.trim().length > 0);
-  assert.ok(parsed.content.trim().length > 20);
+  assert.ok(parsed.content.trim().length > 100);
+  assert.ok(parsed.content.includes("Paragraph 10") || parsed.content.includes("§ 10") || parsed.content.includes("10."));
+  assert.equal(parsed.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
   assert.equal(looksLikeRisWholeLawNotFound(html), false);
 });
 

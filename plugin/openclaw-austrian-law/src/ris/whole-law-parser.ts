@@ -16,13 +16,20 @@ function decodeHtml(text: string): string {
     .replace(/&gt;/gi, ">");
 }
 
-function stripTags(html: string): string {
+function normalizeText(html: string): string {
   return decodeHtml(html)
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "\n- ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -31,7 +38,7 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
     const match = html.match(pattern);
     const raw = match?.[1];
     if (!raw) continue;
-    const value = stripTags(raw);
+    const value = normalizeText(raw);
     if (value.length > 0) return value;
   }
   return null;
@@ -39,8 +46,7 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
 
 function extractTitle(html: string): string {
   const title = extractFirstNonEmpty(html, [
-    /<h1\b[^>]*>([\s\S]*?)<\/h1>/i,
-    /<h2\b[^>]*>([\s\S]*?)<\/h2>/i,
+    /<h1\b[^>]*id\s*=\s*["']Title["'][^>]*>([\s\S]*?)<\/h1>/i,
     /<title\b[^>]*>([\s\S]*?)<\/title>/i,
   ]);
 
@@ -48,20 +54,40 @@ function extractTitle(html: string): string {
   throw new Error("Unable to extract title from RIS whole-law page");
 }
 
+function extractDocumentContentBlocks(html: string): string[] {
+  const blocks = Array.from(
+    html.matchAll(/<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*(?=<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>|<\/div>\s*<div id=|<div id="BottomPageNavigation")/gi),
+  )
+    .map((match) => normalizeText(match[1] ?? ""))
+    .filter((value) => value.length > 0);
+
+  if (blocks.length > 0) return blocks;
+
+  const textContainers = Array.from(
+    html.matchAll(/<div\b[^>]*id\s*=\s*["'][^"']*_TextContainer_[^"']*["'][^>]*class\s*=\s*["'][^"']*embeddedContent[^"']*["'][^>]*>[\s\S]*?<h3\b[^>]*>\s*Text\s*<\/h3>\s*<div>([\s\S]*?)<\/div>\s*<\/div>/gi),
+  )
+    .map((match) => normalizeText(match[1] ?? ""))
+    .filter((value) => value.length > 0);
+
+  return textContainers;
+}
+
 function extractContent(html: string): string {
-  const content = extractFirstNonEmpty(html, [
+  const blocks = extractDocumentContentBlocks(html);
+  if (blocks.length > 0) return blocks.join("\n\n");
+
+  const fallback = extractFirstNonEmpty(html, [
     /<main\b[^>]*>([\s\S]*?)<\/main>/i,
     /<article\b[^>]*>([\s\S]*?)<\/article>/i,
-    /<div\b[^>]*(?:id|class)\s*=\s*["'][^"']*(?:content|main)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<body\b[^>]*>([\s\S]*?)<\/body>/i,
   ]);
 
-  if (content) return content;
+  if (fallback) return fallback;
   throw new Error("Unable to extract content from RIS whole-law page");
 }
 
 export function looksLikeRisWholeLawNotFound(html: string): boolean {
-  return /kein treffer|nicht gefunden|es wurden keine dokumente/i.test(stripTags(html));
+  return /kein treffer|nicht gefunden|es wurden keine dokumente/i.test(normalizeText(html));
 }
 
 export function parseRisWholeLawHtml(html: string): ParsedRisWholeLaw {

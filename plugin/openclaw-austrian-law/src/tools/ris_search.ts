@@ -45,7 +45,10 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   try {
     response = await fetch(url, {
       method: "GET",
-      headers: { "accept": "text/html,application/xhtml+xml" },
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+        "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.1)",
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown fetch error";

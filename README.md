@@ -35,6 +35,7 @@ Enthalten sind:
 - Tests, Fixtures und Beispiel-Config
 - kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
 - kleine ausführbare Tool-Smoke-Tests für die MVP-Tool-Layer
+- zusätzliche RIS-Live-Fixtures für reale Normdokument- und Suchstrukturen
 - optionale Templates für spätere Memory-Initialisierung
 
 Bewusst noch eingeschränkt:

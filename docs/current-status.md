@@ -123,6 +123,7 @@ Relevante Dateien:
 - Meta-Signale: `cache_hit` als `notices`, Cache-Probleme (`cache_conflict`/`cache_read_failed`/`cache_write_failed`) als `warnings`.
 - Kleine RIS-MVP-Härtung: gemeinsame Mini-Helfer für Source-ID-Auflösung/Cache-Meta reduzieren Duplikate ohne Verhaltensänderung.
 - Parser-Härtung: robustere Titel-/Content-Fallbacks und toleranteres HTML-Decoding bei kleinen Seitenvariationen.
+- RIS-Parser wurden gegen echte Live-Snapshots nachgeschärft, damit Segment-/Whole-Law-Fetches den Normtext statt Navigationsstub extrahieren.
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
 - Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
 - Kleine ausführbare Tool-Smoke-Tests decken jetzt die bestehenden RIS-/JUSLINE-MVP-Tools mit kontrollierten Fetch-Mocks ab.

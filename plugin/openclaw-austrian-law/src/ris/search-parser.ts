@@ -2,7 +2,7 @@ import type { SearchHit } from "../types/tool-contracts.js";
 import { resolveRisBaseUrl } from "./runtime.js";
 
 function decodeHtml(text: string): string {
-  const decoded = text
+  return text
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
@@ -12,24 +12,32 @@ function decodeHtml(text: string): string {
     .replace(/&#([0-9]+);?/g, (_, num) => String.fromCodePoint(parseInt(num, 10)))
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">");
-
-  return decoded;
 }
 
 function stripTags(text: string): string {
-  return text
+  return decodeHtml(text)
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function extractSourceIdFromUrl(url: URL): string | undefined {
-  const keys = ["Dokumentnummer", "DokNr", "Gesetzesnummer", "GZ", "Index"];
-  for (const key of keys) {
-    const value = url.searchParams.get(key);
-    if (value && value.trim().length > 0) return value.trim();
+function extractSourceIdFromHref(hrefRaw: string): string | undefined {
+  const decoded = decodeHtml(hrefRaw);
+  const pathMatch = decoded.match(/\/(NOR[0-9A-Z]+)(?:[/?#]|$)/i);
+  if (pathMatch?.[1]) return pathMatch[1].toUpperCase();
+
+  try {
+    const url = new URL(decoded, resolveRisBaseUrl());
+    const keys = ["Dokumentnummer", "DokNr", "Gesetzesnummer", "GZ", "Index"];
+    for (const key of keys) {
+      const value = url.searchParams.get(key);
+      if (value && value.trim().length > 0) return value.trim().toUpperCase();
+    }
+  } catch {
+    // ignore malformed URL candidates and continue with undefined
   }
+
   return undefined;
 }
 
@@ -45,34 +53,44 @@ function toStableIdFromSourceId(sourceId: string | undefined): string | undefine
   return `ris:doc:${normalized}`;
 }
 
+function buildSourceUrl(hrefRaw: string, sourceId: string): string {
+  const href = decodeHtml(hrefRaw).trim();
+  if (/^https?:\/\//i.test(href)) return href;
+  if (/\/Dokumente\/Bundesnormen\//i.test(href)) {
+    return new URL(`/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=${sourceId}`, resolveRisBaseUrl()).toString();
+  }
+  return new URL(href, resolveRisBaseUrl()).toString();
+}
+
 export function parseRisSearchHtml(html: string, maxHits: number): SearchHit[] {
-  const linkRegex = /<a\b[^>]*href\s*=\s*(?:"([^"]+)"|'([^']+)')[^>]*>([\s\S]*?)<\/a>/gi;
+  const rowRegex = /<tr\b[^>]*class\s*=\s*["'][^"']*bocListDataRow[^"']*["'][^>]*>([\s\S]*?)<\/tr>/gi;
   const hits: SearchHit[] = [];
   const seen = new Set<string>();
 
   let match: RegExpExecArray | null;
-  while ((match = linkRegex.exec(html)) && hits.length < maxHits) {
-    const hrefRaw = decodeHtml(match[1] ?? match[2] ?? "");
-    if (!/Dokument\.wxe/i.test(hrefRaw)) continue;
+  while ((match = rowRegex.exec(html)) && hits.length < maxHits) {
+    const rowHtml = match[1] ?? "";
+    const linkMatch = rowHtml.match(/<a\b[^>]*href\s*=\s*["']([^"']*(?:\/eli\/|\/Dokumente\/Bundesnormen\/)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/i);
+    if (!linkMatch) continue;
 
-    const sourceUrl = new URL(hrefRaw, resolveRisBaseUrl());
-    const sourceUrlString = sourceUrl.toString();
-    if (seen.has(sourceUrlString)) continue;
+    const sourceId = extractSourceIdFromHref(linkMatch[1]);
+    if (!sourceId) continue;
 
-    const titleRaw = stripTags(decodeHtml(match[3] ?? ""));
-    if (!titleRaw) continue;
+    const sourceUrl = buildSourceUrl(linkMatch[1], sourceId);
+    if (seen.has(sourceUrl)) continue;
 
-    const sourceId = extractSourceIdFromUrl(sourceUrl);
-    const stableId = toStableIdFromSourceId(sourceId);
+    const titleMatch = rowHtml.match(/<td\b[^>]*class\s*=\s*["'][^"']*bocListTextContent[^"']*["'][^>]*>([\s\S]*?)<\/td>/i);
+    const title = stripTags(titleMatch?.[1] ?? linkMatch[2] ?? "");
+    if (!title) continue;
 
     hits.push({
-      stable_id: stableId ?? "",
+      stable_id: toStableIdFromSourceId(sourceId) ?? "",
       source_id: sourceId,
-      title: titleRaw,
-      source_url: sourceUrlString,
+      title,
+      source_url: sourceUrl,
     });
 
-    seen.add(sourceUrlString);
+    seen.add(sourceUrl);
   }
 
   return hits;

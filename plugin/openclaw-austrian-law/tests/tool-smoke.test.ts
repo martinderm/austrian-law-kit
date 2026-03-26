@@ -59,15 +59,15 @@ function withTempCacheRoot<T>(fn: () => Promise<T> | T): Promise<T> {
     });
 }
 
-await test("ris_search returns hits from fixture-backed fetch", async () => {
-  const html = fixture("fixtures/ris/search-result-sample.html");
+await test("ris_search returns hits from a live-derived fixture-backed fetch", async () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
 
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await risSearchStub({ query: "ABGB", limit: 5 });
 
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.ok(result.data.hits.length >= 2);
+    assert.ok(result.data.hits.length >= 5);
     assert.ok(result.data.hits[0]?.title.trim().length);
   });
 });
@@ -80,8 +80,8 @@ await test("ris_search returns VALIDATION_ERROR for too-short query", async () =
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
-await test("ris_fetch_segment returns an artifact from fixture-backed fetch", async () => {
-  const html = fixture("fixtures/ris/segment-detail-sample.html");
+await test("ris_fetch_segment returns a usable artifact from a live-derived fixture-backed fetch", async () => {
+  const html = fixture("fixtures/ris/nor12018853-live.html");
 
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
@@ -90,7 +90,8 @@ await test("ris_fetch_segment returns an artifact from fixture-backed fetch", as
       assert.equal(result.ok, true);
       if (!result.ok) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_segment");
-      assert.ok(result.data.artifact.content.trim().length > 20);
+      assert.ok(result.data.artifact.content.trim().length > 30);
+      assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
     });
   });
 });
@@ -103,8 +104,8 @@ await test("ris_fetch_segment returns VALIDATION_ERROR without source identifier
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
-await test("ris_fetch_whole_law returns an artifact from fixture-backed fetch", async () => {
-  const html = fixture("fixtures/ris/whole-law-detail-sample.html");
+await test("ris_fetch_whole_law returns a usable artifact from a live-derived fixture-backed fetch", async () => {
+  const html = fixture("fixtures/ris/abgb-whole-law-live.html");
 
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
@@ -113,7 +114,8 @@ await test("ris_fetch_whole_law returns an artifact from fixture-backed fetch", 
       assert.equal(result.ok, true);
       if (!result.ok) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_document");
-      assert.ok(result.data.artifact.content.trim().length > 20);
+      assert.ok(result.data.artifact.content.trim().length > 100);
+      assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
     });
   });
 });

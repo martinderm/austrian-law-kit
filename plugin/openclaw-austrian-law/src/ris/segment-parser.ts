@@ -16,13 +16,20 @@ function decodeHtml(text: string): string {
     .replace(/&gt;/gi, ">");
 }
 
-function stripTags(html: string): string {
+function normalizeText(html: string): string {
   return decodeHtml(html)
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "\n- ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -31,7 +38,7 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
     const match = html.match(pattern);
     const raw = match?.[1];
     if (!raw) continue;
-    const value = stripTags(raw);
+    const value = normalizeText(raw);
     if (value.length > 0) return value;
   }
   return null;
@@ -39,8 +46,9 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
 
 function extractTitle(html: string): string {
   const title = extractFirstNonEmpty(html, [
-    /<h1\b[^>]*>([\s\S]*?)<\/h1>/i,
-    /<h2\b[^>]*>([\s\S]*?)<\/h2>/i,
+    /<div\b[^>]*id\s*=\s*["']MainContent_DocumentData["'][^>]*>[\s\S]*?<h2\b[^>]*class\s*=\s*["'][^"']*onlyScreenreader[^"']*["'][^>]*>([\s\S]*?)<\/h2>/i,
+    /<h1\b[^>]*id\s*=\s*["']Title["'][^>]*>([\s\S]*?)<\/h1>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*document[^"']*["'][^>]*>[\s\S]*?<h2\b[^>]*class\s*=\s*["'][^"']*onlyScreenreader[^"']*["'][^>]*>([\s\S]*?)<\/h2>/i,
     /<title\b[^>]*>([\s\S]*?)<\/title>/i,
   ]);
 
@@ -49,19 +57,27 @@ function extractTitle(html: string): string {
 }
 
 function extractContent(html: string): string {
-  const content = extractFirstNonEmpty(html, [
+  const textContainer = extractFirstNonEmpty(html, [
+    /<div\b[^>]*id\s*=\s*["'][^"']*_TextContainer_[^"']*["'][^>]*class\s*=\s*["'][^"']*embeddedContent[^"']*["'][^>]*>[\s\S]*?<h3\b[^>]*>\s*Text\s*<\/h3>\s*<div>([\s\S]*?)<\/div>\s*<\/div>\s*(?=<div\b[^>]*id\s*=\s*["'][^"']*_(?:AnmerkungContainer|VeroeffentlichungsdatumAenderungsdatumContainer|GesetzesnummerContainer|EliContainer|AlteDokumentnummerContainer)_[^"']*["'])/i,
+    /<div\b[^>]*id\s*=\s*["'][^"']*_TextContainer_[^"']*["'][^>]*class\s*=\s*["'][^"']*embeddedContent[^"']*["'][^>]*>[\s\S]*?<h3\b[^>]*>\s*Text\s*<\/h3>\s*<div>([\s\S]*?)<\/div>\s*<\/div>/i,
+  ]);
+
+  if (textContainer) return textContainer;
+
+  const contentBlock = extractFirstNonEmpty(html, [
+    /<div\b[^>]*class\s*=\s*["'][^"']*contentBlock[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<main\b[^>]*>([\s\S]*?)<\/main>/i,
     /<article\b[^>]*>([\s\S]*?)<\/article>/i,
-    /<div\b[^>]*(?:id|class)\s*=\s*["'][^"']*(?:content|main)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<body\b[^>]*>([\s\S]*?)<\/body>/i,
   ]);
 
-  if (content) return content;
+  if (contentBlock) return contentBlock;
   throw new Error("Unable to extract content from RIS document page");
 }
 
 export function looksLikeRisNotFound(html: string): boolean {
-  return /kein treffer|nicht gefunden|es wurden keine dokumente/i.test(stripTags(html));
+  return /kein treffer|nicht gefunden|es wurden keine dokumente/i.test(normalizeText(html));
 }
 
 export function parseRisSegmentHtml(html: string): ParsedRisSegment {
