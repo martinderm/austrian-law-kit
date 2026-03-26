@@ -123,6 +123,7 @@ Relevante Dateien:
 - Kleine RIS-MVP-Härtung: gemeinsame Mini-Helfer für Source-ID-Auflösung/Cache-Meta reduzieren Duplikate ohne Verhaltensänderung.
 - Parser-Härtung: robustere Titel-/Content-Fallbacks und toleranteres HTML-Decoding bei kleinen Seitenvariationen.
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
+- Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
 
 ## Wichtigste Architekturentscheidungen
 

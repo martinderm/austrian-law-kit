@@ -32,6 +32,7 @@ Enthalten sind:
   - `jusline_list_decisions` (Sekundärquelle)
 - lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
 - Tests, Fixtures und Beispiel-Config
+- kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
 - optionale Templates für spätere Memory-Initialisierung
 
 Bewusst noch eingeschränkt:

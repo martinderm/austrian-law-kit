@@ -6,7 +6,8 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test:parser-smoke": "npm exec --yes --package tsx -- tsx tests/parser-smoke.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

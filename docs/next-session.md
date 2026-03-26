@@ -4,7 +4,7 @@
 
 1. Erst Verträge lesen.
 2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: nächste kleine JUSLINE-MVP-Härtung oder Testergänzung), ohne Scope-Sprung.
+3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: Parser-Smoke-Tests vorsichtig erweitern oder einzelne Edge-Cases ergänzen), ohne Scope-Sprung.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 
@@ -24,7 +24,7 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach der aktuellen JUSLINE-MVP-Härtung: nur den nächsten kleinen Parser-/Fixture-Schritt angehen (weiterhin Sekundärquelle):**
+**Nach den ersten Parser-Smoke-Tests: nur kleine zusätzliche Invarianten oder einzelne Edge-Cases ergänzen:**
 - klare Trennung Diskussionen vs. Entscheidungen beibehalten
 - RIS-first-Architektur unverändert lassen
 
