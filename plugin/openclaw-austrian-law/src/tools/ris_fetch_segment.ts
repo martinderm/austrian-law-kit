@@ -14,6 +14,28 @@ import {
 } from "./ris-fetch-common.js";
 import type { CachedArtifact, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
 
+function buildDisplayTitle(params: {
+  segmentRef?: string;
+  lawAbbreviation?: string;
+  heading?: string;
+  normStatus?: "current" | "historical" | "repealed";
+  fallbackTitle: string;
+}): string {
+  const base = [params.segmentRef, params.lawAbbreviation].filter(Boolean).join(" ").trim();
+  const heading = params.heading?.trim();
+  const headingSuffix = heading
+    ? heading.replace(/^§\s*\d+[a-zA-Z]*\.?\s*/, "").trim().replace(/^[.–\-\s]+/, "")
+    : "";
+  const titleCore = base || heading || params.fallbackTitle;
+  const withHeading = headingSuffix && !titleCore.includes(headingSuffix)
+    ? `${titleCore} – ${headingSuffix}`
+    : titleCore;
+
+  if (params.normStatus === "repealed") return `${withHeading} (historisch/aufgehoben)`;
+  if (params.normStatus === "historical") return `${withHeading} (historisch)`;
+  return withHeading;
+}
+
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
   if (input.segmentRef && input.segmentRef.trim().length > 0) {
     return {
@@ -133,6 +155,14 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   try {
     const parsed = parseRisSegmentHtml(html);
 
+    const displayTitle = buildDisplayTitle({
+      segmentRef: parsed.segmentRef,
+      lawAbbreviation: parsed.lawAbbreviation,
+      heading: parsed.heading,
+      normStatus: parsed.normStatus,
+      fallbackTitle: parsed.title,
+    });
+
     const artifact: CachedArtifact = {
       stable_id: stableId,
       frontmatter: {
@@ -140,13 +170,16 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         source: "ris",
         source_url: sourceUrl,
         doc_type: "norm_segment",
-        title: parsed.title,
+        title: displayTitle,
         fetched_at: new Date().toISOString(),
         version_label: parsed.effectiveDateRaw ?? "unknown",
         fassung_typ: "Arbeitsfassung",
         source_id: sourceId,
         effective_date: parsed.effectiveDate,
         effective_date_raw: parsed.effectiveDateRaw,
+        repealed_date: parsed.repealedDate,
+        repealed_date_raw: parsed.repealedDateRaw,
+        norm_status: parsed.normStatus,
         segment_ref: parsed.segmentRef,
         law_title: parsed.lawTitle,
         law_abbreviation: parsed.lawAbbreviation,
@@ -159,7 +192,8 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       content: parsed.content,
       metadata: {
         ris_extracted: {
-          document_title: parsed.title,
+          document_title_raw: parsed.title,
+          display_title: displayTitle,
           law_title: parsed.lawTitle,
           law_abbreviation: parsed.lawAbbreviation,
           law_slug: parsed.lawSlug,
@@ -168,6 +202,9 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
           promulgation: parsed.promulgation,
           effective_date: parsed.effectiveDate,
           effective_date_raw: parsed.effectiveDateRaw,
+          repealed_date: parsed.repealedDate,
+          repealed_date_raw: parsed.repealedDateRaw,
+          norm_status: parsed.normStatus,
           segment_ref: parsed.segmentRef,
           heading: parsed.heading,
         },

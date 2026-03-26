@@ -63,6 +63,7 @@ test("RIS segment parser extracts rich metadata for NOR40214078", () => {
   assert.equal(parsed.lawAbbreviation, "StVO 1960");
   assert.equal(parsed.lawSlug, "stvo");
   assert.equal(parsed.lawType, "BG");
+  assert.equal(parsed.normStatus, "current");
   assert.equal(parsed.effectiveDateRaw, "01.06.2019");
   assert.equal(parsed.effectiveDate, "2019-06-01");
   assert.equal(parsed.indexLabel, "90/01 Straßenverkehrsrecht");
@@ -70,6 +71,18 @@ test("RIS segment parser extracts rich metadata for NOR40214078", () => {
   assert.equal(parsed.segmentRef, "§ 4");
   assert.equal(parsed.heading, "§ 4. Verkehrsunfälle.");
   assert.ok(parsed.content.startsWith("§ 4. Verkehrsunfälle."));
+  assert.equal(parsed.content.includes("(2)"), true);
+  assert.equal(parsed.content.includes("Absatz 2"), false);
+});
+
+test("RIS segment parser marks repealed ABGB segment as repealed", () => {
+  const html = fixture("fixtures/ris/nor12018853-live.html");
+  const parsed = parseRisSegmentHtml(html);
+
+  assert.equal(parsed.lawAbbreviation, "ABGB");
+  assert.equal(parsed.segmentRef, "§ 1124");
+  assert.equal(parsed.normStatus, "repealed");
+  assert.ok(parsed.promulgation?.includes("aufgehoben"));
 });
 
 test("RIS search parser deduplicates identical result links", () => {

@@ -102,9 +102,12 @@ await test("ris_fetch_segment returns a usable artifact from a live-derived fixt
       assert.ok(result.data.artifact.frontmatter.promulgation?.includes("BGBl. Nr. 159/1960"));
       assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 4");
       assert.equal(result.data.artifact.frontmatter.heading, "§ 4. Verkehrsunfälle.");
+      assert.equal(result.data.artifact.frontmatter.title, "§ 4 StVO 1960 – Verkehrsunfälle.");
+      assert.equal(result.data.artifact.frontmatter.norm_status, "current");
       const extracted = (result.data.artifact.metadata?.ris_extracted ?? {}) as Record<string, unknown>;
       assert.equal(extracted.law_slug, "stvo");
       assert.equal(extracted.heading, "§ 4. Verkehrsunfälle.");
+      assert.equal(extracted.display_title, "§ 4 StVO 1960 – Verkehrsunfälle.");
     });
   });
 });
