@@ -1,6 +1,6 @@
 # Tool Contracts (Planungsstand, ohne Implementierung)
 
-Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `openclaw-austrian-law`.
+Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `austrian-law-kit`.
 
 ## Gemeinsamer Rahmen
 

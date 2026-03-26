@@ -1,6 +1,6 @@
-# openclaw-austrian-law (Plugin Skeleton)
+# austrian-law-kit (Plugin Skeleton)
 
-Natives OpenClaw-Plugin-Skelett für den Austrian-Law-Stack.
+Natives Plugin-Skelett für den Austrian-Law-Stack in OpenClaw.
 
 ## Korrigierte Struktur (OpenClaw-konform)
 

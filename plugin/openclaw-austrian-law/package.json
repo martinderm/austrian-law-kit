@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/openclaw-austrian-law",
+  "name": "austrian-law-kit",
   "version": "0.1.0",
   "private": true,
-  "description": "Skeleton for a native OpenClaw Austrian law plugin (no parser/fetch implementation yet).",
+  "description": "Native Austrian law plugin kit for OpenClaw.",
   "type": "module",
   "main": "index.ts",
   "scripts": {

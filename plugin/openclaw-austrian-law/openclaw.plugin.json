@@ -1,6 +1,6 @@
 {
-  "id": "openclaw-austrian-law",
-  "name": "OpenClaw Austrian Law Plugin",
+  "id": "austrian-law-kit",
+  "name": "Austrian Law Kit",
   "description": "Plugin-Skelett für österreichische Rechtsquellen (ohne Parser/Fetching-Implementierung).",
   "version": "0.1.0",
   "configSchema": {

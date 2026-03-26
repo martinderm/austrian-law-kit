@@ -11,14 +11,14 @@ export const TOOL_NAMES: readonly ToolName[] = [
 ] as const;
 
 export interface PluginSkeletonInfo {
-  id: "openclaw-austrian-law";
+  id: "austrian-law-kit";
   status: "skeleton";
   implemented: false;
   toolsPlanned: readonly ToolName[];
 }
 
 export const pluginSkeletonInfo: PluginSkeletonInfo = {
-  id: "openclaw-austrian-law",
+  id: "austrian-law-kit",
   status: "skeleton",
   implemented: false,
   toolsPlanned: TOOL_NAMES,

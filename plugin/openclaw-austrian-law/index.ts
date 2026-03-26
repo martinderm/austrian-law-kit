@@ -40,9 +40,9 @@ function resolveEffectiveCacheRoot(
 }
 
 export default definePluginEntry({
-  id: "openclaw-austrian-law",
-  name: "OpenClaw Austrian Law Plugin",
-  description: "Skeleton entry for Austrian law plugin (no tools registered yet).",
+  id: "austrian-law-kit",
+  name: "Austrian Law Kit",
+  description: "Plugin entry for Austrian law research tools.",
   register(api: OpenClawPluginApi) {
     configureCacheRoot(extractConfiguredCacheRoot(api));
     configureRisBaseUrl(extractConfiguredRisBaseUrl(api));
@@ -51,7 +51,7 @@ export default definePluginEntry({
     const validation = validateToolRegistry();
     if (!validation.ok) {
       api.logger.warn(
-        `[openclaw-austrian-law] registry validation issues: ${validation.errors.join(" | ")}`,
+        `[austrian-law-kit] registry validation issues: ${validation.errors.join(" | ")}`,
       );
     }
 
@@ -69,7 +69,7 @@ export default definePluginEntry({
     }
 
     api.logger.info(
-      `[openclaw-austrian-law] registered ${TOOL_REGISTRY.length} tools (mixed MVP/stub status).`,
+      `[austrian-law-kit] registered ${TOOL_REGISTRY.length} tools (mixed MVP/stub status).`,
     );
   },
 });
