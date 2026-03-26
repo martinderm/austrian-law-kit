@@ -25,6 +25,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
       sourceId: { type: "string" },
       sourceUrl: { type: "string" },
       segmentRef: { type: "string" },
+      refresh: { type: "boolean" },
     },
   },
   ris_fetch_whole_law: {
@@ -33,6 +34,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     properties: {
       sourceId: { type: "string" },
       sourceUrl: { type: "string" },
+      refresh: { type: "boolean" },
     },
   },
   jusline_fetch_discussions: {
@@ -41,6 +43,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     properties: {
       query: { type: "string" },
       limit: { type: "number" },
+      refresh: { type: "boolean" },
     },
     required: ["query"],
   },
@@ -50,6 +53,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     properties: {
       query: { type: "string" },
       limit: { type: "number" },
+      refresh: { type: "boolean" },
     },
     required: ["query"],
   },

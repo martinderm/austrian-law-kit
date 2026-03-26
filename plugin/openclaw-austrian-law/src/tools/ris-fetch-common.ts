@@ -22,6 +22,15 @@ export function buildCacheHitMeta(tool: ToolName) {
   };
 }
 
+export function buildRefreshMeta(tool: ToolName) {
+  return {
+    tool,
+    source: "ris" as const,
+    timestamp: new Date().toISOString(),
+    notices: ["cache_refresh: bypassed cached artifact and fetched fresh content"],
+  };
+}
+
 export function buildCacheWarnings(params: {
   cacheRead: CacheReadReuseResult;
   cacheWrite: CacheWriteThroughResult;

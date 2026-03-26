@@ -9,6 +9,7 @@ import {
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
+  buildRefreshMeta,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
 import type { CachedArtifact, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
@@ -45,7 +46,10 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   }
 
   const stableId = normalizeWholeLawStableIdFromSourceId(sourceId);
-  const cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
+  const refresh = input.refresh === true;
+  const cacheRead = refresh
+    ? { hit: false, artifact: undefined, warning: undefined }
+    : await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
   if (cacheRead.hit && cacheRead.artifact) {
     return {
       ok: true,
@@ -144,9 +148,11 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         artifact,
       },
       meta: {
-        tool: "ris_fetch_whole_law",
-        source: "ris",
-        timestamp: new Date().toISOString(),
+        ...(refresh ? buildRefreshMeta("ris_fetch_whole_law") : {
+          tool: "ris_fetch_whole_law",
+          source: "ris" as const,
+          timestamp: new Date().toISOString(),
+        }),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

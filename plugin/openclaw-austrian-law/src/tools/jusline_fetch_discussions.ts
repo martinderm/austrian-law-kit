@@ -108,6 +108,9 @@ export async function juslineFetchDiscussionsStub(
 
   try {
     const hits = parseJuslineDiscussionsHtml(html, normalizeLimit(input.limit));
+    const notices = input.refresh === true
+      ? ["cache_refresh: fetched fresh content without reusing cached artifact"]
+      : undefined;
 
     if (hits.length === 0 && looksLikeJuslineNoDiscussions(html)) {
       return {
@@ -128,7 +131,12 @@ export async function juslineFetchDiscussionsStub(
     return {
       ok: true,
       data: { hits },
-      meta: { tool: "jusline_fetch_discussions", source: "jusline", timestamp: new Date().toISOString() },
+      meta: {
+        tool: "jusline_fetch_discussions",
+        source: "jusline",
+        timestamp: new Date().toISOString(),
+        ...(notices ? { notices } : {}),
+      },
     };
   } catch (error) {
     return {

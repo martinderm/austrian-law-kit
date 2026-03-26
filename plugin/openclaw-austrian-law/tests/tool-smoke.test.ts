@@ -117,6 +117,41 @@ await test("ris_fetch_segment returns VALIDATION_ERROR without source identifier
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
+await test("ris_fetch_segment bypasses stale cache when refresh=true", async () => {
+  const staleArtifact = {
+    stable_id: "ris:segment:nor40214078",
+    frontmatter: {
+      stable_id: "ris:segment:nor40214078",
+      source: "ris",
+      source_url: "https://example.invalid/NOR40214078",
+      doc_type: "norm_segment",
+      title: "Bundesrecht konsolidiert",
+      fetched_at: new Date().toISOString(),
+      version_label: "stale",
+      fassung_typ: "Arbeitsfassung",
+      source_id: "NOR40214078",
+    },
+    content: "Startseite Bund Länder Bezirke Gemeinden",
+  };
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+
+  await withTempCacheRoot(async () => {
+    await runWithCacheRoot(undefined, async () => {
+      const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+      await writeThroughCacheForRisArtifact(staleArtifact as any);
+    });
+
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40214078", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
+      assert.ok(result.meta.notices?.includes("cache_refresh: bypassed cached artifact and fetched fresh content"));
+    });
+  });
+});
+
 await test("ris_fetch_whole_law returns a usable artifact from a live-derived fixture-backed fetch", async () => {
   const html = fixture("fixtures/ris/abgb-whole-law-live.html");
 
@@ -167,6 +202,18 @@ await test("jusline_fetch_discussions returns NOT_FOUND for the negative comment
     assert.equal(result.ok, false);
     if (result.ok) return;
     assert.equal(result.error.code, "NOT_FOUND");
+  });
+});
+
+await test("jusline_fetch_discussions exposes refresh notice when refresh=true", async () => {
+  const html = fixture("fixtures/jusline/stgb-paragraf-111-discussions-variant.html");
+
+  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+    const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", refresh: true });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.ok(result.meta.notices?.includes("cache_refresh: fetched fresh content without reusing cached artifact"));
   });
 });
 

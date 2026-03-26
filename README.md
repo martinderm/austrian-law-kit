@@ -37,6 +37,7 @@ Enthalten sind:
 - kleine ausführbare Tool-Smoke-Tests für die MVP-Tool-Layer
 - zusätzliche RIS-Live-Fixtures für reale Normdokument- und Suchstrukturen
 - reichere RIS-Segment-Artefakte mit Gesetzes-/Normmetadaten im Frontmatter und JSON
+- optionales `refresh`-Flag für Fetch-Tools, um Cache-Wiederverwendung gezielt zu überspringen
 - optionale Templates für spätere Memory-Initialisierung
 
 Bewusst noch eingeschränkt:

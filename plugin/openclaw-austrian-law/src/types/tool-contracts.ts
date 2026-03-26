@@ -27,24 +27,28 @@ export interface RisFetchSegmentInput {
   sourceId?: string;
   sourceUrl?: string;
   segmentRef?: string;
+  refresh?: boolean;
 }
 export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
 
 export interface RisFetchWholeLawInput {
   sourceId?: string;
   sourceUrl?: string;
+  refresh?: boolean;
 }
 export type RisFetchWholeLawOutput = ToolResult<{ artifact: CachedArtifact }>;
 
 export interface JuslineFetchDiscussionsInput {
   query: string;
   limit?: number;
+  refresh?: boolean;
 }
 export type JuslineFetchDiscussionsOutput = ToolResult<{ hits: SearchHit[] }>;
 
 export interface JuslineListDecisionsInput {
   query: string;
   limit?: number;
+  refresh?: boolean;
 }
 export type JuslineListDecisionsOutput = ToolResult<{ hits: SearchHit[] }>;
 

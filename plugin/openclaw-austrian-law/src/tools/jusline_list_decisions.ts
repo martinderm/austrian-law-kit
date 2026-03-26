@@ -94,6 +94,9 @@ export async function juslineListDecisionsStub(
 
   try {
     const hits = parseJuslineDecisionsHtml(html, normalizeLimit(input.limit));
+    const notices = input.refresh === true
+      ? ["cache_refresh: fetched fresh content without reusing cached artifact"]
+      : undefined;
 
     if (hits.length === 0 && looksLikeJuslineNoDecisions(html)) {
       return {
@@ -114,7 +117,12 @@ export async function juslineListDecisionsStub(
     return {
       ok: true,
       data: { hits },
-      meta: { tool: "jusline_list_decisions", source: "jusline", timestamp: new Date().toISOString() },
+      meta: {
+        tool: "jusline_list_decisions",
+        source: "jusline",
+        timestamp: new Date().toISOString(),
+        ...(notices ? { notices } : {}),
+      },
     };
   } catch (error) {
     return {

@@ -34,6 +34,7 @@ Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `austrian
 - `sourceId?: string` (z. B. RIS-Dokumentnummer)
 - `sourceUrl?: string` (direkte RIS-Dokument-URL)
 - `segmentRef?: string` (derzeit außerhalb MVP, führt zu `NOT_IMPLEMENTED`)
+- `refresh?: boolean` (optional; ignoriert vorhandenen Cache und holt den Inhalt frisch)
 
 Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 
@@ -54,6 +55,7 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Input (MVP):**
 - `sourceId?: string` (z. B. RIS-Dokumentnummer)
 - `sourceUrl?: string` (direkte RIS-Dokument-URL)
+- `refresh?: boolean` (optional; ignoriert vorhandenen Cache und holt den Inhalt frisch)
 
 Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 
@@ -73,6 +75,7 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Input (MVP):**
 - `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
+- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Cache-Wiederverwendung)
 
 **Output (MVP):**
 - Diskussions-/Kommentartreffer (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
@@ -90,6 +93,7 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Input (MVP):**
 - `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
+- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Cache-Wiederverwendung)
 
 **Output (MVP):**
 - Entscheidungsreferenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)

@@ -9,6 +9,7 @@ import {
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
+  buildRefreshMeta,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
 import type { CachedArtifact, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
@@ -56,7 +57,10 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   }
 
   const stableId = normalizeStableIdFromSourceId(sourceId);
-  const cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
+  const refresh = input.refresh === true;
+  const cacheRead = refresh
+    ? { hit: false, artifact: undefined, warning: undefined }
+    : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
   if (cacheRead.hit && cacheRead.artifact) {
     return {
       ok: true,
@@ -180,9 +184,11 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         artifact,
       },
       meta: {
-        tool: "ris_fetch_segment",
-        source: "ris",
-        timestamp: new Date().toISOString(),
+        ...(refresh ? buildRefreshMeta("ris_fetch_segment") : {
+          tool: "ris_fetch_segment",
+          source: "ris" as const,
+          timestamp: new Date().toISOString(),
+        }),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

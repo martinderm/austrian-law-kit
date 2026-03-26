@@ -59,8 +59,9 @@ Typischer Ablauf:
 1. Zuerst RIS-Treffer oder konkrete RIS-Fundstelle bestimmen.
 2. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
 3. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
-4. Erst danach gezielt Segment oder Gesamtdokument laden.
-5. Erst danach zusammenfassen oder vorsichtig einordnen.
+4. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
+5. Erst danach gezielt Segment oder Gesamtdokument laden.
+6. Erst danach zusammenfassen oder vorsichtig einordnen.
 
 ### JUSLINE (Sekundärquelle)
 JUSLINE nur ergänzend nutzen und intern sauber trennen:
