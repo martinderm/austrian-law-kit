@@ -105,29 +105,43 @@ function cleanupVisibleText(text: string): string {
     .replace(/Paragraph\s+\d+[a-zA-Z]*,\s*[^.]+\.\s*-\s*/g, "")
     .replace(/\((\d+)\)\s*Absatz\s+[^,]+,\s*/g, "($1) ")
     .replace(/-\s*([a-z])\)\s*Litera\s+\1\s*/gi, "- $1) ")
-    .replace(/\s+(\(\d+\))/g, "\n$1")
-    .replace(/\s+([a-z]\))/gi, "\n$1")
     .replace(/Schlagworte[\s\S]*$/i, "")
     .replace(/Zuletzt aktualisiert am[\s\S]*$/i, "")
     .replace(/Dokumentnummer[\s\S]*$/i, "")
     .replace(/Bitte klicken Sie auf einen der folgenden Links,[\s\S]*$/i, "")
-    .replace(/\s+-\s+/g, "\n- ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-function sanitizeVisibleTextHtml(html: string): string {
-  const ariaHiddenParts = Array.from(
-    html.matchAll(/<span\b[^>]*aria-hidden\s*=\s*["']true["'][^>]*>([\s\S]*?)<\/span>/gi),
-  )
-    .map((match) => normalizeText(match[1] ?? ""))
-    .filter((value) => value.length > 0);
+function renderSegmentMarkdown(html: string): string {
+  const prepared = html
+    .replace(/<span\b[^>]*class\s*=\s*["'][^"']*sr-only[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, "")
+    .replace(/<span\b[^>]*aria-hidden\s*=\s*["']true["'][^>]*>([\s\S]*?)<\/span>/gi, "$1")
+    .replace(/<span\b[^>]*>/gi, "")
+    .replace(/<\/span>/gi, "")
+    .replace(/<h5\b[^>]*>([\s\S]*?)<\/h5>/gi, (_m, inner) => `## ${normalizeText(inner)}\n\n`)
+    .replace(/<h4\b[^>]*>([\s\S]*?)<\/h4>/gi, (_m, inner) => `## ${normalizeText(inner)}\n\n`)
+    .replace(/<p\b[^>]*>/gi, "")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<li\b[^>]*>/gi, "- ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<ul\b[^>]*>/gi, "\n")
+    .replace(/<\/ul>/gi, "\n")
+    .replace(/<ol\b[^>]*>/gi, "\n")
+    .replace(/<\/ol>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<div\b[^>]*>/gi, "")
+    .replace(/<\/div>/gi, "\n\n");
 
-  if (ariaHiddenParts.length > 0) {
-    return cleanupVisibleText(ariaHiddenParts.join("\n\n"));
-  }
+  const normalized = normalizeText(prepared)
+    .replace(/^##\s+/gm, "## ")
+    .replace(/\n-\s+/g, "\n- ")
+    .replace(/\n\((\d+)\)/g, "\n\n($1)")
+    .replace(/\n([a-z]\))/gi, "\n- $1")
+    .replace(/\n-\s+([a-z]\))/gi, "\n- $1")
+    .replace(/\n{3,}/g, "\n\n");
 
-  return html.replace(/<span\b[^>]*class\s*=\s*["'][^"']*sr-only[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, "");
+  return cleanupVisibleText(normalized);
 }
 
 function normalizeForDedupe(text: string): string {
@@ -193,8 +207,7 @@ function extractContent(html: string): string {
   );
 
   if (textContainerMatch?.[1]) {
-    const visibleHtml = sanitizeVisibleTextHtml(textContainerMatch[1]);
-    const content = dedupeAdjacentParagraphs(normalizeText(visibleHtml));
+    const content = dedupeAdjacentParagraphs(renderSegmentMarkdown(textContainerMatch[1]));
     if (content && content.length > 30) return content;
 
     const fallbackContent = dedupeAdjacentParagraphs(normalizeText(textContainerMatch[1]));
