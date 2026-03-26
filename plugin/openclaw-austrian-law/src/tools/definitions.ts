@@ -46,8 +46,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     name: "jusline_list_decisions",
     sourceKind: "jusline",
-    status: "stub",
-    description: "Listet optionale JUSLINE-Entscheidungen (Sekundärquelle).",
+    status: "mvp",
+    description: "Listet optionale JUSLINE-Entscheidungen (Sekundärquelle, MVP).",
     inputSchemaRef: TOOL_SCHEMA_REFS.jusline_list_decisions,
     outputSchemaRef: "contracts:JuslineListDecisionsOutput",
   },

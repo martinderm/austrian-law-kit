@@ -42,7 +42,8 @@ Relevante Dateien:
 - `ris_fetch_segment` ist als zweite RIS-MVP-Funktion produktiv angebunden.
 - `ris_fetch_whole_law` ist als dritte RIS-MVP-Funktion produktiv angebunden.
 - `jusline_fetch_discussions` ist als erste JUSLINE-MVP-Funktion (Sekundärquelle) produktiv angebunden.
-- übrige Tools sind weiterhin Stub-basiert.
+- `jusline_list_decisions` ist als zweite JUSLINE-MVP-Funktion (Sekundärquelle) produktiv angebunden.
+- Cache-Tools bleiben weiterhin Stub-basiert.
 - Laufzeitnahe Input-Schemaobjekte vorhanden.
 - Lokale Registry-Konsistenzprüfung vorhanden.
 
@@ -70,7 +71,7 @@ Relevante Dateien:
 ## Was aktuell nur Scaffold/Stub ist
 
 - RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` + `ris_fetch_whole_law` (MVP).
-- `jusline_list_decisions` bleibt Stub-basiert (`NOT_IMPLEMENTED`).
+- `jusline_list_decisions` liefert im MVP Entscheidungslisten von JUSLINE-Paragrafseiten.
 - Keine tiefe Segment-/Unterstrukturmodellierung, keine inhaltliche Norm-Parserlogik.
 - `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
@@ -103,6 +104,14 @@ Relevante Dateien:
 - Entscheidungen/Judikatur auf derselben Seite werden bewusst ignoriert.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
+## JUSLINE Decisions (MVP, neu)
+
+- `jusline_list_decisions` lädt Entscheidungslisten von JUSLINE-Paragrafseiten.
+- Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.
+- Extrahiert nur Entscheidungs-Hits (`title`, `source_url`, `source_id`, optional `snippet`).
+- Diskussionen/Kommentare auf derselben Seite werden bewusst ignoriert.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
+
 ## Cache-Schicht (neu geschärft)
 
 - Cache-Root wird beim Plugin-Register aus `api.pluginConfig.cacheRoot` gebunden und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
@@ -131,6 +140,6 @@ Relevante Dateien:
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)
 
-1. **`jusline_list_decisions` optional evaluieren** (klar getrennt von `jusline_fetch_discussions`, weiterhin Sekundärquelle).
+1. **Gezielte Tests/Fixtures für JUSLINE-Entscheidungslisten erweitern** (ohne RIS-Änderungen).
 2. **Parser mittelfristig auf DOM-/Selektor-Basis umstellen** (Regex nur als MVP-Übergang).
-3. **Gezielte automatisierte Tests erweitern** (JUSLINE-MVP + Cache-/Meta-Signal-Edge-Cases).
+3. **Gezielte automatisierte Tests erweitern** (Cache-/Meta-Signal-Edge-Cases).

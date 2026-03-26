@@ -4,7 +4,7 @@
 
 1. Erst Verträge lesen.
 2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: optionale JUSLINE-Entscheidungsfunktion), ohne Scope-Sprung.
+3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: JUSLINE-Tests/Fixtures nachschärfen), ohne Scope-Sprung.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 
@@ -24,7 +24,7 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach `jusline_fetch_discussions`-MVP: optionale `jusline_list_decisions` evaluieren (weiterhin Sekundärquelle):**
+**Nach `jusline_list_decisions`-MVP: gezielte JUSLINE-Tests/Fixtures nachschärfen (weiterhin Sekundärquelle):**
 - klare Trennung Diskussionen vs. Entscheidungen beibehalten
 - RIS-first-Architektur unverändert lassen
 

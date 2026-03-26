@@ -85,19 +85,19 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 
 ## Tool: `jusline_list_decisions` (Sekundärquelle)
 
-**Zweck:** Optionale Auflistung von Entscheidungen aus JUSLINE.
+**Zweck:** Optionale Auflistung von Entscheidungen aus JUSLINE (MVP).
 
-**Input (geplant):**
-- `query: string`
+**Input (MVP):**
+- `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
 
-**Output (geplant):**
-- Entscheidungsreferenzen (`stable_id`, `source_id`, `title`, `source_url`)
+**Output (MVP):**
+- Entscheidungsreferenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 
-**Fehlerklassen (geplant):**
+**Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
-- `POLICY_BLOCKED`
-- `NOT_IMPLEMENTED`
+- `NOT_FOUND`
+- `UPSTREAM_UNAVAILABLE`
 
 ## Tool: `law_cache_get` (intern)
 
