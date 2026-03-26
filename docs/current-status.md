@@ -114,7 +114,7 @@ Relevante Dateien:
 
 ## Cache-Schicht (neu geschärft)
 
-- Cache-Root wird beim Plugin-Register aus `api.pluginConfig.cacheRoot` gebunden und in die Cache-I/O-Schicht injiziert; Env-Var ist nur Fallback.
+- Cache-Root wird pro Tool-Aufruf aus dem Plugin-Tool-Kontext abgeleitet: standardmäßig aus dem Workspace des aufrufenden Agenten, optional mit `api.pluginConfig.cacheRoot` als Override; Env-Var bleibt nur Fallback.
 - `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 - RIS-Fetch-Tools nutzen optionales write-through Caching (Best-Effort, kein Hard-Fail auf Cache-Schreibfehler).
@@ -125,6 +125,7 @@ Relevante Dateien:
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
 - Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
 - Kleine ausführbare Tool-Smoke-Tests decken jetzt die bestehenden RIS-/JUSLINE-MVP-Tools mit kontrollierten Fetch-Mocks ab.
+- Tool-Fabrik-Smoketests prüfen zusätzlich die agentbezogene Cache-Ableitung: ohne Override landet RIS-Cache im Workspace des aufrufenden Agenten, mit `cacheRoot`-Override am konfigurierten Ziel.
 - Für die lokale Nutzung gibt es jetzt getrennte Skripte für Parser-/Tool-Smoke-Tests plus ein gemeinsames `test:smoke`-Skript.
 - Die Smoke-Tests prüfen zusätzlich einige gezielte Edge-Cases wie Deduplizierung, optionale Snippets und gemischte Linktypen.
 

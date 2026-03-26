@@ -7,28 +7,46 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 - `law_cache_put`
 - `law_cache_get`
 - Konsistenzprüfung in `readArtifactByStableId` (Pfad-Erwartung vs. Frontmatter)
-- Cache-Root-Bindung aus Plugin-Konfiguration
+- agentbezogene Cache-Root-Ableitung aus dem Plugin-Tool-Kontext
+- optionaler `cacheRoot`-Override aus Plugin-Konfiguration
 
 ## Testfälle
 
-### 1) cacheRoot aus Plugin-Konfiguration wird verwendet
+### 1) Workspace des aufrufenden Agenten wird standardmäßig verwendet
 
 **Given**
-- Plugin wird mit `cacheRoot=/tmp/law-cache-a` initialisiert.
+- Plugin-Tool-Kontext enthält `workspaceDir=/tmp/agent-a/workspace`.
+- Plugin-Konfiguration enthält keinen `cacheRoot`-Override.
 
 **When**
-- `law_cache_put` schreibt ein Artefakt.
+- ein RIS-Fetch-Tool schreibt ein Artefakt.
 
 **Then**
-- Artefakt liegt unter `/tmp/law-cache-a/...`.
-- Kein Abhängigkeitszwang auf `process.cwd()`.
+- Artefakt liegt unter `/tmp/agent-a/workspace/memory/references/austrian-law/...`.
+- Kein Abhängigkeitszwang auf globales `process.cwd()`.
 
 ---
 
-### 2) Env-Var nur Fallback
+### 2) cacheRoot aus Plugin-Konfiguration überschreibt den Agent-Workspace
 
 **Given**
-- Plugin-Konfiguration enthält kein `cacheRoot`.
+- Plugin wird mit `cacheRoot=/tmp/law-cache-a` initialisiert.
+- Tool-Kontext enthält zusätzlich einen `workspaceDir`.
+
+**When**
+- ein RIS-Fetch-Tool schreibt ein Artefakt.
+
+**Then**
+- Artefakt liegt unter `/tmp/law-cache-a/...`.
+- Der Override hat Vorrang vor dem Agent-Workspace.
+
+---
+
+### 3) Env-Var nur Fallback
+
+**Given**
+- Plugin-Konfiguration enthält keinen `cacheRoot`.
+- Tool-Kontext enthält keinen `workspaceDir`.
 - `OPENCLAW_AUSTRIAN_LAW_CACHE_ROOT=/tmp/law-cache-env` gesetzt.
 
 **When**
@@ -39,7 +57,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 3) law_cache_put validiert stableId gegen frontmatter.stable_id
+### 4) law_cache_put validiert stableId gegen frontmatter.stable_id
 
 **Given**
 - `stableId !== frontmatter.stable_id`.
@@ -52,7 +70,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 4) law_cache_get mit explizitem docType (ohne Heuristik)
+### 5) law_cache_get mit explizitem docType (ohne Heuristik)
 
 **Given**
 - Artefakt existiert unter korrektem Pfad.
@@ -66,7 +84,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 5) law_cache_get ohne docType (Übergangsheuristik)
+### 6) law_cache_get ohne docType (Übergangsheuristik)
 
 **Given**
 - Artefakt existiert, `docType` wird nicht mitgegeben.
@@ -80,7 +98,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 6) Konsistenzbruch source -> CONFLICT
+### 7) Konsistenzbruch source -> CONFLICT
 
 **Given**
 - Datei liegt am erwarteten Pfad, Frontmatter enthält aber `source` ≠ angefragte Quelle.
@@ -93,7 +111,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 7) Konsistenzbruch doc_type -> CONFLICT
+### 8) Konsistenzbruch doc_type -> CONFLICT
 
 **Given**
 - Datei liegt am Pfad für `docType=A`, Frontmatter enthält aber `doc_type=B`.
@@ -106,7 +124,7 @@ Ziel: lokale Cache-Konsistenzregeln verifizieren, ohne RIS-/JUSLINE-Fetching und
 
 ---
 
-### 8) Fehlendes Artefakt -> NOT_FOUND
+### 9) Fehlendes Artefakt -> NOT_FOUND
 
 **Given**
 - Kein passender Cache-Eintrag vorhanden.

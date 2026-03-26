@@ -1,5 +1,13 @@
-import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { configureCacheRoot } from "./src/cache/cache-runtime.js";
+import {
+  definePluginEntry,
+  type OpenClawPluginApi,
+  type OpenClawPluginToolContext,
+} from "openclaw/plugin-sdk/plugin-entry";
+import {
+  configureCacheRoot,
+  resolveToolContextCacheRoot,
+  runWithCacheRoot,
+} from "./src/cache/cache-runtime.js";
 import { configureJuslineBaseUrl } from "./src/jusline/runtime.js";
 import { configureRisBaseUrl } from "./src/ris/runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
@@ -21,6 +29,16 @@ function extractConfiguredJuslineBaseUrl(api: OpenClawPluginApi): string | undef
   return typeof candidate === "string" ? candidate : undefined;
 }
 
+function resolveEffectiveCacheRoot(
+  api: OpenClawPluginApi,
+  ctx: OpenClawPluginToolContext,
+): string | undefined {
+  return resolveToolContextCacheRoot({
+    configuredCacheRoot: extractConfiguredCacheRoot(api),
+    workspaceDir: ctx.workspaceDir,
+  });
+}
+
 export default definePluginEntry({
   id: "openclaw-austrian-law",
   name: "OpenClaw Austrian Law Plugin",
@@ -38,15 +56,16 @@ export default definePluginEntry({
     }
 
     for (const entry of TOOL_REGISTRY) {
-      api.registerTool({
+      api.registerTool((ctx) => ({
         name: entry.definition.name,
         description: `${entry.definition.description} [${entry.definition.status}]`,
         parameters: entry.inputSchema,
         execute: async (_toolCallId, params) => {
-          const result = await entry.stub(params);
+          const cacheRoot = resolveEffectiveCacheRoot(api, ctx);
+          const result = await runWithCacheRoot(cacheRoot, () => entry.stub(params));
           return formatToolResult(result);
         },
-      });
+      }));
     }
 
     api.logger.info(

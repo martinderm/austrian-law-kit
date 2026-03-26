@@ -37,8 +37,9 @@ Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
 
 - Root-Entry-Point vorhanden
 - Manifest + Paketmetadaten vorhanden
-- noch keine Tool-Registrierung
-- keine Parser-/Fetch-/RIS-/JUSLINE-Implementierung
+- MVP-Tools werden registriert
+- RIS- und JUSLINE-MVP-Logik ist vorhanden
+- Cache wird standardmäßig aus dem Workspace des aufrufenden Agenten abgeleitet; `cacheRoot` bleibt optionaler Override
 
 ## SDK-/Abhängigkeits-Hinweis
 

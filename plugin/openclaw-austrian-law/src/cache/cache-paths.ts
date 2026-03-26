@@ -18,6 +18,10 @@ function resolveDocFolder(source: FrontmatterBase["source"], docType: Frontmatte
   return "jusline/materials";
 }
 
+function encodeStableIdForPath(stableId: string): string {
+  return stableId.replace(/:/g, "_");
+}
+
 export function buildCacheRelativePaths(params: {
   stableId: string;
   frontmatter: Pick<FrontmatterBase, "source" | "doc_type">;
@@ -33,8 +37,10 @@ export function buildCacheRelativePaths(params: {
 
   const docFolder = resolveDocFolder(params.frontmatter.source, params.frontmatter.doc_type);
 
+  const pathStableId = encodeStableIdForPath(stableId);
+
   return {
-    markdownPath: `${docFolder}/${stableId}.md`,
-    metadataPath: `${params.frontmatter.source}/metadata/${stableId}.json`,
+    markdownPath: `${docFolder}/${pathStableId}.md`,
+    metadataPath: `${params.frontmatter.source}/metadata/${pathStableId}.json`,
   };
 }

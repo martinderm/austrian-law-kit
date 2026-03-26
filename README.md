@@ -31,6 +31,7 @@ Enthalten sind:
   - `jusline_fetch_discussions` (Sekundärquelle)
   - `jusline_list_decisions` (Sekundärquelle)
 - lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
+- agentbezogene Cache-Ableitung über den Workspace des aufrufenden Agenten (mit optionalem `cacheRoot`-Override)
 - Tests, Fixtures und Beispiel-Config
 - kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
 - kleine ausführbare Tool-Smoke-Tests für die MVP-Tool-Layer

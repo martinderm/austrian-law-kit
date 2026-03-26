@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { configureCacheRoot } from "../src/cache/cache-runtime.ts";
+import {
+  configureCacheRoot,
+  resolveToolContextCacheRoot,
+  runWithCacheRoot,
+} from "../src/cache/cache-runtime.ts";
 import { juslineFetchDiscussionsStub } from "../src/tools/jusline_fetch_discussions.ts";
 import { juslineListDecisionsStub } from "../src/tools/jusline_list_decisions.ts";
 import { risFetchSegmentStub } from "../src/tools/ris_fetch_segment.ts";
@@ -182,6 +186,53 @@ await test("jusline_list_decisions returns NOT_FOUND for the no-decisions fixtur
     if (result.ok) return;
     assert.equal(result.error.code, "NOT_FOUND");
   });
+});
+
+await test("cache runtime resolves RIS cache under the calling agent workspace by default", async () => {
+  const html = fixture("fixtures/ris/segment-detail-sample.html");
+  const workspaceDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-law-agent-workspace-"));
+  const expectedCachePath = path.join(
+    workspaceDir,
+    "memory",
+    "references",
+    "austrian-law",
+    "ris",
+    "norms",
+    "ris_segment_nor12082462.md",
+  );
+  const cacheRoot = resolveToolContextCacheRoot({ workspaceDir });
+
+  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+    const result = await runWithCacheRoot(cacheRoot, () => risFetchSegmentStub({ sourceId: "NOR12082462" }));
+
+    assert.equal(result.ok, true);
+    assert.equal(existsSync(expectedCachePath), true);
+  });
+
+  rmSync(workspaceDir, { recursive: true, force: true });
+});
+
+await test("cache runtime prefers configured cacheRoot over the calling agent workspace", async () => {
+  const html = fixture("fixtures/ris/segment-detail-sample.html");
+  const workspaceDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-law-agent-workspace-"));
+  const configuredCacheRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-law-configured-cache-"));
+  const expectedCachePath = path.join(
+    configuredCacheRoot,
+    "ris",
+    "norms",
+    "ris_segment_nor12082462.md",
+  );
+  const cacheRoot = resolveToolContextCacheRoot({ configuredCacheRoot, workspaceDir });
+
+  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+    const result = await runWithCacheRoot(cacheRoot, () => risFetchSegmentStub({ sourceId: "NOR12082462" }));
+
+    assert.equal(result.ok, true);
+    assert.equal(existsSync(expectedCachePath), true);
+  });
+
+  rmSync(workspaceDir, { recursive: true, force: true });
+  rmSync(configuredCacheRoot, { recursive: true, force: true });
 });
 
 console.log("tool smoke tests passed");

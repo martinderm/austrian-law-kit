@@ -9,7 +9,7 @@
     "properties": {
       "cacheRoot": {
         "type": "string",
-        "description": "Pfad zur Cache-Zielstruktur unter memory/references/austrian-law"
+        "description": "Optionaler Override für den Cache-Pfad; ohne Override wird der Workspace des aufrufenden Agenten verwendet"
       },
       "risBaseUrl": {
         "type": "string",
@@ -26,7 +26,6 @@
         "description": "Sekundärquelle aktivieren (fachlich weiterhin nur opt-in)",
         "default": true
       }
-    },
-    "required": ["cacheRoot"]
+    }
   }
 }
