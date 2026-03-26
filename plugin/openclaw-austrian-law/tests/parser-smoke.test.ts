@@ -48,6 +48,37 @@ test("RIS segment parser returns non-empty title/content and no not-found signal
   assert.equal(looksLikeRisNotFound(html), false);
 });
 
+test("RIS search parser deduplicates identical document links", () => {
+  const html = `
+    <table>
+      <tr><td><a href="/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR12082462">ABGB § 1</a></td></tr>
+      <tr><td><a href="/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR12082462">ABGB § 1 doppelt</a></td></tr>
+    </table>
+  `;
+  const hits = parseRisSearchHtml(html, 10);
+
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0]?.source_id, "NOR12082462");
+});
+
+test("RIS segment parser falls back from title to body content on small HTML variations", () => {
+  const html = `
+    <!doctype html>
+    <html lang="de">
+      <head><title>ABGB § 2 - RIS</title></head>
+      <body>
+        <article>
+          <p>Jedermann ist fähig, Rechte zu erwerben.</p>
+        </article>
+      </body>
+    </html>
+  `;
+  const parsed = parseRisSegmentHtml(html);
+
+  assert.equal(parsed.title, "ABGB § 2 - RIS");
+  assert.ok(parsed.content.includes("Jedermann ist fähig"));
+});
+
 test("RIS whole-law parser returns non-empty title/content and no not-found signal", () => {
   const html = fixture("fixtures/ris/whole-law-detail-sample.html");
   const parsed = parseRisWholeLawHtml(html);
@@ -79,6 +110,34 @@ test("JUSLINE decisions parser extracts only decision links from the reliable va
     assert.ok(hit.source_url.includes("/entscheidungen/"));
     assert.ok(hit.stable_id.startsWith("jusline:dec:"));
   }
+});
+
+test("JUSLINE discussions parser ignores decision links and keeps snippet optional", () => {
+  const html = `
+    <h2><span class="capitalize">2</span> Kommentare zu § 111 StGB</h2>
+    <a href="/gesetzeskommentare/456492721">Kommentar zum § 111 StGB</a>
+    <div><a href="/entscheidungen/11/111/1">Entscheidungen des OGH</a></div>
+  `;
+  const hits = parseJuslineDiscussionsHtml(html, 10);
+
+  assert.equal(hits.length, 1);
+  assert.ok(hits[0]?.source_url.includes("/gesetzeskommentare/"));
+  assert.equal("snippet" in (hits[0] ?? {}), false);
+});
+
+test("JUSLINE decisions parser deduplicates repeated decision links and ignores comment links", () => {
+  const html = `
+    <div id="decissions">
+      <a href="/entscheidungen/11/111/1">Entscheidungen des OGH</a>
+      <a href="/entscheidungen/11/111/1">Entscheidungen des OGH doppelt</a>
+      <a href="/gesetzeskommentare/456492721">Kommentar zum § 111 StGB</a>
+    </div>
+  `;
+  const hits = parseJuslineDecisionsHtml(html, 10);
+
+  assert.equal(hits.length, 1);
+  assert.ok(hits[0]?.source_url.includes("/entscheidungen/"));
+  assert.equal(hits[0]?.source_id, "11/111/1");
 });
 
 test("JUSLINE decisions negative fixture yields no hits", () => {

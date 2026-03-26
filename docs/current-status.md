@@ -124,6 +124,7 @@ Relevante Dateien:
 - Parser-Härtung: robustere Titel-/Content-Fallbacks und toleranteres HTML-Decoding bei kleinen Seitenvariationen.
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
 - Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
+- Die Smoke-Tests prüfen zusätzlich einige gezielte Edge-Cases wie Deduplizierung, optionale Snippets und gemischte Linktypen.
 
 ## Wichtigste Architekturentscheidungen
 

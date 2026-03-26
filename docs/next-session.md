@@ -4,7 +4,7 @@
 
 1. Erst Verträge lesen.
 2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: Parser-Smoke-Tests vorsichtig erweitern oder einzelne Edge-Cases ergänzen), ohne Scope-Sprung.
+3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: höchstens noch 1-2 kleine Parser-Smoke-Edge-Cases oder eine minimale Fixture-Ergänzung), ohne Scope-Sprung.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 
@@ -24,7 +24,7 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach den ersten Parser-Smoke-Tests: nur kleine zusätzliche Invarianten oder einzelne Edge-Cases ergänzen:**
+**Nach den erweiterten Parser-Smoke-Tests: nur noch sehr kleine Zusatzinvarianten oder gezielte Fixture-Klärungen ergänzen:**
 - klare Trennung Diskussionen vs. Entscheidungen beibehalten
 - RIS-first-Architektur unverändert lassen
 
