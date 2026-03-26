@@ -17,7 +17,7 @@ export interface ParsedRisSegment {
 }
 
 function decodeHtml(text: string): string {
-  return text
+  const decoded = text
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
@@ -28,6 +28,49 @@ function decodeHtml(text: string): string {
     .replace(/&#([0-9]+);?/g, (_, num) => String.fromCodePoint(parseInt(num, 10)))
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">");
+
+  return fixMojibake(decoded);
+}
+
+function fixMojibake(text: string): string {
+  if (!/[ÃÂâ�Ǭ�]/.test(text)) return text;
+
+  const replacements: Array<[RegExp, string]> = [
+    [/â€“/g, "–"],
+    [/â€”/g, "—"],
+    [/â€ž/g, "„"],
+    [/â€œ/g, "“"],
+    [/â€/g, "“"],
+    [/â€/g, "”"],
+    [/â€™/g, "’"],
+    [/â€˜/g, "‘"],
+    [/â€¦/g, "…"],
+    [/â€/g, "–"],
+    [/Ã¤/g, "ä"],
+    [/Ã¶/g, "ö"],
+    [/Ã¼/g, "ü"],
+    [/Ã„/g, "Ä"],
+    [/Ã–/g, "Ö"],
+    [/Ãœ/g, "Ü"],
+    [/ÃŸ/g, "ß"],
+    [/Ã¡/g, "á"],
+    [/Ã©/g, "é"],
+    [/Ã¨/g, "è"],
+    [/Ã /g, "à"],
+    [/Â§/g, "§"],
+    [/Â /g, " "],
+    [/Ǭ/g, "ü"],
+    [/�Y/g, "ß"],
+    [/��/g, "§"],
+    [/�\?/g, "–"],
+  ];
+
+  let fixed = text;
+  for (const [pattern, replacement] of replacements) {
+    fixed = fixed.replace(pattern, replacement);
+  }
+
+  return fixed;
 }
 
 function normalizeText(html: string): string {
@@ -187,6 +230,12 @@ function renderList(html: string): string {
   return rendered.join("\n");
 }
 
+function promoteOrphanHeadings(text: string): string {
+  return text
+    .replace(/(^|\n\n)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+\.)\n(§\s*\d+[a-zA-Z]*\.)/gm, "$1## $2\n## $3")
+    .replace(/(^|\n\n)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+\.)\n(Art\.?\s*\d+[a-zA-Z]*\.)/gm, "$1## $2\n## $3");
+}
+
 function renderSegmentMarkdown(html: string): string {
   const headingMatches = Array.from(html.matchAll(/<h[45]\b[^>]*>([\s\S]*?)<\/h[45]>/gi));
   const absMatches = Array.from(html.matchAll(/<div\b[^>]*class\s*=\s*["'][^"']*Abs[^"']*AlignJustify[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi));
@@ -220,13 +269,15 @@ function renderSegmentMarkdown(html: string): string {
     }
   }
 
-  const normalized = rendered
-    .join("\n\n")
-    .replace(/^##\s+/gm, "## ")
-    .replace(/\n-\s+/g, "\n- ")
-    .replace(/(^|\n\n)(\((?:\d+[a-z]?)\))/g, "$1$2")
-    .replace(/([.!?])\s+(\((?:\d+[a-z]?)\))/g, "$1\n\n$2")
-    .replace(/\n{3,}/g, "\n\n");
+  const normalized = promoteOrphanHeadings(
+    rendered
+      .join("\n\n")
+      .replace(/^##\s+/gm, "## ")
+      .replace(/\n-\s+/g, "\n- ")
+      .replace(/(^|\n\n)(\((?:\d+[a-z]?)\))/g, "$1$2")
+      .replace(/([.!?])\s+(\((?:\d+[a-z]?)\))/g, "$1\n\n$2")
+      .replace(/\n{3,}/g, "\n\n"),
+  );
 
   return cleanupVisibleText(normalized);
 }
@@ -279,10 +330,10 @@ function extractContent(html: string): string {
   );
 
   if (textContainerMatch?.[1]) {
-    const content = dedupeAdjacentParagraphs(renderSegmentMarkdown(textContainerMatch[1]));
+    const content = dedupeAdjacentParagraphs(promoteOrphanHeadings(renderSegmentMarkdown(textContainerMatch[1])));
     if (content && content.length > 30) return content;
 
-    const fallbackContent = dedupeAdjacentParagraphs(normalizeText(textContainerMatch[1]));
+    const fallbackContent = dedupeAdjacentParagraphs(promoteOrphanHeadings(normalizeText(textContainerMatch[1])));
     if (fallbackContent) return fallbackContent;
   }
 
@@ -294,7 +345,7 @@ function extractContent(html: string): string {
     /<body\b[^>]*>([\s\S]*?)<\/body>/i,
   ]);
 
-  if (contentBlock) return dedupeAdjacentParagraphs(contentBlock);
+  if (contentBlock) return dedupeAdjacentParagraphs(promoteOrphanHeadings(contentBlock));
   throw new Error("Unable to extract content from RIS document page");
 }
 

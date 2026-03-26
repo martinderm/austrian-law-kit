@@ -89,6 +89,38 @@ test("RIS segment parser marks repealed ABGB segment as repealed", () => {
   assert.ok(parsed.promulgation?.includes("aufgehoben"));
 });
 
+test("RIS segment parser fixes common mojibake patterns", () => {
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+  const parsed = parseRisSegmentHtml(html);
+
+  assert.equal(parsed.lawTitle, "Straßenverkehrsordnung 1960");
+  assert.equal(parsed.heading, "§ 4. Verkehrsunfälle.");
+  assert.ok(parsed.content.includes("Straßenzustand"));
+  assert.equal(parsed.content.includes("Stra�Yenzustand"), false);
+  assert.equal(parsed.content.includes("��"), false);
+});
+
+test("RIS segment parser promotes orphan heading lines before paragraph markers", () => {
+  const html = `
+    <!doctype html>
+    <html lang="de">
+      <head><title>ABGB § 237 - RIS</title></head>
+      <body>
+        <div id="x_TextContainer_y" class="p embeddedContent">
+          <h3>Text</h3>
+          <div>
+            <p>Caution.</p>
+            <p>§ 237. Der Vormund ist bei Antretung der Vormundschaft nicht schuldig, Caution zu leisten.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  const parsed = parseRisSegmentHtml(html);
+
+  assert.match(parsed.content, /^## Caution\.\n## § 237\./);
+});
+
 test("RIS search parser deduplicates identical result links", () => {
   const html = `
     <table><tbody>
