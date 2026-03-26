@@ -57,8 +57,10 @@ Primär diese MVP-Tools nutzen:
 
 Typischer Ablauf:
 1. Zuerst RIS-Treffer oder konkrete RIS-Fundstelle bestimmen.
-2. Dann gezielt Segment oder Gesamtdokument laden.
-3. Erst danach zusammenfassen oder vorsichtig einordnen.
+2. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
+3. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
+4. Erst danach gezielt Segment oder Gesamtdokument laden.
+5. Erst danach zusammenfassen oder vorsichtig einordnen.
 
 ### JUSLINE (Sekundärquelle)
 JUSLINE nur ergänzend nutzen und intern sauber trennen:
@@ -72,6 +74,9 @@ Regeln:
 
 ### Bei unklarer Lage
 - Zuerst Quellenstatus klären, dann interpretieren.
+- Bei `VALIDATION_ERROR` der RIS-Fetch-Tools zuerst die RIS-Fundstelle sauber über `ris_search` bzw. eine belastbare `sourceId` auflösen.
+- Nicht vorschnell auf `web_fetch` oder allgemeine Websuche ausweichen, wenn das Ziel eigentlich eine RIS-Primärquelle ist.
+- `web_fetch` für RIS-Normtexte nur als Notbehelf verwenden und dann die geringere Verlässlichkeit ausdrücklich markieren.
 - Lieber enger und sauberer antworten als zu weit extrapolieren.
 
 ## Caching-/Memory-Hinweis

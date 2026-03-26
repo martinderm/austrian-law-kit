@@ -74,7 +74,7 @@ Aktuelle interne Plugin-ID: `austrian-law-kit`
 
 Das Plugin allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill
 `skills/austrian-law/` in den Ziel-Agent-Workspace übernommen werden, damit Quellenhierarchie, Antwortstruktur,
-Rechtsberatungsgrenze und JUSLINE-Trennung auch promptseitig wirksam sind.
+Rechtsberatungsgrenze, JUSLINE-Trennung und die saubere RIS-Fetch-Disziplin auch promptseitig wirksam sind.
 
 Kurz gesagt:
 - **Plugin** = Tools, Cache, technische Laufzeit
