@@ -33,6 +33,7 @@ Enthalten sind:
 - lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
 - Tests, Fixtures und Beispiel-Config
 - kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
+- kleine ausführbare Tool-Smoke-Tests für die MVP-Tool-Layer
 - optionale Templates für spätere Memory-Initialisierung
 
 Bewusst noch eingeschränkt:
