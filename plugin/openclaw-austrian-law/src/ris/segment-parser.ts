@@ -105,6 +105,12 @@ function cleanupVisibleText(text: string): string {
     .replace(/Paragraph\s+\d+[a-zA-Z]*,\s*[^.]+\.\s*-\s*/g, "")
     .replace(/\((\d+)\)\s*Absatz\s+[^,]+,\s*/g, "($1) ")
     .replace(/-\s*([a-z])\)\s*Litera\s+\1\s*/gi, "- $1) ")
+    .replace(/\s+(\(\d+\))/g, "\n$1")
+    .replace(/\s+([a-z]\))/gi, "\n$1")
+    .replace(/Schlagworte[\s\S]*$/i, "")
+    .replace(/Zuletzt aktualisiert am[\s\S]*$/i, "")
+    .replace(/Dokumentnummer[\s\S]*$/i, "")
+    .replace(/Bitte klicken Sie auf einen der folgenden Links,[\s\S]*$/i, "")
     .replace(/\s+-\s+/g, "\n- ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();

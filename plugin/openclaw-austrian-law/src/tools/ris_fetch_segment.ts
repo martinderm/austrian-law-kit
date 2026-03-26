@@ -17,11 +17,13 @@ import type { CachedArtifact, RisFetchSegmentInput, RisFetchSegmentOutput } from
 function buildDisplayTitle(params: {
   segmentRef?: string;
   lawAbbreviation?: string;
+  lawTitle?: string;
   heading?: string;
   normStatus?: "current" | "historical" | "repealed";
   fallbackTitle: string;
 }): string {
-  const base = [params.segmentRef, params.lawAbbreviation].filter(Boolean).join(" ").trim();
+  const lawLabel = params.lawAbbreviation || params.lawTitle;
+  const base = [params.segmentRef, lawLabel].filter(Boolean).join(" ").trim();
   const heading = params.heading?.trim();
   const headingSuffix = heading
     ? heading.replace(/^§\s*\d+[a-zA-Z]*\.?\s*/, "").trim().replace(/^[.–\-\s]+/, "")
@@ -158,6 +160,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     const displayTitle = buildDisplayTitle({
       segmentRef: parsed.segmentRef,
       lawAbbreviation: parsed.lawAbbreviation,
+      lawTitle: parsed.lawTitle,
       heading: parsed.heading,
       normStatus: parsed.normStatus,
       fallbackTitle: parsed.title,
