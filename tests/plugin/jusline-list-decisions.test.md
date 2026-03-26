@@ -5,12 +5,14 @@ Ziel: optionale JUSLINE-MVP-Funktion für Entscheidungslisten absichern, strikt 
 ## Fixtures (reale Seiten als reduzierte Snapshot-Extrakte)
 
 - Positiv: `fixtures/jusline/stgb-paragraf-111-decisions.html`
-- Negativ: `fixtures/jusline/stvo-paragraf-4.html`
+- Negativ (keine erkannten Entscheidungslinks): `fixtures/jusline/stgb-paragraf-111-no-decisions.html`
+- Negativ (Seite ohne parserrelevante Entscheidungslinks): `fixtures/jusline/stvo-paragraf-4.html`
 - Dokumentation: `fixtures/jusline/README.md`
 
 Hinweis: Die Fixtures basieren auf realen JUSLINE-Seiten, enthalten aber nur die
 parserrelevanten Entscheidungssektionen (Gerichtsgruppen, Entscheidungslinks, Metadaten-Badges).
 Kommentar-/Diskussionsblöcke bleiben bewusst außen vor oder werden ignoriert.
+Das zusätzliche No-Decisions-Fixture ist ein bewusst synthetischer Negativ-Extrakt zur sauberen Parser-Abstützung.
 
 ## Testfälle
 
@@ -50,7 +52,21 @@ Kommentar-/Diskussionsblöcke bleiben bewusst außen vor oder werden ignoriert.
 
 ---
 
-### 4) Negativbeispiel: keine Entscheidungslinks erkannt
+### 4) Negativbeispiel: Entscheidungen-Panel ohne erkennbare Entscheidungslinks
+
+**Given**
+- Fixture `stgb-paragraf-111-no-decisions.html`
+
+**When**
+- Parser läuft
+
+**Then**
+- keine Decision-Hits
+- Tool liefert `NOT_FOUND`
+
+---
+
+### 4b) Negativbeispiel: Seite ohne parserrelevante Entscheidungslinks
 
 **Given**
 - Fixture `stvo-paragraf-4.html`

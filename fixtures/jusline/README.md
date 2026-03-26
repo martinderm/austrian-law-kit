@@ -6,6 +6,7 @@ Diese Fixture-Dateien sind **reduzierte Snapshot-Extrakte** aus realen Seiten:
   `https://www.jusline.at/gesetz/stgb/paragraf/111`
 - Positiv (Entscheidungen): `stgb-paragraf-111-decisions.html` basiert auf
   `https://www.jusline.at/gesetz/stgb/paragraf/111`
+- Negativ (synthetisch, keine Entscheidungslinks): `stgb-paragraf-111-no-decisions.html`
 - Negativ: `stvo-paragraf-4.html` basiert auf
   `https://www.jusline.at/gesetz/stvo/paragraf/4`
 
@@ -19,6 +20,7 @@ um Testdaten stabil und wartbar zu halten.
 
 - Kommentar-/Diskussionsblöcke (positiver Fall)
 - Entscheidungslisten/Gerichtsgruppen (positiver Fall)
+- synthetischer Entscheidungs-Panel-Extrakt ohne Einzel-Links (negativer Fall für Decision-Parsing)
 - expliziter "keine Kommentare"-Hinweis (negativer Fall)
 - Entscheidungs-Header als Gegenprobe, damit Diskussionen/Entscheidungen sauber getrennt testbar bleiben
 
