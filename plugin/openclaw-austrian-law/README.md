@@ -1,8 +1,8 @@
-# austrian-law-kit (Plugin Skeleton)
+# austrian-law-kit (Plugin MVP)
 
-Natives Plugin-Skelett für den Austrian-Law-Stack in OpenClaw.
+Natives Plugin-MVP für den Austrian-Law-Stack in OpenClaw.
 
-## Korrigierte Struktur (OpenClaw-konform)
+## Struktur (OpenClaw-konform)
 
 - `openclaw.plugin.json`
   - Manifest für Discovery + Config-Validierung (manifest-first)
@@ -16,13 +16,16 @@ Natives Plugin-Skelett für den Austrian-Law-Stack in OpenClaw.
 - `src/tools/`, `src/cache/`, `src/types/`
   - reine Platzhalterstruktur
 
-## Geplante Tools (noch ohne Implementierung)
+## Registrierte Tools
 
+Produktiv im MVP:
 - `ris_search`
 - `ris_fetch_segment`
 - `ris_fetch_whole_law`
 - `jusline_fetch_discussions`
 - `jusline_list_decisions`
+
+Derzeit noch Stubs:
 - `law_cache_get`
 - `law_cache_put`
 
@@ -43,9 +46,16 @@ Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
 
 ## SDK-/Abhängigkeits-Hinweis
 
-Für dieses reine Skeleton sind im Paket keine zusätzlichen Runtime-Abhängigkeiten nötig.
+Für dieses schlanke MVP sind im Paket keine zusätzlichen Runtime-Abhängigkeiten nötig.
 Der Import `openclaw/plugin-sdk/core` wird im OpenClaw-Plugin-Laufzeitkontext aufgelöst.
+
+## Lokale Checks
+
+Im Plugin-Ordner:
+- `npm run test:parser-smoke`
+- `npm run test:tool-smoke`
+- `npm run test:smoke`
 
 ## Nächster Schritt
 
-Im nächsten Schritt wird die Tool-Registrierung vorbereitet (weiterhin ohne echte Fetch-/Parserlogik).
+Nächster sinnvoller Schritt sind kleine Edge-Case-Härtungen bei Fixtures/Parsern und danach breitere Tests jenseits der Smoke-Checks.

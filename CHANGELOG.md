@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0 - JUSLINE Decisions MVP + Parser-Smokes
+- `jusline_list_decisions` als zweite produktive JUSLINE-MVP-Funktion ergänzt (Sekundärquelle)
+- JUSLINE-Entscheidungsparser ergänzt und gegen doppelte/reine Entscheidungslinks gehärtet
+- Parser-Smoke-Tests für RIS und JUSLINE als kleine ausführbare Checks ergänzt
+- zusätzliche Live-/Varianten-Fixtures für RIS und JUSLINE ergänzt
+- Plugin-/Root-Doku auf den tatsächlichen MVP-Stand nachgezogen
+
 ## 0.10.0 - JUSLINE Discussions MVP
 - `jusline_fetch_discussions` als erste produktive JUSLINE-MVP-Funktion ergänzt (Sekundärquelle)
 - JUSLINE URL-/Pfad-Auflösung ergänzt (`src/jusline/url-builder.ts`)

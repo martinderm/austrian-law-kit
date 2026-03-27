@@ -89,11 +89,12 @@ Kurz gesagt:
 - Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
 - Workspace-Skill `skills/austrian-law/` auf aktuellen MVP-Stand nachgezogen
 - Datenvertrag: Stable ID, Frontmatter, Memory-Layout
-- OpenClaw-formnahes Plugin-Skelett (Manifest + `openclaw.extensions` + Entry)
+- OpenClaw-formnahes Plugin-MVP (Manifest + `openclaw.extensions` + Entry)
 - Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
 - Produktive JUSLINE-MVP-Funktionen (`jusline_fetch_discussions`, `jusline_list_decisions`) als Sekundärquelle
 - Lokale Cache-I/O inkl. write-through + gezielte cache-read Wiederverwendung
 - Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
+- kleine ausführbare Parser-/Tool-Smoke-Tests für den aktuellen MVP-Stand
 
 ### Nächster empfohlener Schritt
 - kleine Parser-Smoke-Edge-Cases oder minimale Fixture-Klärungen nachziehen, ohne RIS-Primärlogik anzutasten.
