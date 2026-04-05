@@ -12,3 +12,5 @@ Thumbs.db
 # Local runtime artifacts
 *.log
 .tmp/
+
+tests/live/results/

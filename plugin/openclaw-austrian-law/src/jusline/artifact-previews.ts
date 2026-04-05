@@ -140,11 +140,19 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
     if (entry.document_type) contentLines.push(`- Dokumenttyp: ${entry.document_type}`);
     if (entry.court) contentLines.push(`- Gericht: ${entry.court}`);
     if (entry.published_date_raw) contentLines.push(`- Datum: ${entry.published_date_raw}`);
+    const hasSubstantiveDetail = Boolean(
+      detail.rechtssatz
+      || (detail.entscheidungstexte && detail.entscheidungstexte.length > 0)
+      || (detail.norms && detail.norms.length > 0)
+      || detail.ecli,
+    );
+
     contentLines.push("", "## Extrahierter Kontext", "");
     if (entry.teaser) contentLines.push(entry.teaser, "");
-    if (detail.body_markdown) contentLines.push(detail.body_markdown, "");
-    else contentLines.push("Keine Detaildaten extrahiert.", "");
-    contentLines.push("## Hinweise", "", "- Nicht-amtliche Sekundärquelle.", "- RIS bleibt für Normwortlaut und Primärmetadaten maßgeblich.", "- Dieses Artefakt basiert auf der Einzel-Entscheidungsseite ('mehr lesen').");
+    if (hasSubstantiveDetail && detail.body_markdown) contentLines.push(detail.body_markdown, "");
+    else if (detail.updated_at) contentLines.push(`Detailseite lieferte nur Metadaten (zuletzt aktualisiert: ${detail.updated_at}).`, "");
+    else contentLines.push("Keine zusätzlichen Detaildaten extrahiert.", "");
+    contentLines.push("## Hinweise", "", "- Nicht-amtliche Sekundärquelle.", "- RIS bleibt für Normwortlaut und Primärmetadaten maßgeblich.", "- Dieses Artefakt basiert primär auf dem Listentreffer; Detailseiten werden nur ergänzend verwertet.");
 
     artifacts.push({
       stable_id: stableId,
@@ -180,6 +188,7 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
         extracted_snippet: decodeHtmlEntities(hit.snippet),
         decision_list_entry: entry,
         decision_detail_preview: detail,
+        decision_detail_used_as_primary_source: hasSubstantiveDetail,
         preview_only: true,
       },
     });
