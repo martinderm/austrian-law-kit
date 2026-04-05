@@ -24,11 +24,20 @@ export type DecisionDetailPreview = {
 
 function splitNormLines(text: string | undefined): string[] | undefined {
   if (!text) return undefined;
-  const normalized = text
-    .replace(/([A-ZÄÖÜ][A-Za-zÄÖÜäöüß0-9]*\s§)/g, "\n$1")
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  if (!collapsed) return undefined;
+
+  const withBreaks = collapsed
+    .replace(/\s+(?=(?:[A-ZÄÖÜ][A-Za-zÄÖÜäöüß0-9./()-]*\s+)?§\s*\d+[a-zA-Z0-9]*)/g, "\n")
+    .replace(/\s+(?=[A-ZÄÖÜ][A-Za-zÄÖÜäöüß0-9./()-]+\s+§\s*\d+)/g, "\n")
+    .replace(/\s+(?=Art\.?\s*\d+)/g, "\n");
+
+  const normalized = withBreaks
     .split(/\n+/)
     .map((part) => part.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((part) => part.replace(/\s+/g, " "));
+
   return normalized.length > 0 ? normalized : undefined;
 }
 
@@ -67,11 +76,16 @@ export async function fetchDecisionDetailPreview(url: string): Promise<DecisionD
   try {
     const html = await fetchHtml(url);
     const title = stripTags(html.match(/<title>([^<]+)<\/title>/i)?.[1] ?? "");
-    const norms = splitNormLines(takeHtmlAfterStrongLabel(html, "Norm") ? stripTags(takeHtmlAfterStrongLabel(html, "Norm")!) : undefined);
+
+    const normHtml = takeHtmlAfterStrongLabel(html, "Norm");
+    const norms = splitNormLines(normHtml ? stripTags(normHtml) : undefined);
     const rechtssatz = takeTextAfterStrongLabel(html, "Rechtssatz");
     const entscheidungstexte = parseDecisionTextsFromHtml(takeHtmlAfterStrongLabel(html, "Entscheidungstexte"));
     const ecliPrefixMatch = html.match(/European Case Law Identifier \(ECLI\)<\/strong><\/p>\s*([^<\s]+)\s*<a[^>]*>([^<]+)<\/a>/i);
     const updatedMatch = html.match(/Zuletzt aktualisiert am<\/strong><\/p>\s*([0-9]{2}\.[0-9]{2}\.[0-9]{4})/i);
+
+    const ecli = ecliPrefixMatch ? `${stripTags(ecliPrefixMatch[1])}${stripTags(ecliPrefixMatch[2])}` : undefined;
+    const updated = updatedMatch?.[1];
 
     const bodyLines: string[] = [];
     if (norms?.length) {
@@ -87,14 +101,14 @@ export async function fetchDecisionDetailPreview(url: string): Promise<DecisionD
       for (const entry of entscheidungstexte) bodyLines.push(`- ${entry}`);
       bodyLines.push("");
     }
-    const ecli = ecliPrefixMatch ? `${stripTags(ecliPrefixMatch[1])}${stripTags(ecliPrefixMatch[2])}` : undefined;
-    const updated = updatedMatch?.[1];
     if (ecli || updated) {
       bodyLines.push("### Metadaten", "");
       if (ecli) bodyLines.push(`- ECLI: ${ecli}`);
       if (updated) bodyLines.push(`- Zuletzt aktualisiert: ${updated}`);
       bodyLines.push("");
     }
+
+    const bodyMarkdown = bodyLines.join("\n").trim();
 
     return {
       source_url: url,
@@ -104,7 +118,7 @@ export async function fetchDecisionDetailPreview(url: string): Promise<DecisionD
       ...(entscheidungstexte ? { entscheidungstexte } : {}),
       ...(ecli ? { ecli } : {}),
       ...(updated ? { updated_at: updated } : {}),
-      ...(bodyLines.length ? { body_markdown: bodyLines.join("\n").trim() } : {}),
+      ...(bodyMarkdown ? { body_markdown: bodyMarkdown } : {}),
     };
   } catch (error) {
     return { source_url: url, fetch_error: error instanceof Error ? error.message : String(error) };
