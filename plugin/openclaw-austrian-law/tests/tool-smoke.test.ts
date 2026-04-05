@@ -195,6 +195,7 @@ await test("jusline_fetch_discussions returns hits from fixture-backed fetch", a
       assert.ok(result.data.hits.length >= 1);
       assert.ok(result.data.hits[0]?.source_url.includes("/gesetzeskommentare/"));
       assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+      assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("query_index_written:")));
     });
   });
 });
@@ -237,6 +238,7 @@ await test("jusline_list_decisions returns hits from fixture-backed fetch", asyn
       assert.ok(result.data.hits.length >= 1);
       assert.ok(result.data.hits[0]?.source_url.includes("/entscheidungen/"));
       assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+      assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("query_index_written:")));
     });
   });
 });
@@ -270,6 +272,7 @@ await test("jusline_list_decisions writes preview cache artifacts for repeated c
       assert.equal(first.ok, true);
       if (!first.ok) return;
       assert.ok(first.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+      assert.ok(first.meta.warnings?.some((entry) => entry.startsWith("query_index_written:")));
     });
 
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
@@ -278,6 +281,7 @@ await test("jusline_list_decisions writes preview cache artifacts for repeated c
       if (!second.ok) return;
       assert.ok(
         second.meta.notices?.includes("cache_hit: reused cached artifact")
+        || second.meta.warnings?.some((entry) => entry.startsWith("query_index_written:"))
         || second.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")),
       );
     });

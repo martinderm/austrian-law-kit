@@ -1,4 +1,5 @@
 import { tryReadCachedJuslineArtifact } from "../cache/cache-read-reuse.js";
+import { writeJuslineQueryIndex, readJuslineQueryIndex } from "../cache/jusline-query-index.js";
 import { writeThroughCacheForJuslineArtifact } from "../cache/cache-write-through.js";
 import { buildJuslineArtifactPreviews, deriveContextFromQuery } from "../jusline/artifact-previews.js";
 import { parseJuslineDecisionsHtml, looksLikeJuslineNoDecisions } from "../jusline/decisions-parser.js";
@@ -116,6 +117,26 @@ export async function juslineListDecisionsStub(
     }
 
     const refresh = input.refresh === true;
+    const effectiveLimit = normalizeLimit(input.limit);
+    const queryIndex = refresh ? null : await readJuslineQueryIndex({ query: input.query, kind: "decisions", limit: effectiveLimit });
+    if (queryIndex && queryIndex.stable_ids.length > 0) {
+      let allCached = true;
+      for (const stableId of queryIndex.stable_ids) {
+        const cached = await tryReadCachedJuslineArtifact({ stableId, docType: "decision" });
+        if (!cached.hit || !cached.artifact) {
+          allCached = false;
+          break;
+        }
+      }
+      if (allCached) {
+        return {
+          ok: true,
+          data: { hits },
+          meta: buildCacheHitMeta("jusline_list_decisions", "jusline"),
+        };
+      }
+    }
+
     const previewResult = await buildJuslineArtifactPreviews({
       hits,
       kind: "decisions",
@@ -124,18 +145,6 @@ export async function juslineListDecisionsStub(
     });
 
     const cacheRead = { hit: false, artifact: undefined, warning: undefined };
-    if (!refresh) {
-      for (const preview of previewResult.previews) {
-        const cached = await tryReadCachedJuslineArtifact({ stableId: preview.stable_id, docType: "decision" });
-        if (cached.hit && cached.artifact) {
-          return {
-            ok: true,
-            data: { hits },
-            meta: buildCacheHitMeta("jusline_list_decisions", "jusline"),
-          };
-        }
-      }
-    }
 
     const cacheWrites = await Promise.all(
       previewResult.previews.map(async (preview) => {
@@ -158,6 +167,14 @@ export async function juslineListDecisionsStub(
       cacheWrite: cacheWrites.find((entry) => !entry.cached) ?? { cached: true },
     });
 
+    await writeJuslineQueryIndex({
+      query: input.query,
+      kind: "decisions",
+      limit: effectiveLimit,
+      stable_ids: previewResult.previews.map((preview) => preview.stable_id),
+      stored_at: new Date().toISOString(),
+    });
+
     return {
       ok: true,
       data: { hits },
@@ -171,6 +188,7 @@ export async function juslineListDecisionsStub(
           ...warnings,
           `preview_cache_written:${cacheWrites.filter((entry) => entry.cached).length}`,
           `preview_cache_skipped:${previewResult.skipped.length}`,
+          `query_index_written:${previewResult.previews.length}`,
         ],
       },
     };
