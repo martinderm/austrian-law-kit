@@ -7,14 +7,15 @@ export interface CacheReadReuseResult {
   warning?: string;
 }
 
-export async function tryReadCachedRisArtifact(params: {
+async function tryReadCachedArtifact(params: {
   stableId: string;
-  docType: "norm_segment" | "norm_document";
+  source: "ris" | "jusline";
+  docType: CachedArtifact["frontmatter"]["doc_type"];
 }): Promise<CacheReadReuseResult> {
   try {
     const artifact = await readArtifactByStableId({
       stableId: params.stableId,
-      source: "ris",
+      source: params.source,
       docType: params.docType,
       includeMetadata: false,
     });
@@ -33,4 +34,26 @@ export async function tryReadCachedRisArtifact(params: {
 
     return { hit: false, warning: `cache_read_failed: ${message}` };
   }
+}
+
+export async function tryReadCachedRisArtifact(params: {
+  stableId: string;
+  docType: "norm_segment" | "norm_document";
+}): Promise<CacheReadReuseResult> {
+  return tryReadCachedArtifact({
+    stableId: params.stableId,
+    source: "ris",
+    docType: params.docType,
+  });
+}
+
+export async function tryReadCachedJuslineArtifact(params: {
+  stableId: string;
+  docType: "decision" | "discussion" | "commentary";
+}): Promise<CacheReadReuseResult> {
+  return tryReadCachedArtifact({
+    stableId: params.stableId,
+    source: "jusline",
+    docType: params.docType,
+  });
 }

@@ -1,5 +1,9 @@
+import { tryReadCachedJuslineArtifact } from "../cache/cache-read-reuse.js";
+import { writeThroughCacheForJuslineArtifact } from "../cache/cache-write-through.js";
+import { buildJuslineArtifactPreviews, deriveContextFromQuery } from "../jusline/artifact-previews.js";
 import { parseJuslineDecisionsHtml, looksLikeJuslineNoDecisions } from "../jusline/decisions-parser.js";
 import { buildJuslineDiscussionsUrl } from "../jusline/url-builder.js";
+import { buildCacheHitMeta, buildCacheWarnings, buildRefreshMeta } from "./ris-fetch-common.js";
 import type {
   JuslineListDecisionsInput,
   JuslineListDecisionsOutput,
@@ -94,9 +98,6 @@ export async function juslineListDecisionsStub(
 
   try {
     const hits = parseJuslineDecisionsHtml(html, normalizeLimit(input.limit));
-    const notices = input.refresh === true
-      ? ["cache_refresh: fetched fresh content without reusing cached artifact"]
-      : undefined;
 
     if (hits.length === 0 && looksLikeJuslineNoDecisions(html)) {
       return {
@@ -114,14 +115,63 @@ export async function juslineListDecisionsStub(
       };
     }
 
+    const refresh = input.refresh === true;
+    const previewResult = await buildJuslineArtifactPreviews({
+      hits,
+      kind: "decisions",
+      input,
+      context: deriveContextFromQuery(input.query),
+    });
+
+    const cacheRead = { hit: false, artifact: undefined, warning: undefined };
+    if (!refresh) {
+      for (const preview of previewResult.previews) {
+        const cached = await tryReadCachedJuslineArtifact({ stableId: preview.stable_id, docType: "decision" });
+        if (cached.hit && cached.artifact) {
+          return {
+            ok: true,
+            data: { hits },
+            meta: buildCacheHitMeta("jusline_list_decisions", "jusline"),
+          };
+        }
+      }
+    }
+
+    const cacheWrites = await Promise.all(
+      previewResult.previews.map(async (preview) => {
+        const metadataParsed = JSON.parse(preview.metadata_content) as {
+          stable_id: string;
+          frontmatter: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        return await writeThroughCacheForJuslineArtifact({
+          stable_id: preview.stable_id,
+          frontmatter: metadataParsed.frontmatter as any,
+          content: preview.markdown_content.replace(/^---\n[\s\S]*?\n---\n\n/, ""),
+          metadata: metadataParsed.metadata,
+        });
+      }),
+    );
+
+    const warnings = buildCacheWarnings({
+      cacheRead,
+      cacheWrite: cacheWrites.find((entry) => !entry.cached) ?? { cached: true },
+    });
+
     return {
       ok: true,
       data: { hits },
       meta: {
-        tool: "jusline_list_decisions",
-        source: "jusline",
-        timestamp: new Date().toISOString(),
-        ...(notices ? { notices } : {}),
+        ...(refresh ? buildRefreshMeta("jusline_list_decisions", "jusline") : {
+          tool: "jusline_list_decisions",
+          source: "jusline" as const,
+          timestamp: new Date().toISOString(),
+        }),
+        warnings: [
+          ...warnings,
+          `preview_cache_written:${cacheWrites.filter((entry) => entry.cached).length}`,
+          `preview_cache_skipped:${previewResult.skipped.length}`,
+        ],
       },
     };
   } catch (error) {

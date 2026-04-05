@@ -186,13 +186,16 @@ await test("ris_fetch_whole_law returns NOT_FOUND on HTTP 404", async () => {
 await test("jusline_fetch_discussions returns hits from fixture-backed fetch", async () => {
   const html = fixture("fixtures/jusline/stgb-paragraf-111-discussions-variant.html");
 
-  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
-    const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", limit: 5 });
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
-    assert.ok(result.data.hits.length >= 1);
-    assert.ok(result.data.hits[0]?.source_url.includes("/gesetzeskommentare/"));
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.ok(result.data.hits.length >= 1);
+      assert.ok(result.data.hits[0]?.source_url.includes("/gesetzeskommentare/"));
+      assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+    });
   });
 });
 
@@ -211,25 +214,30 @@ await test("jusline_fetch_discussions returns NOT_FOUND for the negative comment
 await test("jusline_fetch_discussions exposes refresh notice when refresh=true", async () => {
   const html = fixture("fixtures/jusline/stgb-paragraf-111-discussions-variant.html");
 
-  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
-    const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", refresh: true });
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", refresh: true });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
-    assert.ok(result.meta.notices?.includes("cache_refresh: fetched fresh content without reusing cached artifact"));
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.ok(result.meta.notices?.includes("cache_refresh: bypassed cached artifact and fetched fresh content"));
+    });
   });
 });
 
 await test("jusline_list_decisions returns hits from fixture-backed fetch", async () => {
   const html = fixture("fixtures/jusline/stgb-paragraf-111-decisions-variant.html");
 
-  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
-    const result = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
-    assert.ok(result.data.hits.length >= 1);
-    assert.ok(result.data.hits[0]?.source_url.includes("/entscheidungen/"));
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.ok(result.data.hits.length >= 1);
+      assert.ok(result.data.hits[0]?.source_url.includes("/entscheidungen/"));
+      assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+    });
   });
 });
 
@@ -250,6 +258,29 @@ await test("jusline_list_decisions returns NOT_FOUND for the no-decisions fixtur
     assert.equal(result.ok, false);
     if (result.ok) return;
     assert.equal(result.error.code, "NOT_FOUND");
+  });
+});
+
+await test("jusline_list_decisions writes preview cache artifacts for repeated calls", async () => {
+  const html = fixture("fixtures/jusline/stgb-paragraf-111-decisions-variant.html");
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const first = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
+      assert.equal(first.ok, true);
+      if (!first.ok) return;
+      assert.ok(first.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
+    });
+
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const second = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
+      assert.equal(second.ok, true);
+      if (!second.ok) return;
+      assert.ok(
+        second.meta.notices?.includes("cache_hit: reused cached artifact")
+        || second.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")),
+      );
+    });
   });
 });
 

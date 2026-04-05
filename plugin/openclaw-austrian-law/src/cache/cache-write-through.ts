@@ -7,9 +7,7 @@ export interface CacheWriteThroughResult {
   cacheError?: string;
 }
 
-export async function writeThroughCacheForRisArtifact(
-  artifact: CachedArtifact,
-): Promise<CacheWriteThroughResult> {
+async function writeThroughCache(artifact: CachedArtifact): Promise<CacheWriteThroughResult> {
   try {
     const written = await writeArtifact(artifact);
     return { cached: true, cachePath: written.markdownPath };
@@ -19,4 +17,16 @@ export async function writeThroughCacheForRisArtifact(
       cacheError: error instanceof Error ? error.message : "Unknown cache write error",
     };
   }
+}
+
+export async function writeThroughCacheForRisArtifact(
+  artifact: CachedArtifact,
+): Promise<CacheWriteThroughResult> {
+  return writeThroughCache(artifact);
+}
+
+export async function writeThroughCacheForJuslineArtifact(
+  artifact: CachedArtifact,
+): Promise<CacheWriteThroughResult> {
+  return writeThroughCache(artifact);
 }

@@ -13,19 +13,19 @@ export function resolveSourceIdFromInputOrUrl(params: {
   return params.extractFromUrl(params.sourceUrl);
 }
 
-export function buildCacheHitMeta(tool: ToolName) {
+export function buildCacheHitMeta(tool: ToolName, source: "ris" | "jusline" = "ris") {
   return {
     tool,
-    source: "ris" as const,
+    source,
     timestamp: new Date().toISOString(),
     notices: ["cache_hit: reused cached artifact"],
   };
 }
 
-export function buildRefreshMeta(tool: ToolName) {
+export function buildRefreshMeta(tool: ToolName, source: "ris" | "jusline" = "ris") {
   return {
     tool,
-    source: "ris" as const,
+    source,
     timestamp: new Date().toISOString(),
     notices: ["cache_refresh: bypassed cached artifact and fetched fresh content"],
   };
