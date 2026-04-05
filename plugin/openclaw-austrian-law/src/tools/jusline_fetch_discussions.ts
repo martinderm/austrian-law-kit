@@ -132,23 +132,25 @@ export async function juslineFetchDiscussionsStub(
 
     const refresh = input.refresh === true;
     const effectiveLimit = normalizeLimit(input.limit);
+    let cacheCoverage: "full" | "partial" | "miss" = "miss";
     const queryIndex = refresh ? null : await readJuslineQueryIndex({ query: input.query, kind: "discussions", limit: effectiveLimit });
     if (queryIndex && queryIndex.stable_ids.length > 0) {
-      let allCached = true;
+      let cachedCount = 0;
       for (const stableId of queryIndex.stable_ids) {
         const cached = await tryReadCachedJuslineArtifact({ stableId, docType: "commentary" });
-        if (!cached.hit || !cached.artifact) {
-          allCached = false;
-          break;
-        }
+        if (cached.hit && cached.artifact) cachedCount += 1;
       }
-      if (allCached) {
+      if (cachedCount === queryIndex.stable_ids.length) {
         return {
           ok: true,
           data: { hits },
-          meta: buildCacheHitMeta("jusline_fetch_discussions", "jusline"),
+          meta: {
+            ...buildCacheHitMeta("jusline_fetch_discussions", "jusline"),
+            notices: ["cache_hit: reused cached artifact", "full_cache_hit"],
+          },
         };
       }
+      cacheCoverage = cachedCount > 0 ? "partial" : "miss";
     }
 
     const previewResult = await buildJuslineArtifactPreviews({
@@ -197,6 +199,7 @@ export async function juslineFetchDiscussionsStub(
           tool: "jusline_fetch_discussions",
           source: "jusline" as const,
           timestamp: new Date().toISOString(),
+          notices: [cacheCoverage === "partial" ? "partial_cache_hit" : "cache_miss"],
         }),
         warnings: [
           ...warnings,

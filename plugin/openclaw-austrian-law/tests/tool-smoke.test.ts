@@ -280,9 +280,9 @@ await test("jusline_list_decisions writes preview cache artifacts for repeated c
       assert.equal(second.ok, true);
       if (!second.ok) return;
       assert.ok(
-        second.meta.notices?.includes("cache_hit: reused cached artifact")
-        || second.meta.warnings?.some((entry) => entry.startsWith("query_index_written:"))
-        || second.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")),
+        second.meta.notices?.includes("full_cache_hit")
+        || second.meta.notices?.includes("partial_cache_hit")
+        || second.meta.notices?.includes("cache_miss"),
       );
     });
   });

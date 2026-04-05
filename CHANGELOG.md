@@ -4,6 +4,7 @@
 - JUSLINE-Query-Index für `query + kind + limit` ergänzt, damit Artefaktmengen vor erneutem Upstream-Fetch wiederverwendet werden können
 - Query-Index-TTL auf 24 Stunden festgelegt
 - `refresh=true` für JUSLINE als Force-Reload-Semantik geschärft (Index und Artefakt-Reuse werden bypassed)
+- Meta-Signale unterscheiden jetzt zwischen `full_cache_hit`, `partial_cache_hit` und `cache_miss`
 - Root-/Plugin-/Status-Doku auf den tatsächlichen Cache-Stand nachgezogen
 
 ## 0.11.0 - JUSLINE Decisions MVP + Parser-Smokes
