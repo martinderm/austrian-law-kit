@@ -6,6 +6,8 @@ import { resolveCacheRoot } from "./cache-runtime.js";
 
 export type JuslineQueryIndexKind = "discussions" | "decisions";
 
+export const JUSLINE_QUERY_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
+
 export interface JuslineQueryIndexRecord {
   query: string;
   kind: JuslineQueryIndexKind;
@@ -39,7 +41,11 @@ export async function readJuslineQueryIndex(params: {
   try {
     const filePath = buildIndexPath(params);
     const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw) as JuslineQueryIndexRecord;
+    const parsed = JSON.parse(raw) as JuslineQueryIndexRecord;
+    const storedAtMs = Date.parse(parsed.stored_at);
+    if (!Number.isFinite(storedAtMs)) return null;
+    if (Date.now() - storedAtMs > JUSLINE_QUERY_INDEX_TTL_MS) return null;
+    return parsed;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes("ENOENT") || message.includes("no such file")) return null;

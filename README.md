@@ -31,6 +31,7 @@ Enthalten sind:
   - `jusline_fetch_discussions` (Sekundärquelle)
   - `jusline_list_decisions` (Sekundärquelle)
 - lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
+- JUSLINE-Query-Index für Cache-Reuse über `query + kind + limit` (TTL 24h, `refresh=true` als Force-Reload)
 - agentbezogene Cache-Ableitung über den Workspace des aufrufenden Agenten (mit optionalem `cacheRoot`-Override)
 - Tests, Fixtures und Beispiel-Config
 - kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
@@ -93,6 +94,7 @@ Kurz gesagt:
 - Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
 - Produktive JUSLINE-MVP-Funktionen (`jusline_fetch_discussions`, `jusline_list_decisions`) als Sekundärquelle
 - Lokale Cache-I/O inkl. write-through + gezielte cache-read Wiederverwendung
+- JUSLINE-Query-Index mit 24h TTL und `refresh=true` als Force-Reload-Semantik
 - Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
 - kleine ausführbare Parser-/Tool-Smoke-Tests für den aktuellen MVP-Stand
 

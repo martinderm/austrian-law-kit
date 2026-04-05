@@ -43,6 +43,7 @@ Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
 - MVP-Tools werden registriert
 - RIS- und JUSLINE-MVP-Logik ist vorhanden
 - Cache wird standardmäßig aus dem Workspace des aufrufenden Agenten abgeleitet; `cacheRoot` bleibt optionaler Override
+- JUSLINE nutzt zusätzlich einen Query-Index (`query + kind + limit`) mit 24h TTL; `refresh=true` wirkt als Force-Reload und bypassed Query-Index + Artefakt-Reuse
 
 ## SDK-/Abhängigkeits-Hinweis
 

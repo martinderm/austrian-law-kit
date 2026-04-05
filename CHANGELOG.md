@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 - JUSLINE Query-Index + Refresh-Semantik
+- JUSLINE-Query-Index für `query + kind + limit` ergänzt, damit Artefaktmengen vor erneutem Upstream-Fetch wiederverwendet werden können
+- Query-Index-TTL auf 24 Stunden festgelegt
+- `refresh=true` für JUSLINE als Force-Reload-Semantik geschärft (Index und Artefakt-Reuse werden bypassed)
+- Root-/Plugin-/Status-Doku auf den tatsächlichen Cache-Stand nachgezogen
+
 ## 0.11.0 - JUSLINE Decisions MVP + Parser-Smokes
 - `jusline_list_decisions` als zweite produktive JUSLINE-MVP-Funktion ergänzt (Sekundärquelle)
 - JUSLINE-Entscheidungsparser ergänzt und gegen doppelte/reine Entscheidungslinks gehärtet
