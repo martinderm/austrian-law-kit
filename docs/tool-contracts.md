@@ -1,6 +1,6 @@
-# Tool Contracts (Planungsstand, ohne Implementierung)
+# Tool Contracts (MVP-Stand, laufend nachziehen)
 
-Dieses Dokument definiert die geplanten Tool-Verträge für das Plugin `austrian-law-kit`.
+Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian-law-kit` auf MVP-Niveau.
 
 ## Gemeinsamer Rahmen
 
@@ -75,10 +75,31 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Input (MVP):**
 - `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
-- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Cache-Wiederverwendung)
+- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Query-Index- oder Artefakt-Reuse)
 
 **Output (MVP):**
 - Diskussions-/Kommentartreffer (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
+- je nach Query zusätzlich Kontexthinweise in `meta`, z. B. `source_path`, `law_slug`, `segment_ref`
+- bei Cache-/Refresh-Verhalten optionale `notices`, z. B. `cache_refresh`
+- aus Treffern können intern Preview-Artefakte für Kommentar-Detailseiten erzeugt werden
+
+**Optionale angereicherte Kommentar-Detailfelder (kontextabhängig):**
+- `author_name`
+- `author_profile_url`
+- `citation`
+- `published_date`
+- `published_date_raw`
+- `rating_value`
+- `rating_count`
+- `views_count`
+- `comment_version`
+- `body_markdown`
+- `fetch_error`
+
+**Hinweise (MVP):**
+- JUSLINE nutzt einen Query-Index über `query + kind + limit` mit 24h TTL.
+- Ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
+- Fehlende Detailfelder dürfen nicht als garantiert angenommen werden.
 
 **Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
@@ -93,10 +114,31 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Input (MVP):**
 - `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
 - `limit?: number`
-- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Cache-Wiederverwendung)
+- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Query-Index- oder Artefakt-Reuse)
 
 **Output (MVP):**
 - Entscheidungsreferenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
+- je nach Query zusätzlich Kontexthinweise in `meta`, z. B. `source_path`, `law_slug`, `segment_ref`
+- bei Cache-/Refresh-Verhalten optionale `notices`, z. B. `cache_refresh`
+- aus Listentreffern können intern Preview-Artefakte für Entscheidungsdetailseiten erzeugt werden
+
+**Optionale angereicherte Entscheidungs-Detailfelder (kontextabhängig):**
+- `document_type`
+- `court`
+- `published_date_raw`
+- `teaser`
+- `norms`
+- `rechtssatz`
+- `entscheidungstexte`
+- `ecli`
+- `updated_at`
+- `body_markdown`
+- `fetch_error`
+
+**Hinweise (MVP):**
+- JUSLINE nutzt einen Query-Index über `query + kind + limit` mit 24h TTL.
+- Ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
+- Detailseiten werden nur ergänzend verwertet; RIS bleibt Primärquelle für Normwortlaut und Primärmetadaten.
 
 **Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`

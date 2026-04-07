@@ -72,6 +72,18 @@ Regeln:
 - Diskussionen/Kommentare und Entscheidungen niemals vermischen.
 - JUSLINE-Inhalte nicht als Primärbeleg für Normwortlaut darstellen.
 - Wenn JUSLINE verwendet wird, das in der Quellenlage klar kenntlich machen.
+- `refresh: true` als gezielten Force-Reload verwenden, wenn ein Re-Test nicht durch ältere Artefakte oder Query-Index-Reuse verfälscht werden soll.
+- Bei JUSLINE berücksichtigt der Cache zusätzlich einen Query-Index über `query + kind + limit` mit 24h TTL; ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
+- JUSLINE-Treffer liefern je nach Tool und Seitentyp über die Basistreffer hinaus nur optional angereicherte Metadaten; fehlende Felder nicht erraten.
+
+Typische JUSLINE-Nutzung:
+1. Zuerst RIS-Wortlaut bzw. RIS-Fundstelle klären.
+2. Nur bei ausdrücklichem Bedarf oder erkennbarem Zusatznutzen ergänzend JUSLINE laden.
+3. Für Kommentare `jusline_fetch_discussions`, für Entscheidungslisten `jusline_list_decisions` verwenden.
+4. Bei Re-Checks oder Parser-Tests `refresh: true` setzen.
+5. In der Antwort klar trennen: RIS für Normwortlaut, JUSLINE nur für Zusatzkontext.
+
+Für konkrete JUSLINE-Felder, Detail-Previews, Grenzen und Antwortdisziplin siehe `references/jusline.md`.
 
 ### Bei unklarer Lage
 - Zuerst Quellenstatus klären, dann interpretieren.

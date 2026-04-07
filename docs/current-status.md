@@ -1,6 +1,6 @@
 # Current Status
 
-Stand: 2026-03-23 (laufend aktualisiert)
+Stand: 2026-04-07 (laufend aktualisiert)
 
 ## Was bereits umgesetzt ist
 
@@ -103,6 +103,8 @@ Relevante Dateien:
 - Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.
 - Extrahiert nur Kommentar-/Diskussions-Hits (`title`, `source_url`, `source_id`, optional `snippet`).
 - Entscheidungen/Judikatur auf derselben Seite werden bewusst ignoriert.
+- Aus geeigneten Treffern können ergänzende Kommentar-Preview-Artefakte erzeugt werden.
+- Diese Preview-Artefakte enthalten, wenn verfügbar, zusätzliche Metadaten wie Autor/in, Zitiervorschlag, Datum, Bewertung, Aufrufe, Versionshinweis und extrahierten Kontext.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
 ## JUSLINE Decisions (MVP)
@@ -111,6 +113,8 @@ Relevante Dateien:
 - Unterstützt JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`.
 - Extrahiert nur Entscheidungs-Hits (`title`, `source_url`, `source_id`, optional `snippet`).
 - Diskussionen/Kommentare auf derselben Seite werden bewusst ignoriert.
+- Aus geeigneten Listentreffern können ergänzende Entscheidungs-Preview-Artefakte erzeugt werden.
+- Diese Preview-Artefakte können, wenn verfügbar, zusätzliche Angaben wie Dokumenttyp, Gericht, Datum, Normen, Rechtssatz, Entscheidungstexte und ECLI enthalten.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 
 ## Cache-Schicht (neu geschärft)
@@ -126,8 +130,9 @@ Relevante Dateien:
 - RIS-Parser wurden gegen echte Live-Snapshots nachgeschärft, damit Segment-/Whole-Law-Fetches den Normtext statt Navigationsstub extrahieren.
 - RIS-Segment-Artefakte enthalten jetzt exemplarisch reichere Metadaten wie Kurztitel, Abkürzung, Slug, Typ, Inkrafttretensdatum, Index, Kundmachungsorgan und Überschrift.
 - Fetch-Tools unterstützen jetzt optional `refresh`, um vorhandene Cache-Artefakte gezielt zu ignorieren und frisch neu zu laden.
-- JUSLINE nutzt zusätzlich einen Query-Index mit 24h TTL über `query + kind + limit`; bei `refresh=true` wird dieser Index bewusst ignoriert und frisch aufgebaut.
+- JUSLINE nutzt zusätzlich einen Query-Index mit 24h TTL über `query + kind + limit`; bei `refresh=true` wird dieser Index bewusst ignoriert und frisch aufgebaut, inklusive Bypass von Query-Index- und Artefakt-Reuse.
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.
+- JUSLINE-Preview-Artefakte für Kommentare und Entscheidungen werden als ergänzende Kontextbausteine serialisiert; sie bleiben ausdrücklich Sekundärquelle.
 - Kleine ausführbare Parser-Smoke-Tests decken jetzt RIS- und JUSLINE-MVP-Parser direkt gegen Fixtures ab.
 - Kleine ausführbare Tool-Smoke-Tests decken jetzt die bestehenden RIS-/JUSLINE-MVP-Tools mit kontrollierten Fetch-Mocks ab.
 - Tool-Fabrik-Smoketests prüfen zusätzlich die agentbezogene Cache-Ableitung: ohne Override landet RIS-Cache im Workspace des aufrufenden Agenten, mit `cacheRoot`-Override am konfigurierten Ziel.
