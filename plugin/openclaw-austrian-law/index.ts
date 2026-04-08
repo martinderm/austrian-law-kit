@@ -9,6 +9,7 @@ import {
   runWithCacheRoot,
 } from "./src/cache/cache-runtime.js";
 import { configureJuslineBaseUrl } from "./src/jusline/runtime.js";
+import { configureRisApiBaseUrl } from "./src/ris-api/runtime.js";
 import { configureRisBaseUrl } from "./src/ris/runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
 import { formatToolResult } from "./src/tools/format-result.js";
@@ -21,6 +22,11 @@ function extractConfiguredCacheRoot(api: OpenClawPluginApi): string | undefined 
 
 function extractConfiguredRisBaseUrl(api: OpenClawPluginApi): string | undefined {
   const candidate = api.pluginConfig?.risBaseUrl;
+  return typeof candidate === "string" ? candidate : undefined;
+}
+
+function extractConfiguredRisApiBaseUrl(api: OpenClawPluginApi): string | undefined {
+  const candidate = api.pluginConfig?.risApiBaseUrl;
   return typeof candidate === "string" ? candidate : undefined;
 }
 
@@ -46,6 +52,7 @@ export default definePluginEntry({
   register(api: OpenClawPluginApi) {
     configureCacheRoot(extractConfiguredCacheRoot(api));
     configureRisBaseUrl(extractConfiguredRisBaseUrl(api));
+    configureRisApiBaseUrl(extractConfiguredRisApiBaseUrl(api));
     configureJuslineBaseUrl(extractConfiguredJuslineBaseUrl(api));
 
     const validation = validateToolRegistry();

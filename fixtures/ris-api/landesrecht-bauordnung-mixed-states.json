@@ -1,0 +1,85 @@
+{
+  "OgdSearchResult": {
+    "OgdDocumentResults": {
+      "Hits": {
+        "@pageNumber": "1",
+        "@pageSize": "20",
+        "#text": "2"
+      },
+      "OgdDocumentReference": [
+        {
+          "Data": {
+            "Metadaten": {
+              "Technisch": {
+                "ID": "LNO40026933",
+                "Applikation": "LrKons"
+              },
+              "Allgemein": {
+                "DokumentUrl": "https://www.ris.bka.gv.at/eli/lgbl/NI/2018/13/P0/LNO40026933"
+              },
+              "Landesrecht": {
+                "Kurztitel": "Authentische Interpretation NÖ Bauordnung 2014 und NÖ Raumordnungsgesetz 2014",
+                "Bundesland": "Niederösterreich",
+                "LrKons": {
+                  "Dokumenttyp": "Norm",
+                  "ArtikelParagraphAnlage": "§ 0",
+                  "Paragraphnummer": "0",
+                  "Gesetzesnummer": "20001185",
+                  "GesamteRechtsvorschriftUrl": "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrNO&Gesetzesnummer=20001185"
+                }
+              }
+            },
+            "Dokumentliste": {
+              "ContentReference": {
+                "Urls": {
+                  "ContentUrl": [
+                    {
+                      "DataType": "Html",
+                      "Url": "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LNO40026933/LNO40026933.html"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "Data": {
+            "Metadaten": {
+              "Technisch": {
+                "ID": "LOO40000077",
+                "Applikation": "LrKons"
+              },
+              "Allgemein": {
+                "DokumentUrl": "https://www.ris.bka.gv.at/eli/lgbl/OB/1994/66/P1/LOO40000077"
+              },
+              "Landesrecht": {
+                "Kurztitel": "Oö. Bauordnung 1994",
+                "Bundesland": "Oberösterreich",
+                "LrKons": {
+                  "Dokumenttyp": "Paragraph",
+                  "ArtikelParagraphAnlage": "§ 1",
+                  "Paragraphnummer": "1",
+                  "Gesetzesnummer": "10000077",
+                  "GesamteRechtsvorschriftUrl": "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000077"
+                }
+              }
+            },
+            "Dokumentliste": {
+              "ContentReference": {
+                "Urls": {
+                  "ContentUrl": [
+                    {
+                      "DataType": "Html",
+                      "Url": "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LOO40000077/LOO40000077.html"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

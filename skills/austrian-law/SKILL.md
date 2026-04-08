@@ -58,8 +58,8 @@ Primär diese MVP-Tools nutzen:
 Typischer Ablauf:
 1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
 2. `ris_search` nur dann einsetzen, wenn die RIS-Referenz **noch nicht bekannt** ist und erst aus einer Suchanfrage aufgelöst werden muss.
-3. `ris_search` nutzt inzwischen einen kleinen Resolver für direkte `NOR...`-IDs und typische Normreferenzen; diese Discovery-Hilfe ist nützlich, ersetzt aber keinen belastbaren Fallback-Pfad.
-4. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query und gelegentliche Upstream-Fehler.
+3. `ris_search` nutzt inzwischen einen Resolver für direkte `NOR...`-/`LOO...`-IDs und typische Normreferenzen sowie einen API-first-Pfad über die offizielle OGD-RIS-API; diese Discovery-Hilfe ist nützlich, ersetzt aber keinen belastbaren Fallback-Pfad.
+4. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlässige Landesrecht-State-Filter in der offiziellen API. Der aktuelle Landesrecht-Pfad versucht das mit clientseitigem State-Filter und state-spezifischen Titelvarianten abzufedern, garantiert aber noch keine beliebige Freitext-Suche.
 5. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
 6. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
 7. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.

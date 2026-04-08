@@ -13,8 +13,13 @@
       },
       "risBaseUrl": {
         "type": "string",
-        "description": "Basis-URL für RIS",
+        "description": "Basis-URL für RIS HTML-/Dokument-Abrufe",
         "default": "https://www.ris.bka.gv.at"
+      },
+      "risApiBaseUrl": {
+        "type": "string",
+        "description": "Basis-URL für die offizielle OGD-RIS-API",
+        "default": "https://data.bka.gv.at/ris/api/v2.6/"
       },
       "juslineBaseUrl": {
         "type": "string",

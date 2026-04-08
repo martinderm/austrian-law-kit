@@ -89,7 +89,7 @@ await test("ris_search resolves direct sourceId without upstream fetch", async (
     assert.equal(result.data.resolver_kind, "sourceId");
     assert.equal(result.data.hits[0]?.source_id, "NOR40214078");
     assert.equal(result.data.best_candidate?.confidence, "high");
-    assert.ok(result.meta.notices?.includes("resolver_shortcut: sourceId detected, RIS HTML search skipped"));
+    assert.ok(result.meta.notices?.includes("resolver_shortcut: sourceId detected, RIS search skipped"));
   });
 });
 
@@ -111,11 +111,126 @@ await test("ris_search resolves Landesrecht sourceId without upstream fetch", as
   });
 });
 
-await test("ris_search normalizes common norm references", async () => {
+await test("ris_search uses the official RIS API first for Bundesrecht norm references", async () => {
+  const apiJson = fixture("fixtures/ris-api/bundesrecht-abgb-1293.json");
+  let htmlFetchCount = 0;
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/Bundesrecht")) {
+      assert.ok(url.includes("Applikation=BrKons"));
+      assert.ok(url.includes("Titel=ABGB"));
+      assert.ok(url.includes("Suchworte="));
+      return new Response(apiJson, { status: 200, headers: { "content-type": "application/json" } });
+    }
+
+    htmlFetchCount += 1;
+    return new Response("<html></html>", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(htmlFetchCount, 0);
+    assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
+    assert.equal(result.data.best_candidate?.application, "BrKons");
+    assert.equal(result.data.best_candidate?.law_id, "10001622");
+    assert.ok(result.meta.notices?.includes("api_search: Bundesrecht"));
+  });
+});
+
+await test("ris_search filters Landesrecht API hits by explicit state and tries title variants", async () => {
+  const mixedJson = fixture("fixtures/ris-api/landesrecht-bauordnung-mixed-states.json");
+  const mixedParsed = JSON.parse(mixedJson);
+  const firstOnlyJson = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '1' },
+        OgdDocumentReference: mixedParsed.OgdSearchResult.OgdDocumentResults.OgdDocumentReference[0],
+      },
+    },
+  });
+  const exactJson = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '1' },
+        OgdDocumentReference: mixedParsed.OgdSearchResult.OgdDocumentResults.OgdDocumentReference[1],
+      },
+    },
+  });
+  let htmlFetchCount = 0;
+  let apiCalls = 0;
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/Landesrecht")) {
+      apiCalls += 1;
+      assert.ok(url.includes("Applikation=LrKons"));
+      assert.ok(url.includes("SucheInOberoesterreich=true"));
+      if (url.includes("Titel=Bauordnung")) {
+        return new Response(firstOnlyJson, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("Titel=O%C3%B6.+Bauordnung") || url.includes("Titel=O%C3%B6.%20Bauordnung") || url.includes("Titel=Oö.+Bauordnung") || url.includes("Titel=Oö.%20Bauordnung")) {
+        return new Response(exactJson, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: { Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '0' } } } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    htmlFetchCount += 1;
+    return new Response("<html></html>", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "Bauordnung", scope: "land", state: "Oberösterreich", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(htmlFetchCount, 0);
+    assert.ok(apiCalls >= 2);
+    assert.equal(result.data.best_candidate?.source_id, "LOO40000077");
+    assert.equal(result.data.best_candidate?.state, "Oberösterreich");
+    assert.ok(result.meta.notices?.includes("api_search: Landesrecht"));
+    assert.ok(result.meta.notices?.some((entry) => entry.startsWith("api_land_title_variant_used:")));
+    assert.ok(result.meta.warnings?.includes("api_state_mismatch_filtered_count: 1"));
+    assert.ok(result.meta.warnings?.includes("api_land_title_variant_no_results: Bauordnung"));
+  });
+});
+
+await test("ris_search falls back to HTML when the RIS API is unavailable", async () => {
   const html = fixture("fixtures/ris/abgb-search-live.html");
 
   await withMockedFetch(async (input) => {
     const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { Error: { Applikation: "BrKons", Message: "temporary API outage" } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    return new Response(html, { status: 200 });
+  }, async () => {
+    const result = await risSearchStub({ query: "ABGB", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.ok(result.meta.notices?.includes("html_fallback_used"));
+    assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("api_variant_failed:")));
+  });
+});
+
+await test("ris_search normalizes common norm references for the HTML fallback path", async () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { Error: { Applikation: "BrKons", Message: "temporary API outage" } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
     assert.ok(url.includes("Titel=ABGB"));
     assert.ok(url.includes("VonParagraf=1293"));
     assert.ok(url.includes("BisParagraf=1293"));
@@ -133,6 +248,7 @@ await test("ris_search normalizes common norm references", async () => {
     assert.ok(result.data.best_candidate?.match_reason);
     assert.ok(result.data.best_candidate?.confidence);
     assert.ok(result.meta.notices?.some((entry) => entry.startsWith("resolver_variants:")));
+    assert.ok(result.meta.notices?.includes("html_fallback_used"));
   });
 });
 
@@ -153,11 +269,17 @@ await test("ris_search validates state for Landesnormen scope", async () => {
   assert.ok(result.error.message.includes("Burgenland"));
 });
 
-await test("ris_search builds Landesnormen queries with explicit state", async () => {
+await test("ris_search builds Landesnormen HTML fallback queries with explicit state", async () => {
   const html = fixture("fixtures/ris/abgb-search-live.html");
 
   await withMockedFetch(async (input) => {
     const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { Error: { Applikation: "LrKons", Message: "temporary API outage" } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
     assert.ok(url.includes("Abfrage=Landesnormen"));
     assert.ok(url.includes("Bundesland=Ober%C3%B6sterreich") || url.includes("Bundesland=Oberösterreich"));
     assert.ok(url.includes("BundeslandDefault=Ober%C3%B6sterreich") || url.includes("BundeslandDefault=Oberösterreich"));
@@ -168,31 +290,46 @@ await test("ris_search builds Landesnormen queries with explicit state", async (
     assert.equal(result.ok, true);
     if (!result.ok) return;
     assert.equal(result.data.resolver_kind, "freeText");
+    assert.ok(result.meta.notices?.includes("html_fallback_used"));
   });
 });
 
-await test("ris_search retries on upstream 500 and succeeds on retry", async () => {
+await test("ris_search retries HTML fallback on upstream 500 and succeeds on retry", async () => {
   const html = fixture("fixtures/ris/abgb-search-live.html");
-  let attempts = 0;
+  let htmlAttempts = 0;
 
-  await withMockedFetch(async () => {
-    attempts += 1;
-    if (attempts === 1) return new Response("upstream error", { status: 500 });
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { Error: { Applikation: "BrKons", Message: "temporary API outage" } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    htmlAttempts += 1;
+    if (htmlAttempts === 1) return new Response("upstream error", { status: 500 });
     return new Response(html, { status: 200 });
   }, async () => {
     const result = await risSearchStub({ query: "ABGB", limit: 5 });
 
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.equal(attempts, 2);
+    assert.equal(htmlAttempts, 2);
   });
 });
 
 await test("ris_search falls back across normalized variants before returning NOT_FOUND", async () => {
-  let calls = 0;
+  let htmlCalls = 0;
 
-  await withMockedFetch(async () => {
-    calls += 1;
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: { Hits: { "@pageNumber": "1", "@pageSize": "20", "#text": "0" } } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    htmlCalls += 1;
     return new Response("<html><body><table></table></body></html>", { status: 200 });
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
@@ -200,22 +337,32 @@ await test("ris_search falls back across normalized variants before returning NO
     assert.equal(result.ok, false);
     if (result.ok) return;
     assert.equal(result.error.code, "NOT_FOUND");
-    assert.ok(calls >= 2);
-    assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("search_variant_no_results:")));
+    assert.ok(htmlCalls >= 2);
+    assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("html_variant_no_results:")));
+    assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("api_variant_no_results:")));
   });
 });
 
-await test("ris_search returns a direct document hit when RIS resolves uniquely", async () => {
+await test("ris_search returns a direct document hit when HTML fallback resolves uniquely", async () => {
   const html = '<html><head><title>RIS - Allgemeines bürgerliches Gesetzbuch § 1293 - Bundesrecht konsolidiert</title></head><body><a href="/eli/jgs/1811/946/P1293/NOR12019035">Direkt</a></body></html>';
 
-  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response(JSON.stringify({ OgdSearchResult: { Error: { Applikation: "BrKons", Message: "temporary API outage" } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response(html, { status: 200 });
+  }, async () => {
     const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
 
     assert.equal(result.ok, true);
     if (!result.ok) return;
     assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
     assert.equal(result.data.best_candidate?.confidence, "high");
-    assert.ok(result.meta?.notices?.some((entry) => entry.startsWith("resolver_direct_document:")));
+    assert.ok(result.meta?.notices?.some((entry) => entry.startsWith("html_fallback_direct_document:")));
   });
 });
 

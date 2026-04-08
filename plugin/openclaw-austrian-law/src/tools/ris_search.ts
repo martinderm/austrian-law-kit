@@ -1,3 +1,4 @@
+import { searchRisApi } from "../ris-api/index.js";
 import { AUSTRIAN_STATES, normalizeAustrianState } from "../ris/collections.js";
 import { resolveRisQuery } from "../ris/query-resolver.js";
 import { rankRisSearchHits } from "../ris/search-ranking.js";
@@ -61,6 +62,18 @@ async function fetchWithRetry(url: string): Promise<{ response?: Response; error
   return { error: lastError, attempts };
 }
 
+function buildResolverShortcutHit(sourceId: string, scope: "bund" | "land"): SearchHit {
+  return {
+    stable_id: `ris:doc:${sourceId.toLowerCase()}`,
+    source_id: sourceId,
+    title: sourceId,
+    source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=${scope === "land" ? "Landesnormen" : "Bundesnormen"}&Dokumentnummer=${sourceId}`,
+    match_reason: "direct sourceId detected in query",
+    confidence: "high",
+    scope,
+  };
+}
+
 export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOutput> {
   const validationMessage = validateInput(input);
   if (validationMessage) {
@@ -89,16 +102,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   const resolved = resolveRisQuery(query);
 
   if (resolved.kind === "sourceId") {
-    const sourceId = resolved.sourceId;
-    const hit: SearchHit = {
-      stable_id: `ris:doc:${sourceId.toLowerCase()}`,
-      source_id: sourceId,
-      title: sourceId,
-      source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=${scope === "land" ? "Landesnormen" : "Bundesnormen"}&Dokumentnummer=${sourceId}`,
-      match_reason: "direct sourceId detected in query",
-      confidence: "high",
-    };
-
+    const hit = buildResolverShortcutHit(resolved.sourceId, scope);
     return {
       ok: true,
       data: {
@@ -107,19 +111,73 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         normalized_query: resolved.normalizedQuery,
         resolver_kind: resolved.kind,
       },
-      meta: { tool: "ris_search", source: "ris", timestamp: new Date().toISOString(), notices: ["resolver_shortcut: sourceId detected, RIS HTML search skipped", ...(scope === "land" && state ? [`scope: land/${state}`] : [])] },
+      meta: {
+        tool: "ris_search",
+        source: "ris",
+        timestamp: new Date().toISOString(),
+        notices: [
+          "resolver_shortcut: sourceId detected, RIS search skipped",
+          ...(scope === "land" && state ? [`scope: land/${state}`] : []),
+        ],
+      },
     };
   }
 
-  const searchQueries = resolved.kind === "normRef"
-    ? resolved.searchVariants
-    : [resolved.normalizedQuery];
-
+  const searchQueries = resolved.kind === "normRef" ? resolved.searchVariants : [resolved.normalizedQuery];
   const notices: string[] = [];
   const warnings: string[] = [];
 
   if (resolved.kind === "normRef") {
     notices.push(`resolver_variants: ${searchQueries.join(" | ")}`);
+  }
+
+  let lastApiFailure: { message: string; retryable?: boolean; details?: Record<string, unknown> } | undefined;
+
+  for (const searchQuery of searchQueries) {
+    const apiResult = await searchRisApi({
+      query,
+      normalizedQuery: searchQuery,
+      limit,
+      scope,
+      state,
+      lawTitle: resolved.kind === "normRef" ? resolved.lawAbbreviation : searchQuery,
+      keywords: searchQuery,
+    });
+
+    notices.push(...(apiResult.notices ?? []));
+    warnings.push(...(apiResult.warnings ?? []));
+
+    if (apiResult.ok) {
+      const rankedHits = rankRisSearchHits(apiResult.hits.map((entry) => entry.hit), resolved).slice(0, limit);
+      return {
+        ok: true,
+        data: {
+          hits: rankedHits,
+          best_candidate: rankedHits[0],
+          normalized_query: resolved.normalizedQuery,
+          resolver_kind: resolved.kind,
+        },
+        meta: {
+          tool: "ris_search",
+          source: "ris",
+          timestamp: new Date().toISOString(),
+          notices,
+          warnings,
+        },
+      };
+    }
+
+    if (apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
+      lastApiFailure = {
+        message: apiResult.message,
+        retryable: apiResult.retryable,
+        details: apiResult.details,
+      };
+      warnings.push(`api_variant_failed: ${searchQuery}`);
+      continue;
+    }
+
+    warnings.push(`api_variant_no_results: ${searchQuery}`);
   }
 
   let lastUpstreamError: { status?: number; url?: string; attempts?: number; message?: string } | undefined;
@@ -142,7 +200,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     if (fetchResult.error) {
       const message = fetchResult.error instanceof Error ? fetchResult.error.message : "Unknown fetch error";
       lastUpstreamError = { url, attempts: fetchResult.attempts, message };
-      warnings.push(`search_variant_failed: ${searchQuery}`);
+      warnings.push(`html_variant_failed: ${searchQuery}`);
       continue;
     }
 
@@ -152,18 +210,18 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     if (!response.ok) {
       lastUpstreamError = { status: response.status, url, attempts: fetchResult.attempts };
       if (response.status >= 500) {
-        warnings.push(`search_variant_upstream_5xx: ${searchQuery}`);
+        warnings.push(`html_variant_upstream_5xx: ${searchQuery}`);
         continue;
       }
       return {
         ok: false,
         error: {
           code: "UPSTREAM_UNAVAILABLE",
-          message: `RIS search returned HTTP ${response.status}`,
+          message: `RIS HTML search returned HTTP ${response.status}`,
           details: { status: response.status, url, attempts: fetchResult.attempts },
           retryable: response.status >= 500,
         },
-        meta: { tool: "ris_search", source: "ris", warnings },
+        meta: { tool: "ris_search", source: "ris", warnings, notices },
       };
     }
 
@@ -185,13 +243,13 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
               tool: "ris_search",
               source: "ris",
               timestamp: new Date().toISOString(),
-              notices: [...notices, `resolver_direct_document: ${searchQuery}`],
+              notices: [...notices, `html_fallback_direct_document: ${searchQuery}`],
               warnings,
             },
           };
         }
 
-        warnings.push(`search_variant_no_results: ${searchQuery}`);
+        warnings.push(`html_variant_no_results: ${searchQuery}`);
         continue;
       }
 
@@ -209,7 +267,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           tool: "ris_search",
           source: "ris",
           timestamp: new Date().toISOString(),
-          notices,
+          notices: [...notices, "html_fallback_used"],
           warnings,
         },
       };
@@ -219,7 +277,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         ok: false,
         error: {
           code: "UPSTREAM_UNAVAILABLE",
-          message: `RIS search response could not be parsed: ${message}`,
+          message: `RIS HTML search response could not be parsed: ${message}`,
           details: { url, searchQuery },
         },
         meta: { tool: "ris_search", source: "ris", notices, warnings },
@@ -233,10 +291,23 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: lastUpstreamError.status
-          ? `RIS search returned HTTP ${lastUpstreamError.status}`
-          : `RIS search request failed: ${lastUpstreamError.message ?? "Unknown fetch error"}`,
-        details: lastUpstreamError,
+          ? `RIS HTML search returned HTTP ${lastUpstreamError.status}`
+          : `RIS HTML search request failed: ${lastUpstreamError.message ?? "Unknown fetch error"}`,
+        details: { html: lastUpstreamError, api: lastApiFailure },
         retryable: typeof lastUpstreamError.status === "number" ? lastUpstreamError.status >= 500 : true,
+      },
+      meta: { tool: "ris_search", source: "ris", notices, warnings },
+    };
+  }
+
+  if (lastApiFailure) {
+    return {
+      ok: false,
+      error: {
+        code: "UPSTREAM_UNAVAILABLE",
+        message: lastApiFailure.message,
+        details: lastApiFailure.details,
+        retryable: lastApiFailure.retryable,
       },
       meta: { tool: "ris_search", source: "ris", notices, warnings },
     };
@@ -246,7 +317,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     ok: false,
     error: {
       code: "NOT_FOUND",
-      message: "RIS search returned no usable hits for any tried search variant",
+      message: "RIS API and HTML fallback returned no usable hits for any tried search variant",
       details: { searchQueries },
     },
     meta: { tool: "ris_search", source: "ris", notices, warnings },

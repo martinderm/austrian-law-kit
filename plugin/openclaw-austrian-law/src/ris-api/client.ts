@@ -1,0 +1,62 @@
+import { resolveRisApiBaseUrl } from "./runtime.js";
+import type { RisApiSearchResponseEnvelope } from "./types.js";
+
+const RIS_API_HEADERS = {
+  accept: "application/json",
+  "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.1)",
+};
+
+export class RisApiError extends Error {
+  status?: number;
+  details?: Record<string, unknown>;
+
+  constructor(message: string, options?: { status?: number; details?: Record<string, unknown> }) {
+    super(message);
+    this.name = "RisApiError";
+    this.status = options?.status;
+    this.details = options?.details;
+  }
+}
+
+export function buildRisApiUrl(pathname: string, params: Record<string, string | undefined>): string {
+  const normalizedPath = pathname.replace(/^\/+/, "");
+  const url = new URL(normalizedPath, resolveRisApiBaseUrl());
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string" && value.length > 0) {
+      url.searchParams.set(key, value);
+    }
+  }
+  return url.toString();
+}
+
+export async function fetchRisApiJson(url: string): Promise<RisApiSearchResponseEnvelope> {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: RIS_API_HEADERS,
+  });
+
+  if (!response.ok) {
+    throw new RisApiError(`RIS API returned HTTP ${response.status}`, {
+      status: response.status,
+      details: { url },
+    });
+  }
+
+  let payload: RisApiSearchResponseEnvelope;
+  try {
+    payload = await response.json() as RisApiSearchResponseEnvelope;
+  } catch (error) {
+    throw new RisApiError(`RIS API response was not valid JSON: ${error instanceof Error ? error.message : "Unknown parse error"}`, {
+      details: { url },
+    });
+  }
+
+  const apiError = payload?.OgdSearchResult?.Error;
+  if (apiError?.Message) {
+    throw new RisApiError(apiError.Message, {
+      details: { url, application: apiError.Applikation },
+    });
+  }
+
+  return payload;
+}

@@ -79,14 +79,15 @@ Relevante Dateien:
 
 - `ris_search` ist als **optionale Discovery-Hilfe** gedacht, nicht als alleiniger Einstiegspunkt für RIS-Abrufe.
 - Zweck: aus einer menschlichen Suchanfrage zunächst eine belastbare RIS-Referenz (`sourceId` / `sourceUrl`) ableiten.
-- Der Tool-Einstieg enthält jetzt einen kleinen Resolver für häufige Fälle wie direkte `NOR...`-Dokumentnummern oder typische Normreferenzen (`§ 1293 ABGB`, `ABGB 1293`).
-- Direkte `NOR...`-Treffer können ohne vorgelagerte RIS-HTML-Suche direkt als Kandidat zurückgegeben werden.
-- Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten und wiederholt Requests bei temporären 5xx-Fehlern in kleinem Rahmen.
-- Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason` und grober `confidence` angereichert.
+- Der Tool-Einstieg enthält einen Resolver für häufige Fälle wie direkte `NOR...`-/`LOO...`-Dokumentnummern oder typische Normreferenzen (`§ 1293 ABGB`, `ABGB 1293`).
+- Direkte Dokumentnummern können ohne vorgelagerte Suche direkt als Kandidat zurückgegeben werden.
+- Für Bundesrecht läuft Discovery nun **API-first** über die offizielle OGD-RIS-API (`/Bundesrecht`, `Applikation=BrKons`); HTML-Suche bleibt Fallback.
+- Für Landesrecht gibt es einen ersten API-Pfad (`/Landesrecht`, `Applikation=LrKons`) mit explizitem Bundesland-Kontext, zusätzlichem clientseitigem State-Filter und state-spezifischen Titelvarianten (z. B. `Oö. Bauordnung`, `Wiener Bauordnung`), weil die API-Flags laut Live-Tests nicht zuverlässig nur das gewünschte Bundesland zurückliefern.
+- Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten; bei API-Ausfall oder fehlenden Treffern wird auf HTML-Fallback mit Retry bei temporären 5xx-Fehlern zurückgegangen.
+- Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason`, grober `confidence` sowie ersten Metadaten wie `application`, `scope`, `law_id`, `content_url` und `whole_law_url` angereichert.
 - Der frühere kleine `ris_search`-Härtungsplan (Resolver, Retry/Fallbacks, Ranking, Doku-Nachzug) gilt im Wesentlichen als abgearbeitet; offener Restpunkt ist höchstens weitere Parser-Härtung.
-- `ris_search` baut weiterhin RIS-Ergebnis-URLs für Bundesnormen und parst die Trefferliste aus HTML.
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
-- Bekannte operative Grenzen: je nach RIS-Verhalten sind 0 Treffer trotz plausibler Query oder Upstream-Fehler weiterhin möglich; daher bleibt ein Fallback auf bekannte Dokumentnummern, direkte RIS-URLs oder alternative Auflösung einzuplanen.
+- Bekannte operative Grenzen: Landesrecht liefert über die API derzeit teils state-fremde Treffer trotz gesetztem Bundesland-Flag; state-spezifische Titelvarianten verbessern die Trefferlage deutlich, aber es gibt noch keine Garantie für beliebige freie Landes-Suchanfragen.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
 
 ## RIS Fetch Segment (MVP)

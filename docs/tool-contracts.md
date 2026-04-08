@@ -23,11 +23,19 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 **Output (MVP):**
 - Trefferliste mit Referenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 - optional `best_candidate` als bestgerankter Treffer
-- bei RIS-Treffern optional zusätzliche Einordnung wie `match_reason`, `confidence`, `normalized_query`, `resolver_kind`
+- bei RIS-Treffern optionale Zusatzfelder wie `match_reason`, `confidence`, `normalized_query`, `resolver_kind`
+- im API-first-Pfad zusätzlich erste Metadatenfelder wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url`
+
+**Aktueller Suchpfad (MVP):**
+- direkte `NOR...`-/`LOO...`-Dokumentnummern werden sofort aufgelöst
+- Bundesrecht läuft bevorzugt über die offizielle OGD-RIS-API (`/Bundesrecht`, `Applikation=BrKons`)
+- Landesrecht nutzt einen ersten OGD-RIS-API-Pfad (`/Landesrecht`, `Applikation=LrKons`) mit zusätzlichem clientseitigem State-Filter und state-spezifischen Titelvarianten
+- HTML-Suche über RIS bleibt Fallback
 
 **Bekannte Grenzen (MVP):**
 - kann 0 Treffer trotz plausibler Query liefern
 - kann an RIS-Upstream-Fehlern scheitern (z. B. HTTP-500)
+- Landesrecht-Filter der offiziellen API wirken in Live-Tests nicht zuverlässig; daher werden state-fremde Treffer clientseitig verworfen und state-spezifische Titelvarianten nachprobiert
 - ist daher nur als best-effort Discovery-Hilfe einzuplanen
 - bei Fehlschlag sollte auf bekannte `sourceId`, direkte RIS-URL oder alternative Auflösung gewechselt werden
 

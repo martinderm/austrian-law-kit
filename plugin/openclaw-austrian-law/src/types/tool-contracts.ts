@@ -9,6 +9,12 @@ export interface SearchHit {
   snippet?: string;
   match_reason?: string;
   confidence?: "high" | "medium" | "low";
+  scope?: RisScope;
+  application?: string;
+  state?: AustrianState;
+  law_id?: string;
+  content_url?: string;
+  whole_law_url?: string;
 }
 
 export interface CachedArtifact {
