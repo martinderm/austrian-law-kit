@@ -140,6 +140,24 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
     if (entry.document_type) contentLines.push(`- Dokumenttyp: ${entry.document_type}`);
     if (entry.court) contentLines.push(`- Gericht: ${entry.court}`);
     if (entry.published_date_raw) contentLines.push(`- Datum: ${entry.published_date_raw}`);
+
+    if (detail.norms && detail.norms.length > 0) {
+      contentLines.push("", "### Normen", "");
+      for (const norm of detail.norms) contentLines.push(`- ${norm}`);
+    }
+    if (detail.rechtssatz) {
+      contentLines.push("", "### Rechtssatz", "", detail.rechtssatz);
+    }
+    if (detail.entscheidungstexte && detail.entscheidungstexte.length > 0) {
+      contentLines.push("", "### Entscheidungstexte", "");
+      for (const text of detail.entscheidungstexte) contentLines.push(`- ${text}`);
+    }
+    if (detail.ecli || detail.updated_at) {
+      contentLines.push("", "### Metadaten", "");
+      if (detail.ecli) contentLines.push(`- ECLI: ${detail.ecli}`);
+      if (detail.updated_at) contentLines.push(`- Zuletzt aktualisiert: ${detail.updated_at}`);
+    }
+
     const hasSubstantiveDetail = Boolean(
       detail.rechtssatz
       || (detail.entscheidungstexte && detail.entscheidungstexte.length > 0)
@@ -147,12 +165,7 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
       || detail.ecli,
     );
 
-    contentLines.push("", "## Extrahierter Kontext", "");
-    if (entry.teaser) contentLines.push(entry.teaser, "");
-    if (hasSubstantiveDetail && detail.body_markdown) contentLines.push(detail.body_markdown, "");
-    else if (detail.updated_at) contentLines.push(`Detailseite lieferte nur Metadaten (zuletzt aktualisiert: ${detail.updated_at}).`, "");
-    else contentLines.push("Keine zusätzlichen Detaildaten extrahiert.", "");
-    contentLines.push("## Hinweise", "", "- Nicht-amtliche Sekundärquelle.", "- RIS bleibt für Normwortlaut und Primärmetadaten maßgeblich.", "- Dieses Artefakt basiert primär auf dem Listentreffer; Detailseiten werden nur ergänzend verwertet.");
+    contentLines.push("", "## Hinweise", "", "- Nicht-amtliche Sekundärquelle.", "- RIS bleibt für Normwortlaut und Primärmetadaten maßgeblich.", "- Dieses Artefakt basiert primär auf dem Listentreffer; Detailseiten werden nur ergänzend verwertet.");
 
     artifacts.push({
       stable_id: stableId,
@@ -175,7 +188,7 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
         ...(parsedDate.iso ? { published_date: parsedDate.iso } : {}),
         ...(parsedDate.raw ? { published_date_raw: parsedDate.raw } : {}),
         ...(detail.ecli ? { decision_ref: detail.ecli } : {}),
-        ...(entry.court ? { law_title: entry.court } : {}),
+        ...(entry.court ? { court: entry.court } : {}),
         ...(entry.document_type ? { index_label: entry.document_type } : {}),
       },
       content: contentLines.join("\n"),

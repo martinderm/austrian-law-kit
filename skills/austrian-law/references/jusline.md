@@ -64,7 +64,6 @@ Bei Entscheidungsdetails können ergänzende Felder auftauchen, wenn die Seite s
 - `document_type`
 - `court`
 - `published_date_raw`
-- `teaser`
 - `norms`
 - `rechtssatz`
 - `entscheidungstexte`
@@ -75,7 +74,9 @@ Bei Entscheidungsdetails können ergänzende Felder auftauchen, wenn die Seite s
 
 Wichtig:
 - Entscheidungslisten und Entscheidungsdetails nicht mit Kommentaren vermischen.
+- `court` und `law_title` nicht verwechseln: Gericht separat führen, Normtitel nur setzen, wenn er ohnehin bereits belastbar vorliegt; sonst weglassen.
 - Rechtssatz, Normen und Entscheidungstexte sind Sekundärkontext und nicht mit RIS-Normwortlaut gleichzusetzen.
+- Keine rohen Preview-Blöcke wie „Extrahierter Kontext“ in Decision-Artefakte rendern.
 
 ## Antwortdisziplin
 
