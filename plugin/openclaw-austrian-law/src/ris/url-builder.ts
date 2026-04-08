@@ -2,12 +2,17 @@ import { resolveRisBaseUrl } from "./runtime.js";
 
 const RIS_RESULT_PAGE_SIZE = 100;
 
-export function buildRisSearchUrl(params: { query: string; limit: number; lawTitle?: string; paragraphFrom?: string; paragraphTo?: string; keywords?: string }): string {
+export function buildRisSearchUrl(params: { query: string; limit: number; lawTitle?: string; paragraphFrom?: string; paragraphTo?: string; keywords?: string; scope?: "bund" | "land"; state?: string }): string {
   const base = new URL("/Ergebnis.wxe", resolveRisBaseUrl());
   const today = new Date().toISOString().slice(0, 10);
 
-  base.searchParams.set("Abfrage", "Bundesnormen");
+  const scope = params.scope ?? "bund";
+  base.searchParams.set("Abfrage", scope === "land" ? "Landesnormen" : "Bundesnormen");
   base.searchParams.set("Kundmachungsorgan", "");
+  if (scope === "land") {
+    base.searchParams.set("Bundesland", params.state ?? "");
+    base.searchParams.set("BundeslandDefault", params.state ?? "");
+  }
   base.searchParams.set("Index", "");
   base.searchParams.set("Titel", params.lawTitle ?? params.query);
   base.searchParams.set("Gesetzesnummer", "");

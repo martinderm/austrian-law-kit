@@ -1,3 +1,4 @@
+import { AUSTRIAN_STATES, normalizeAustrianState } from "../ris/collections.js";
 import { resolveRisQuery } from "../ris/query-resolver.js";
 import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
@@ -20,6 +21,13 @@ function normalizeLimit(limit: number | undefined): number {
 function validateInput(input: RisSearchInput): string | null {
   if (typeof input.query !== "string" || input.query.trim().length < 2) {
     return "query must be a non-empty string with at least 2 characters";
+  }
+
+  if (input.scope === "land") {
+    const normalizedState = normalizeAustrianState(input.state);
+    if (!normalizedState) {
+      return `state must be one of: ${AUSTRIAN_STATES.join(", ")}`;
+    }
   }
 
   return null;
@@ -76,6 +84,8 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
   const query = input.query.trim();
   const limit = normalizeLimit(input.limit);
+  const scope = input.scope ?? "bund";
+  const state = scope === "land" ? normalizeAustrianState(input.state) : undefined;
   const resolved = resolveRisQuery(query);
 
   if (resolved.kind === "sourceId") {
@@ -84,7 +94,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       stable_id: `ris:doc:${sourceId.toLowerCase()}`,
       source_id: sourceId,
       title: sourceId,
-      source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=${sourceId}`,
+      source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=${scope === "land" ? "Landesnormen" : "Bundesnormen"}&Dokumentnummer=${sourceId}`,
       match_reason: "direct sourceId detected in query",
       confidence: "high",
     };
@@ -97,7 +107,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         normalized_query: resolved.normalizedQuery,
         resolver_kind: resolved.kind,
       },
-      meta: { tool: "ris_search", source: "ris", timestamp: new Date().toISOString(), notices: ["resolver_shortcut: sourceId detected, RIS HTML search skipped"] },
+      meta: { tool: "ris_search", source: "ris", timestamp: new Date().toISOString(), notices: ["resolver_shortcut: sourceId detected, RIS HTML search skipped", ...(scope === "land" && state ? [`scope: land/${state}`] : [])] },
     };
   }
 
@@ -119,12 +129,14 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       ? buildRisSearchUrl({
           query: searchQuery,
           limit,
+          scope,
+          state,
           lawTitle: resolved.lawAbbreviation,
           paragraphFrom: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
           paragraphTo: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
           keywords: searchQuery,
         })
-      : buildRisSearchUrl({ query: searchQuery, limit });
+      : buildRisSearchUrl({ query: searchQuery, limit, scope, state });
     const fetchResult = await fetchWithRetry(url);
 
     if (fetchResult.error) {

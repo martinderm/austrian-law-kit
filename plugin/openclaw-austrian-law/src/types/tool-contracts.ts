@@ -18,10 +18,24 @@ export interface CachedArtifact {
   metadata?: Record<string, unknown>;
 }
 
+export type RisScope = "bund" | "land";
+export type AustrianState =
+  | "Burgenland"
+  | "Kärnten"
+  | "Niederösterreich"
+  | "Oberösterreich"
+  | "Salzburg"
+  | "Steiermark"
+  | "Tirol"
+  | "Vorarlberg"
+  | "Wien";
+
 export interface RisSearchInput {
   query: string;
   limit?: number;
   docType?: "norm" | "decision" | "material";
+  scope?: RisScope;
+  state?: AustrianState;
 }
 export type RisSearchOutput = ToolResult<{
   hits: SearchHit[];

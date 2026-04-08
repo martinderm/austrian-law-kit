@@ -93,6 +93,24 @@ await test("ris_search resolves direct sourceId without upstream fetch", async (
   });
 });
 
+await test("ris_search resolves Landesrecht sourceId without upstream fetch", async () => {
+  let fetchCalled = false;
+  await withMockedFetch(async () => {
+    fetchCalled = true;
+    return new Response("should not happen", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "LOO12009295", scope: "land", state: "Oberösterreich" });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(fetchCalled, false);
+    assert.equal(result.data.resolver_kind, "sourceId");
+    assert.equal(result.data.hits[0]?.source_id, "LOO12009295");
+    assert.equal(result.data.best_candidate?.confidence, "high");
+    assert.ok(result.data.hits[0]?.source_url.includes("Abfrage=Landesnormen"));
+  });
+});
+
 await test("ris_search normalizes common norm references", async () => {
   const html = fixture("fixtures/ris/abgb-search-live.html");
 
@@ -124,6 +142,33 @@ await test("ris_search returns VALIDATION_ERROR for too-short query", async () =
   assert.equal(result.ok, false);
   if (result.ok) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
+});
+
+await test("ris_search validates state for Landesnormen scope", async () => {
+  const result = await risSearchStub({ query: "Bauordnung", scope: "land" });
+
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.equal(result.error.code, "VALIDATION_ERROR");
+  assert.ok(result.error.message.includes("Burgenland"));
+});
+
+await test("ris_search builds Landesnormen queries with explicit state", async () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    assert.ok(url.includes("Abfrage=Landesnormen"));
+    assert.ok(url.includes("Bundesland=Ober%C3%B6sterreich") || url.includes("Bundesland=Oberösterreich"));
+    assert.ok(url.includes("BundeslandDefault=Ober%C3%B6sterreich") || url.includes("BundeslandDefault=Oberösterreich"));
+    return new Response(html, { status: 200 });
+  }, async () => {
+    const result = await risSearchStub({ query: "Bauordnung", scope: "land", state: "Oberösterreich", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.resolver_kind, "freeText");
+  });
 });
 
 await test("ris_search retries on upstream 500 and succeeds on retry", async () => {
@@ -161,7 +206,7 @@ await test("ris_search falls back across normalized variants before returning NO
 });
 
 await test("ris_search returns a direct document hit when RIS resolves uniquely", async () => {
-  const html = '<html><head><title>RIS - Allgemeines bürgerliches Gesetzbuch § 1293 - Bundesrecht konsolidiert</title></head><body>NOR12019035</body></html>';
+  const html = '<html><head><title>RIS - Allgemeines bürgerliches Gesetzbuch § 1293 - Bundesrecht konsolidiert</title></head><body><a href="/eli/jgs/1811/946/P1293/NOR12019035">Direkt</a></body></html>';
 
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
@@ -171,6 +216,22 @@ await test("ris_search returns a direct document hit when RIS resolves uniquely"
     assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
     assert.equal(result.data.best_candidate?.confidence, "high");
     assert.ok(result.meta?.notices?.some((entry) => entry.startsWith("resolver_direct_document:")));
+  });
+});
+
+await test("ris_search extracts Landesrecht direct-document ids from the URL context", async () => {
+  const html = '<html><head><title>RIS - 1. Oö. Euro-Umstellungsgesetz Art. 1 - Landesrecht konsolidiert Oberösterreich</title></head><body><a href="/eli/lgbl/OB/1998/126/A1/LOO12009295">Direkt</a></body></html>';
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    return new Response(html, { status: 200, headers: { 'x-test-url': url } });
+  }, async () => {
+    const result = await risSearchStub({ query: 'LOO12009295', scope: 'land', state: 'Oberösterreich', limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.best_candidate?.source_id, 'LOO12009295');
+    assert.equal(result.data.best_candidate?.confidence, 'high');
   });
 });
 

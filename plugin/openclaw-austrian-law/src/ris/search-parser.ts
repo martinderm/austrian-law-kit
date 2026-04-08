@@ -96,14 +96,41 @@ export function parseRisSearchHtml(html: string, maxHits: number): SearchHit[] {
   return hits;
 }
 
-export function parseRisDirectDocumentHit(html: string, fallbackUrl: string): SearchHit | undefined {
-  const sourceIdMatch = html.match(/\bNOR[0-9A-Z]+\b/i);
-  const sourceId = sourceIdMatch?.[0]?.toUpperCase();
-  if (!sourceId) return undefined;
+function extractDirectDocumentSourceId(html: string, fallbackUrl: string): string | undefined {
+  const directUrlMatches = [
+    ...html.matchAll(/\/eli\/[^"'\s>]*\/([A-Z]{3,}[0-9]{5,})(?:[/?#"'&]|$)/gi),
+    ...html.matchAll(/\/Dokumente\/[^"'\s>]*\/([A-Z]{3,}[0-9]{5,})\//gi),
+  ];
+  for (const match of directUrlMatches) {
+    const value = match[1]?.toUpperCase();
+    if (value && /^(NOR|LOO)[0-9A-Z]+$/i.test(value)) return value;
+  }
 
+  const titleSuggestsDocument = /§\s*\d+|Art\.?:?\s*\d+/i.test(html) || /Bundesrecht konsolidiert|Landesrecht konsolidiert/i.test(html);
+  if (!titleSuggestsDocument) return undefined;
+
+  const textMatches = [
+    html.match(/\b(NOR[0-9A-Z]+)\b/i),
+    html.match(/\b(LOO[0-9A-Z]+)\b/i),
+    fallbackUrl.match(/\b(NOR[0-9A-Z]+)\b/i),
+    fallbackUrl.match(/\b(LOO[0-9A-Z]+)\b/i),
+  ];
+  for (const match of textMatches) {
+    const value = match?.[1]?.toUpperCase();
+    if (value && /^(NOR|LOO)[0-9A-Z]+$/i.test(value)) return value;
+  }
+
+  return undefined;
+}
+
+export function parseRisDirectDocumentHit(html: string, fallbackUrl: string): SearchHit | undefined {
   const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
   const title = stripTags(titleMatch?.[1] ?? "");
   if (!title) return undefined;
+  if (/Trefferliste|\bSuche\b/i.test(title)) return undefined;
+
+  const sourceId = extractDirectDocumentSourceId(html, fallbackUrl);
+  if (!sourceId) return undefined;
 
   return {
     stable_id: toStableIdFromSourceId(sourceId) ?? "",
