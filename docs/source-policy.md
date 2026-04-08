@@ -11,6 +11,7 @@
 - Optional für Diskussionen, Kommentare, Zusatzkontext
 - Entscheidungen/Inhalte daraus nur bei ausdrücklicher Nachfrage laden oder zusammenfassen
 - Nie als Ersatz für RIS verwenden
+- Nutzung, Abruf, Speicherung oder Weiterverarbeitung von JUSLINE-Inhalten kann zusätzlichen Bedingungen der Quelle unterliegen; die Repository-Lizenz deckt diese Inhalte nicht ab
 
 ## Fachliche Mindestregeln
 

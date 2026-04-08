@@ -18,6 +18,16 @@ Dieses Repository liefert eine übertragbare Grundstruktur für:
 3. **Transparenz**: Antworten trennen Wortlaut, Quelle, Unsicherheit und Einordnung.
 4. **Inkrementelle Umsetzung**: Erst Skill + Doku, dann Plugin + Parser + Caching.
 
+## Lizenz und Quellenhinweis
+
+Dieses Repository steht unter der **MIT-Lizenz** (siehe `LICENSE`).
+
+Wichtig zur Quellnutzung:
+- Die Lizenz dieses Repositories gilt nur für den Code und die mitgelieferte Projektdokumentation.
+- Inhalte und Nutzungsbedingungen externer Quellen, insbesondere **JUSLINE**, werden dadurch nicht mitlizenziert.
+- JUSLINE ist im Projekt bewusst nur als **optionale Sekundärquelle** vorgesehen.
+- Wer JUSLINE-Funktionen nutzt, muss die Nutzungsbedingungen und urheberrechtlichen Rahmenbedingungen der Quelle selbst prüfen und einhalten.
+
 ## Scope (aktueller Stand)
 
 Enthalten sind:

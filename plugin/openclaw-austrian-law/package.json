@@ -1,7 +1,6 @@
 {
   "name": "austrian-law-kit",
   "version": "0.1.0",
-  "private": true,
   "description": "Native Austrian law plugin kit for OpenClaw.",
   "type": "module",
   "main": "index.ts",

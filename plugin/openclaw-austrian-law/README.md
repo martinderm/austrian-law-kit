@@ -42,6 +42,16 @@ Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
 - Cache wird standardmäßig aus dem Workspace des aufrufenden Agenten abgeleitet; `cacheRoot` bleibt optionaler Override
 - JUSLINE nutzt zusätzlich einen Query-Index (`query + kind + limit`) mit 24h TTL; `refresh=true` wirkt als Force-Reload und bypassed Query-Index + Artefakt-Reuse
 
+## Hinweis zu externen Quellen
+
+Die Lizenz dieses Plugins erfasst nur den Plugin-Code selbst.
+
+Für externe Quellen gilt insbesondere:
+- **RIS** bleibt die vorgesehene Primärquelle.
+- **JUSLINE** ist nur als optionale Sekundärquelle gedacht.
+- Nutzung, Abruf, Speicherung oder Weiterverarbeitung von JUSLINE-Inhalten kann zusätzlichen Nutzungsbedingungen oder urheberrechtlichen Grenzen unterliegen.
+- Wer das Plugin mit JUSLINE verwendet, sollte diese Rahmenbedingungen selbst prüfen.
+
 ## SDK-/Abhängigkeits-Hinweis
 
 Für dieses schlanke MVP sind im Paket keine zusätzlichen Runtime-Abhängigkeiten nötig.
