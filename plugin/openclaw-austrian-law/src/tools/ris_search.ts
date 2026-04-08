@@ -1,6 +1,7 @@
+import { resolveRisQuery } from "../ris/query-resolver.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
 import { parseRisSearchHtml } from "../ris/search-parser.js";
-import type { RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
+import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
 
 function normalizeLimit(limit: number | undefined): number {
   if (limit === undefined) return 10;
@@ -39,7 +40,31 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
   const query = input.query.trim();
   const limit = normalizeLimit(input.limit);
-  const url = buildRisSearchUrl({ query, limit });
+  const resolved = resolveRisQuery(query);
+
+  if (resolved.kind === "sourceId") {
+    const sourceId = resolved.sourceId;
+    const hit: SearchHit = {
+      stable_id: `ris:doc:${sourceId.toLowerCase()}`,
+      source_id: sourceId,
+      title: sourceId,
+      source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=${sourceId}`,
+      match_reason: "direct sourceId detected in query",
+    };
+
+    return {
+      ok: true,
+      data: {
+        hits: [hit],
+        normalized_query: resolved.normalizedQuery,
+        resolver_kind: resolved.kind,
+      },
+      meta: { tool: "ris_search", source: "ris", timestamp: new Date().toISOString(), notices: ["resolver_shortcut: sourceId detected, RIS HTML search skipped"] },
+    };
+  }
+
+  const searchQuery = resolved.kind === "normRef" ? resolved.searchVariants[0] ?? resolved.normalizedQuery : resolved.normalizedQuery;
+  const url = buildRisSearchUrl({ query: searchQuery, limit });
 
   let response: Response;
   try {
@@ -82,8 +107,17 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
     return {
       ok: true,
-      data: { hits },
-      meta: { tool: "ris_search", source: "ris", timestamp: new Date().toISOString() },
+      data: {
+        hits,
+        normalized_query: resolved.normalizedQuery,
+        resolver_kind: resolved.kind,
+      },
+      meta: {
+        tool: "ris_search",
+        source: "ris",
+        timestamp: new Date().toISOString(),
+        notices: resolved.kind === "normRef" ? [`resolver_variant: using normalized reference query '${searchQuery}'`] : undefined,
+      },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown parse error";

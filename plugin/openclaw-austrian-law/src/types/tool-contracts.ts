@@ -7,6 +7,7 @@ export interface SearchHit {
   title: string;
   source_url: string;
   snippet?: string;
+  match_reason?: string;
 }
 
 export interface CachedArtifact {
@@ -21,7 +22,11 @@ export interface RisSearchInput {
   limit?: number;
   docType?: "norm" | "decision" | "material";
 }
-export type RisSearchOutput = ToolResult<{ hits: SearchHit[] }>;
+export type RisSearchOutput = ToolResult<{
+  hits: SearchHit[];
+  normalized_query?: string;
+  resolver_kind?: "sourceId" | "normRef" | "freeText";
+}>;
 
 export interface RisFetchSegmentInput {
   sourceId?: string;

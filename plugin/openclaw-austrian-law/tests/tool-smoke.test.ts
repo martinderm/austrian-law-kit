@@ -69,6 +69,43 @@ await test("ris_search returns hits from a live-derived fixture-backed fetch", a
     if (!result.ok) return;
     assert.ok(result.data.hits.length >= 5);
     assert.ok(result.data.hits[0]?.title.trim().length);
+    assert.equal(result.data.normalized_query, "ABGB");
+    assert.equal(result.data.resolver_kind, "freeText");
+  });
+});
+
+await test("ris_search resolves direct sourceId without upstream fetch", async () => {
+  let fetchCalled = false;
+  await withMockedFetch(async () => {
+    fetchCalled = true;
+    return new Response("should not happen", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "NOR40214078" });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(fetchCalled, false);
+    assert.equal(result.data.resolver_kind, "sourceId");
+    assert.equal(result.data.hits[0]?.source_id, "NOR40214078");
+    assert.ok(result.meta.notices?.includes("resolver_shortcut: sourceId detected, RIS HTML search skipped"));
+  });
+});
+
+await test("ris_search normalizes common norm references", async () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    assert.ok(url.includes("Titel=ABGB+%C2%A7+1293") || url.includes("Titel=ABGB+%C2%A7%2B1293") || url.includes("Titel=ABGB+%C2%A7+1293"));
+    return new Response(html, { status: 200 });
+  }, async () => {
+    const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.normalized_query, "§ 1293 abgb");
+    assert.equal(result.data.resolver_kind, "normRef");
+    assert.ok(result.meta.notices?.some((entry) => entry.startsWith("resolver_variant: using normalized reference query")));
   });
 });
 
