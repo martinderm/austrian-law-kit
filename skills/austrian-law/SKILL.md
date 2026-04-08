@@ -51,17 +51,19 @@ Bei sehr kleinen, rein mechanischen Nachfragen darf die Antwort knapper sein, di
 
 ### RIS (Primärquelle)
 Primär diese MVP-Tools nutzen:
-- `ris_search`
+- `ris_search` (nur als optionale Discovery-Hilfe)
 - `ris_fetch_segment`
 - `ris_fetch_whole_law`
 
 Typischer Ablauf:
-1. Zuerst RIS-Treffer oder konkrete RIS-Fundstelle bestimmen.
-2. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
-3. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
-4. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
-5. Erst danach gezielt Segment oder Gesamtdokument laden.
-6. Erst danach zusammenfassen oder vorsichtig einordnen.
+1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
+2. `ris_search` nur dann einsetzen, wenn die RIS-Referenz **noch nicht bekannt** ist und erst aus einer Suchanfrage aufgelöst werden muss.
+3. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query und gelegentliche Upstream-Fehler.
+4. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
+5. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
+6. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
+7. Erst danach gezielt Segment oder Gesamtdokument laden.
+8. Erst danach zusammenfassen oder vorsichtig einordnen.
 
 ### JUSLINE (Sekundärquelle)
 JUSLINE nur ergänzend nutzen und intern sauber trennen:
@@ -87,7 +89,7 @@ Für konkrete JUSLINE-Felder, Detail-Previews, Grenzen und Antwortdisziplin sieh
 
 ### Bei unklarer Lage
 - Zuerst Quellenstatus klären, dann interpretieren.
-- Bei `VALIDATION_ERROR` der RIS-Fetch-Tools zuerst die RIS-Fundstelle sauber über `ris_search` bzw. eine belastbare `sourceId` auflösen.
+- Bei `VALIDATION_ERROR` der RIS-Fetch-Tools zuerst prüfen, ob eine belastbare `sourceId` oder RIS-URL ermittelbar ist; `ris_search` ist dafür nur eine optionale Hilfe, nicht die einzige zulässige Auflösungsstufe.
 - Nicht vorschnell auf `web_fetch` oder allgemeine Websuche ausweichen, wenn das Ziel eigentlich eine RIS-Primärquelle ist.
 - `web_fetch` für RIS-Normtexte nur als Notbehelf verwenden und dann die geringere Verlässlichkeit ausdrücklich markieren.
 - Lieber enger und sauberer antworten als zu weit extrapolieren.

@@ -11,17 +11,25 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 
 ## Tool: `ris_search` (Primärquelle)
 
-**Zweck:** Suche nach Rechtsquellen/Normtreffern in RIS.
+**Zweck:** Optionale Discovery-Stufe für RIS, um aus einer Suchanfrage zunächst belastbare Referenzen aufzulösen.
 
-**Input (geplant):**
+**Wichtig:** `ris_search` ist nicht als alleiniger Backbone des Abrufflusses gedacht. Wenn eine belastbare `sourceId` oder `sourceUrl` bereits bekannt ist, sollen direkt `ris_fetch_segment` oder `ris_fetch_whole_law` verwendet werden.
+
+**Input (MVP):**
 - `query: string`
 - `limit?: number`
 - `docType?: "norm" | "decision" | "material"`
 
-**Output (geplant):**
+**Output (MVP):**
 - Trefferliste mit Referenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 
-**Fehlerklassen (geplant):**
+**Bekannte Grenzen (MVP):**
+- kann 0 Treffer trotz plausibler Query liefern
+- kann an RIS-Upstream-Fehlern scheitern (z. B. HTTP-500)
+- ist daher nur als best-effort Discovery-Hilfe einzuplanen
+- bei Fehlschlag sollte auf bekannte `sourceId`, direkte RIS-URL oder alternative Auflösung gewechselt werden
+
+**Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
 - `NOT_IMPLEMENTED`
 - `UPSTREAM_UNAVAILABLE`
