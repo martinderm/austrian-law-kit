@@ -83,6 +83,7 @@ Relevante Dateien:
 - Direkte `NOR...`-Treffer können ohne vorgelagerte RIS-HTML-Suche direkt als Kandidat zurückgegeben werden.
 - Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten und wiederholt Requests bei temporären 5xx-Fehlern in kleinem Rahmen.
 - Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason` und grober `confidence` angereichert.
+- Der frühere kleine `ris_search`-Härtungsplan (Resolver, Retry/Fallbacks, Ranking, Doku-Nachzug) gilt im Wesentlichen als abgearbeitet; offener Restpunkt ist höchstens weitere Parser-Härtung.
 - `ris_search` baut weiterhin RIS-Ergebnis-URLs für Bundesnormen und parst die Trefferliste aus HTML.
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
 - Bekannte operative Grenzen: je nach RIS-Verhalten sind 0 Treffer trotz plausibler Query oder Upstream-Fehler weiterhin möglich; daher bleibt ein Fallback auf bekannte Dokumentnummern, direkte RIS-URLs oder alternative Auflösung einzuplanen.
