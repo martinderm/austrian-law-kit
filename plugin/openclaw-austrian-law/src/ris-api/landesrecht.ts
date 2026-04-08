@@ -20,7 +20,7 @@ const STATE_FLAG_BY_NAME: Record<string, string> = {
 };
 
 const STATE_TITLE_PREFIXES: Record<string, string[]> = {
-  Burgenland: ["Burgenländische", "Bgld."],
+  Burgenland: ["Burgenländisches", "Burgenländische", "Bgld."],
   "Kärnten": ["Kärntner"],
   "Niederösterreich": ["NÖ"],
   "Oberösterreich": ["Oö."],
