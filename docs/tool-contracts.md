@@ -22,6 +22,8 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 
 **Output (MVP):**
 - Trefferliste mit Referenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
+- optional `best_candidate` als bestgerankter Treffer
+- bei RIS-Treffern optional zusätzliche Einordnung wie `match_reason`, `confidence`, `normalized_query`, `resolver_kind`
 
 **Bekannte Grenzen (MVP):**
 - kann 0 Treffer trotz plausibler Query liefern

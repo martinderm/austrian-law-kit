@@ -79,11 +79,14 @@ Relevante Dateien:
 
 - `ris_search` ist als **optionale Discovery-Hilfe** gedacht, nicht als alleiniger Einstiegspunkt für RIS-Abrufe.
 - Zweck: aus einer menschlichen Suchanfrage zunächst eine belastbare RIS-Referenz (`sourceId` / `sourceUrl`) ableiten.
-- `ris_search` baut eine RIS-Ergebnis-URL für Bundesnormen und ruft die Trefferliste via HTTP ab.
-- Ergebnis-Mapping liefert `title`, `source_url`, optional `source_id` und `stable_id` (nur wenn robust ableitbar).
+- Der Tool-Einstieg enthält jetzt einen kleinen Resolver für häufige Fälle wie direkte `NOR...`-Dokumentnummern oder typische Normreferenzen (`§ 1293 ABGB`, `ABGB 1293`).
+- Direkte `NOR...`-Treffer können ohne vorgelagerte RIS-HTML-Suche direkt als Kandidat zurückgegeben werden.
+- Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten und wiederholt Requests bei temporären 5xx-Fehlern in kleinem Rahmen.
+- Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason` und grober `confidence` angereichert.
+- `ris_search` baut weiterhin RIS-Ergebnis-URLs für Bundesnormen und parst die Trefferliste aus HTML.
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
-- Bekannte operative Grenzen: je nach RIS-Verhalten sind 0 Treffer trotz plausibler Query oder Upstream-Fehler möglich; daher ist ein Fallback auf bekannte Dokumentnummern, direkte RIS-URLs oder alternative Auflösung einzuplanen.
-- Fehlerbehandlung: `VALIDATION_ERROR`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
+- Bekannte operative Grenzen: je nach RIS-Verhalten sind 0 Treffer trotz plausibler Query oder Upstream-Fehler weiterhin möglich; daher bleibt ein Fallback auf bekannte Dokumentnummern, direkte RIS-URLs oder alternative Auflösung einzuplanen.
+- Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
 
 ## RIS Fetch Segment (MVP)
 
