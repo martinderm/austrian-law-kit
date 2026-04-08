@@ -195,7 +195,6 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       content: parsed.content,
       metadata: {
         ris_extracted: {
-          document_title_raw: parsed.title,
           display_title: displayTitle,
           law_title: parsed.lawTitle,
           law_abbreviation: parsed.lawAbbreviation,
