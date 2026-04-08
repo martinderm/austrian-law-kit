@@ -58,13 +58,16 @@ Primär diese MVP-Tools nutzen:
 Typischer Ablauf:
 1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
 2. `ris_search` nur dann einsetzen, wenn die RIS-Referenz **noch nicht bekannt** ist und erst aus einer Suchanfrage aufgelöst werden muss.
-3. `ris_search` nutzt inzwischen einen Resolver für direkte `NOR...`-/`LOO...`-IDs und typische Normreferenzen sowie einen API-first-Pfad über die offizielle OGD-RIS-API; diese Discovery-Hilfe ist nützlich, ersetzt aber keinen belastbaren Fallback-Pfad.
-4. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlässige Landesrecht-State-Filter in der offiziellen API. Der aktuelle Landesrecht-Pfad versucht das mit clientseitigem State-Filter und state-spezifischen Titelvarianten abzufedern, garantiert aber noch keine beliebige Freitext-Suche.
-5. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
+3. `ris_search` nutzt inzwischen einen Resolver für direkte `NOR...`-/`LOO...`-/Gemeinderecht-IDs, typische Normreferenzen sowie API-first-Pfade über die offizielle OGD-RIS-API; diese Discovery-Hilfe ist nützlich, ersetzt aber keinen belastbaren Fallback-Pfad.
+4. `ris_search` unterstützt derzeit drei Discovery-Scope-Pfade: Bundesrecht (`bund`), Landesrecht (`land`) und Gemeinderecht (`municipal`). Gemeinderecht läuft über `/Gemeinden` mit `Gr` oder `GrA` und kann zusätzlich nach Bundesland, Gemeinde und Bezirk eingegrenzt werden.
+5. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlässige Landesrecht-State-Filter in der offiziellen API. Der aktuelle Landesrecht-Pfad versucht das mit clientseitigem State-Filter und state-spezifischen Titelvarianten abzufedern, garantiert aber noch keine beliebige Freitext-Suche. Der bekannte Niederösterreich-Sonderfall (`Bauordnung` -> authentische Interpretation statt Stammnorm) ist bewusst dokumentiert und bis auf Weiteres geparkt.
+6. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden.
+7. Wenn `ris_search` bereits `content_url` oder `whole_law_url` liefert, diese URLs bevorzugt direkt in die Fetch-Tools weiterreichen.
 6. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine `sourceId` ableitbar ist.
 7. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
 8. Erst danach gezielt Segment oder Gesamtdokument laden.
-9. Erst danach zusammenfassen oder vorsichtig einordnen.
+9. Für History/Änderungsstände derzeit keinen öffentlichen Suchfluss modellieren; der aktuelle History-Client ist bewusst ein interner, typed Baustein für spätere Sync-/Update-Logik.
+10. Erst danach zusammenfassen oder vorsichtig einordnen.
 
 ### JUSLINE (Sekundärquelle)
 JUSLINE nur ergänzend nutzen und intern sauber trennen:

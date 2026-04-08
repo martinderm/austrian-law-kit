@@ -31,6 +31,7 @@
 ## 2026-04-08 — Landesrecht bleibt trotz API-first defensiv
 **Entscheidung:** State-spezifische Titelvarianten bleiben aktiv, und bekannte API-Missgriffe werden offen als Limit dokumentiert statt schöngeredet.
 **Warum:** Die Live-Prüfung über alle Bundesländer war weitgehend brauchbar, aber nicht makellos; konkret liefert Niederösterreich für `Bauordnung` derzeit bevorzugt eine authentische Interpretation statt der Stammnorm.
+**Folge:** Dieser Niederösterreich-Sonderfall wird vorerst nicht weiter optimiert, solange kein klarer belastbarer Lösungsweg vorliegt.
 
 ## 2026-04-08 — Gemeinderecht wird öffentlich über `ris_search` integriert
 **Entscheidung:** Gemeinderecht bleibt nicht bei internen Raw-Clients stehen, sondern wird als öffentlicher `ris_search`-Pfad mit `scope: "municipal"` nutzbar gemacht.
