@@ -8,6 +8,7 @@ export interface SearchHit {
   source_url: string;
   snippet?: string;
   match_reason?: string;
+  confidence?: "high" | "medium" | "low";
 }
 
 export interface CachedArtifact {
@@ -24,6 +25,7 @@ export interface RisSearchInput {
 }
 export type RisSearchOutput = ToolResult<{
   hits: SearchHit[];
+  best_candidate?: SearchHit;
   normalized_query?: string;
   resolver_kind?: "sourceId" | "normRef" | "freeText";
 }>;

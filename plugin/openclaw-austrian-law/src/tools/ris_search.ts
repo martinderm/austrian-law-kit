@@ -1,4 +1,5 @@
 import { resolveRisQuery } from "../ris/query-resolver.js";
+import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
 import { parseRisSearchHtml } from "../ris/search-parser.js";
 import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
@@ -85,12 +86,14 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       title: sourceId,
       source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=${sourceId}`,
       match_reason: "direct sourceId detected in query",
+      confidence: "high",
     };
 
     return {
       ok: true,
       data: {
         hits: [hit],
+        best_candidate: hit,
         normalized_query: resolved.normalizedQuery,
         resolver_kind: resolved.kind,
       },
@@ -151,10 +154,13 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         continue;
       }
 
+      const rankedHits = rankRisSearchHits(hits, resolved);
+
       return {
         ok: true,
         data: {
-          hits,
+          hits: rankedHits,
+          best_candidate: rankedHits[0],
           normalized_query: resolved.normalizedQuery,
           resolver_kind: resolved.kind,
         },

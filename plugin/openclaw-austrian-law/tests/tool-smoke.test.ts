@@ -71,6 +71,7 @@ await test("ris_search returns hits from a live-derived fixture-backed fetch", a
     assert.ok(result.data.hits[0]?.title.trim().length);
     assert.equal(result.data.normalized_query, "ABGB");
     assert.equal(result.data.resolver_kind, "freeText");
+    assert.equal(result.data.best_candidate?.source_id, result.data.hits[0]?.source_id);
   });
 });
 
@@ -87,6 +88,7 @@ await test("ris_search resolves direct sourceId without upstream fetch", async (
     assert.equal(fetchCalled, false);
     assert.equal(result.data.resolver_kind, "sourceId");
     assert.equal(result.data.hits[0]?.source_id, "NOR40214078");
+    assert.equal(result.data.best_candidate?.confidence, "high");
     assert.ok(result.meta.notices?.includes("resolver_shortcut: sourceId detected, RIS HTML search skipped"));
   });
 });
@@ -105,6 +107,9 @@ await test("ris_search normalizes common norm references", async () => {
     if (!result.ok) return;
     assert.equal(result.data.normalized_query, "§ 1293 abgb");
     assert.equal(result.data.resolver_kind, "normRef");
+    assert.ok(result.data.best_candidate);
+    assert.ok(result.data.best_candidate?.match_reason);
+    assert.ok(result.data.best_candidate?.confidence);
     assert.ok(result.meta.notices?.some((entry) => entry.startsWith("resolver_variants:")));
   });
 });
