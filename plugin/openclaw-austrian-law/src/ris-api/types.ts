@@ -1,7 +1,7 @@
 import type { AustrianState, SearchHit } from "../types/tool-contracts.js";
 
-export type RisApiScope = "bund" | "land";
-export type RisApiApplication = "BrKons" | "LrKons";
+export type RisApiScope = "bund" | "land" | "municipal";
+export type RisApiApplication = "BrKons" | "LrKons" | "Gr" | "GrA" | "History";
 
 export interface RisApiSearchRequest {
   query: string;
@@ -9,6 +9,9 @@ export interface RisApiSearchRequest {
   limit: number;
   scope: RisApiScope;
   state?: AustrianState;
+  municipality?: string;
+  district?: string;
+  authentic?: boolean;
   lawTitle?: string;
   keywords?: string;
 }
@@ -18,6 +21,8 @@ export interface RisApiSearchCandidate {
   application: RisApiApplication;
   scope: RisApiScope;
   state?: AustrianState;
+  municipality?: string;
+  district?: string;
   lawId?: string;
   contentUrl?: string;
   wholeLawUrl?: string;
@@ -91,6 +96,24 @@ export interface RisApiDocumentReference {
           Eli?: string;
         };
       };
+      Gemeinden?: {
+        Kurztitel?: string;
+        Titel?: string;
+        Bundesland?: string;
+        Gemeinde?: string;
+        Typ?: string;
+        Geschaeftszahl?: { item?: string | string[] };
+        Gr?: {
+          Bezirk?: string;
+          Inkrafttretensdatum?: string;
+          Indizes?: { item?: string | string[] };
+        };
+        GrA?: {
+          Bezirk?: string;
+          KundmachungsorganNr?: string;
+          Kundmachungsdatum?: string;
+        };
+      };
     };
     Dokumentliste?: {
       ContentReference?: {
@@ -99,9 +122,21 @@ export interface RisApiDocumentReference {
         Urls?: {
           ContentUrl?: RisApiContentUrl | RisApiContentUrl[];
         };
-      };
+      } | {
+        ContentType?: string;
+        Name?: string;
+        Urls?: {
+          ContentUrl?: RisApiContentUrl | RisApiContentUrl[];
+        };
+      }[];
     };
   };
+}
+
+export interface RisApiHitsMeta {
+  totalHits?: number;
+  pageNumber?: number;
+  pageSize?: number;
 }
 
 export interface RisApiSearchResponseEnvelope {

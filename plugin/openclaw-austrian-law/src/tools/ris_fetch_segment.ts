@@ -53,7 +53,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   let sourceUrl: string;
   try {
-    sourceUrl = buildRisSegmentUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    sourceUrl = input.contentUrl?.trim() || buildRisSegmentUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
   } catch (error) {
     return {
       ok: false,
@@ -96,7 +96,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   let apiLookup = undefined as Awaited<ReturnType<typeof lookupRisApiBySourceId>>;
   let apiLookupWarning: string | undefined;
-  if (!input.sourceUrl) {
+  if (!input.sourceUrl && !input.contentUrl) {
     try {
       apiLookup = await lookupRisApiBySourceId(sourceId);
     } catch (error) {

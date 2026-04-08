@@ -15,6 +15,11 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
       query: { type: "string" },
       limit: { type: "number" },
       docType: { type: "string", enum: ["norm", "decision", "material"] },
+      scope: { type: "string", enum: ["bund", "land", "municipal"] },
+      state: { type: "string", enum: ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"] },
+      municipality: { type: "string" },
+      district: { type: "string" },
+      authentic: { type: "boolean" },
     },
     required: ["query"],
   },
@@ -24,6 +29,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     properties: {
       sourceId: { type: "string" },
       sourceUrl: { type: "string" },
+      contentUrl: { type: "string" },
       segmentRef: { type: "string" },
       refresh: { type: "boolean" },
     },
@@ -34,6 +40,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     properties: {
       sourceId: { type: "string" },
       sourceUrl: { type: "string" },
+      wholeLawUrl: { type: "string" },
       refresh: { type: "boolean" },
     },
   },

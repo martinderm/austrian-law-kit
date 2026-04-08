@@ -1,6 +1,6 @@
-import { buildRisApiUrl, fetchRisApiJson, RisApiError } from "./client.js";
+import { buildRisApiUrl, extractRisApiHitsMeta, fetchRisApiJson, hasMoreRisApiPages, RisApiError } from "./client.js";
 import { mapApiDocumentReferences } from "./mappers.js";
-import type { RisApiSearchRequest, RisApiSearchResult } from "./types.js";
+import type { RisApiSearchCandidate, RisApiSearchRequest, RisApiSearchResult } from "./types.js";
 
 function asArray<T>(value: T | T[] | undefined): T[] {
   if (!value) return [];
@@ -35,6 +35,8 @@ const STATE_TITLE_SUFFIXES: Record<string, string[]> = {
   Wien: ["für Wien"],
 };
 
+const MAX_API_PAGES = 3;
+
 function dedupe(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -43,6 +45,18 @@ function dedupe(values: string[]): string[] {
     if (!normalized || seen.has(normalized)) continue;
     seen.add(normalized);
     result.push(normalized);
+  }
+  return result;
+}
+
+function dedupeCandidates(candidates: RisApiSearchCandidate[]): RisApiSearchCandidate[] {
+  const seen = new Set<string>();
+  const result: RisApiSearchCandidate[] = [];
+  for (const candidate of candidates) {
+    const key = candidate.hit.source_id ?? candidate.hit.source_url;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(candidate);
   }
   return result;
 }
@@ -80,43 +94,58 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
   let lastError: RisApiError | undefined;
 
   for (const titleVariant of titleVariants) {
-    const url = buildRisApiUrl("/Landesrecht", {
-      Applikation: "LrKons",
-      Titel: titleVariant,
-      Suchworte: request.keywords,
-      Seitennummer: "1",
-      [stateFlag ?? ""]: stateFlag ? "true" : undefined,
-    });
+    const variantHits: RisApiSearchCandidate[] = [];
 
-    try {
-      const payload = await fetchRisApiJson(url);
-      const refs = asArray(payload.OgdSearchResult?.OgdDocumentResults?.OgdDocumentReference);
-      const mapped = mapApiDocumentReferences(refs, request);
-      aggregateWarnings.push(...mapped.warnings);
+    for (let page = 1; page <= MAX_API_PAGES; page += 1) {
+      const url = buildRisApiUrl("/Landesrecht", {
+        Applikation: "LrKons",
+        Titel: titleVariant,
+        Suchworte: request.keywords,
+        Seitennummer: String(page),
+        [stateFlag ?? ""]: stateFlag ? "true" : undefined,
+      });
 
-      if (mapped.hits.length > 0) {
-        return {
-          ok: true,
-          hits: mapped.hits.slice(0, request.limit),
-          notices: [
-            ...aggregateNotices,
-            ...mapped.notices,
-            `api_land_title_variant_used: ${titleVariant}`,
-          ],
-          warnings: [...aggregateWarnings, ...(stateFlag ? [`api_state_flag_used: ${stateFlag}`] : [])],
-        };
-      }
+      try {
+        const payload = await fetchRisApiJson(url);
+        const refs = asArray(payload.OgdSearchResult?.OgdDocumentResults?.OgdDocumentReference);
+        const mapped = mapApiDocumentReferences(refs, request);
+        variantHits.push(...mapped.hits);
+        aggregateWarnings.push(...mapped.warnings);
+        aggregateNotices.push(...mapped.notices);
 
-      aggregateWarnings.push(`api_land_title_variant_no_results: ${titleVariant}`);
-    } catch (error) {
-      if (error instanceof RisApiError) {
-        lastError = error;
+        const meta = extractRisApiHitsMeta(payload);
+        if (page > 1) aggregateNotices.push(`api_pagination_used: Landesrecht page ${page}`);
+        if (!hasMoreRisApiPages(meta) || dedupeCandidates(variantHits).length >= request.limit) {
+          break;
+        }
+      } catch (error) {
+        if (error instanceof RisApiError) {
+          lastError = error;
+          aggregateWarnings.push(`api_error_type: ${error.code}`);
+          aggregateWarnings.push(`api_land_title_variant_failed: ${titleVariant}`);
+          break;
+        }
+
+        aggregateWarnings.push("api_error_type: UNKNOWN_ERROR");
         aggregateWarnings.push(`api_land_title_variant_failed: ${titleVariant}`);
-        continue;
+        break;
       }
-
-      aggregateWarnings.push(`api_land_title_variant_failed: ${titleVariant}`);
     }
+
+    const dedupedHits = dedupeCandidates(variantHits);
+    if (dedupedHits.length > 0) {
+      return {
+        ok: true,
+        hits: dedupedHits.slice(0, request.limit),
+        notices: [
+          ...aggregateNotices,
+          `api_land_title_variant_used: ${titleVariant}`,
+        ],
+        warnings: [...aggregateWarnings, ...(stateFlag ? [`api_state_flag_used: ${stateFlag}`] : [])],
+      };
+    }
+
+    aggregateWarnings.push(`api_land_title_variant_no_results: ${titleVariant}`);
   }
 
   if (lastError) {
@@ -126,8 +155,8 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
       message: lastError.message,
       retryable: typeof lastError.status === "number" ? lastError.status >= 500 : true,
       notices: aggregateNotices,
-      warnings: aggregateWarnings,
-      details: lastError.details,
+      warnings: [...aggregateWarnings, ...(stateFlag ? [`api_state_flag_used: ${stateFlag}`] : [])],
+      details: { ...(lastError.details ?? {}), api_error_type: lastError.code },
     };
   }
 

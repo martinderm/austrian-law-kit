@@ -12,9 +12,20 @@ export interface SearchHit {
   scope?: RisScope;
   application?: string;
   state?: AustrianState;
+  municipality?: string;
+  district?: string;
   law_id?: string;
   content_url?: string;
   whole_law_url?: string;
+  document_url?: string;
+  document_type?: string;
+  legal_type?: string;
+  section_ref?: string;
+  paragraph_number?: string;
+  law_abbreviation?: string;
+  promulgation?: string;
+  published_at?: string;
+  changed_at?: string;
 }
 
 export interface CachedArtifact {
@@ -24,7 +35,7 @@ export interface CachedArtifact {
   metadata?: Record<string, unknown>;
 }
 
-export type RisScope = "bund" | "land";
+export type RisScope = "bund" | "land" | "municipal";
 export type AustrianState =
   | "Burgenland"
   | "Kärnten"
@@ -42,6 +53,9 @@ export interface RisSearchInput {
   docType?: "norm" | "decision" | "material";
   scope?: RisScope;
   state?: AustrianState;
+  municipality?: string;
+  district?: string;
+  authentic?: boolean;
 }
 export type RisSearchOutput = ToolResult<{
   hits: SearchHit[];
@@ -53,6 +67,7 @@ export type RisSearchOutput = ToolResult<{
 export interface RisFetchSegmentInput {
   sourceId?: string;
   sourceUrl?: string;
+  contentUrl?: string;
   segmentRef?: string;
   refresh?: boolean;
 }
@@ -61,6 +76,7 @@ export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
 export interface RisFetchWholeLawInput {
   sourceId?: string;
   sourceUrl?: string;
+  wholeLawUrl?: string;
   refresh?: boolean;
 }
 export type RisFetchWholeLawOutput = ToolResult<{ artifact: CachedArtifact }>;

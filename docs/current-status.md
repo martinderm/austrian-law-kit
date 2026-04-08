@@ -83,11 +83,13 @@ Relevante Dateien:
 - Direkte Dokumentnummern können ohne vorgelagerte Suche direkt als Kandidat zurückgegeben werden.
 - Für Bundesrecht läuft Discovery nun **API-first** über die offizielle OGD-RIS-API (`/Bundesrecht`, `Applikation=BrKons`); HTML-Suche bleibt Fallback.
 - Für Landesrecht gibt es einen ersten API-Pfad (`/Landesrecht`, `Applikation=LrKons`) mit explizitem Bundesland-Kontext, zusätzlichem clientseitigem State-Filter und state-spezifischen Titelvarianten (z. B. `Burgenländisches Baugesetz`, `Oö. Bauordnung`, `Wiener Bauordnung`), weil die API-Flags laut Live-Tests nicht zuverlässig nur das gewünschte Bundesland zurückliefern.
+- Für Gemeinderecht gibt es jetzt einen öffentlichen API-Pfad über `ris_search` mit `scope: "municipal"`; gesucht wird über `/Gemeinden` mit `Applikation=Gr` oder `GrA`, optional scoped nach Bundesland, Gemeinde und Bezirk.
 - Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten; bei API-Ausfall oder fehlenden Treffern wird auf HTML-Fallback mit Retry bei temporären 5xx-Fehlern zurückgegangen.
-- Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason`, grober `confidence` sowie ersten Metadaten wie `application`, `scope`, `law_id`, `content_url` und `whole_law_url` angereichert.
+- Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason`, grober `confidence` sowie ersten Metadaten wie `application`, `scope`, `law_id`, `content_url`, `whole_law_url`, `document_type`, `legal_type`, `section_ref`, `municipality` und `district` angereichert.
 - Der frühere kleine `ris_search`-Härtungsplan (Resolver, Retry/Fallbacks, Ranking, Doku-Nachzug) gilt im Wesentlichen als abgearbeitet; offener Restpunkt ist höchstens weitere Parser-Härtung.
 - `docType` ist im MVP auf `norm` beschränkt; andere Werte liefern explizit `NOT_IMPLEMENTED`.
 - Bekannte operative Grenzen: Landesrecht liefert über die API derzeit teils state-fremde Treffer trotz gesetztem Bundesland-Flag; state-spezifische Titelvarianten verbessern die Trefferlage deutlich, aber es gibt noch keine Garantie für beliebige freie Landes-Suchanfragen. Konkreter offener Fall aus der Live-Prüfung: Niederösterreich liefert für `Bauordnung` derzeit bevorzugt die `Authentische Interpretation NÖ Bauordnung 2014 ...` statt der Stammnorm.
+- Für den History-Endpunkt existiert jetzt ein interner typed Raw-Client; live funktionierte das Zeitfenster ohne `Anwendung`-Filter, während getestete `Anwendung`-Werte (`BrKons`, `LrKons` etc.) derzeit zu API-Fehlern führten.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED` ohne stille Fallbacks.
 
 ## RIS Fetch Segment (MVP)

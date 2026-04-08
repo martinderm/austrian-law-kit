@@ -19,12 +19,23 @@ function normalizeLimit(limit: number | undefined): number {
   return Math.min(Math.floor(limit), 50);
 }
 
+function dedupeStrings(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim().length > 0))];
+}
+
 function validateInput(input: RisSearchInput): string | null {
   if (typeof input.query !== "string" || input.query.trim().length < 2) {
     return "query must be a non-empty string with at least 2 characters";
   }
 
   if (input.scope === "land") {
+    const normalizedState = normalizeAustrianState(input.state);
+    if (!normalizedState) {
+      return `state must be one of: ${AUSTRIAN_STATES.join(", ")}`;
+    }
+  }
+
+  if (input.scope === "municipal" && input.state) {
     const normalizedState = normalizeAustrianState(input.state);
     if (!normalizedState) {
       return `state must be one of: ${AUSTRIAN_STATES.join(", ")}`;
@@ -62,15 +73,21 @@ async function fetchWithRetry(url: string): Promise<{ response?: Response; error
   return { error: lastError, attempts };
 }
 
-function buildResolverShortcutHit(sourceId: string, scope: "bund" | "land"): SearchHit {
+function buildResolverShortcutHit(sourceId: string, scope: "bund" | "land" | "municipal"): SearchHit {
+  const abfrage = scope === "land"
+    ? "Landesnormen"
+    : scope === "municipal"
+      ? (sourceId.toUpperCase().startsWith("GEMREA_") ? "GemeinderechtAuth" : "Gemeinderecht")
+      : "Bundesnormen";
   return {
     stable_id: `ris:doc:${sourceId.toLowerCase()}`,
     source_id: sourceId,
     title: sourceId,
-    source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=${scope === "land" ? "Landesnormen" : "Bundesnormen"}&Dokumentnummer=${sourceId}`,
+    source_url: `https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=${abfrage}&Dokumentnummer=${sourceId}`,
     match_reason: "direct sourceId detected in query",
     confidence: "high",
     scope,
+    application: scope === "municipal" ? (sourceId.toUpperCase().startsWith("GEMREA_") ? "GrA" : "Gr") : undefined,
   };
 }
 
@@ -98,7 +115,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   const query = input.query.trim();
   const limit = normalizeLimit(input.limit);
   const scope = input.scope ?? "bund";
-  const state = scope === "land" ? normalizeAustrianState(input.state) : undefined;
+  const state = scope === "land" || scope === "municipal" ? normalizeAustrianState(input.state) : undefined;
   const resolved = resolveRisQuery(query);
 
   if (resolved.kind === "sourceId") {
@@ -142,6 +159,9 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       state,
       lawTitle: resolved.kind === "normRef" ? resolved.lawAbbreviation : searchQuery,
       keywords: searchQuery,
+      municipality: input.municipality?.trim() || undefined,
+      district: input.district?.trim() || undefined,
+      authentic: input.authentic,
     });
 
     notices.push(...(apiResult.notices ?? []));
@@ -161,8 +181,8 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           tool: "ris_search",
           source: "ris",
           timestamp: new Date().toISOString(),
-          notices,
-          warnings,
+          notices: dedupeStrings(notices),
+          warnings: dedupeStrings(warnings),
         },
       };
     }
@@ -178,6 +198,31 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     }
 
     warnings.push(`api_variant_no_results: ${searchQuery}`);
+  }
+
+  if (scope === "municipal") {
+    if (lastApiFailure) {
+      return {
+        ok: false,
+        error: {
+          code: "UPSTREAM_UNAVAILABLE",
+          message: lastApiFailure.message,
+          details: lastApiFailure.details,
+          retryable: lastApiFailure.retryable,
+        },
+        meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
+      };
+    }
+
+    return {
+      ok: false,
+      error: {
+        code: "NOT_FOUND",
+        message: "RIS municipal API returned no usable hits for any tried search variant",
+        details: { searchQueries, municipality: input.municipality, district: input.district, authentic: input.authentic },
+      },
+      meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
+    };
   }
 
   let lastUpstreamError: { status?: number; url?: string; attempts?: number; message?: string } | undefined;
@@ -221,7 +266,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           details: { status: response.status, url, attempts: fetchResult.attempts },
           retryable: response.status >= 500,
         },
-        meta: { tool: "ris_search", source: "ris", warnings, notices },
+        meta: { tool: "ris_search", source: "ris", warnings: dedupeStrings(warnings), notices: dedupeStrings(notices) },
       };
     }
 
@@ -243,8 +288,8 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
               tool: "ris_search",
               source: "ris",
               timestamp: new Date().toISOString(),
-              notices: [...notices, `html_fallback_direct_document: ${searchQuery}`],
-              warnings,
+              notices: dedupeStrings([...notices, `html_fallback_direct_document: ${searchQuery}`]),
+              warnings: dedupeStrings(warnings),
             },
           };
         }
@@ -267,8 +312,8 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           tool: "ris_search",
           source: "ris",
           timestamp: new Date().toISOString(),
-          notices: [...notices, "html_fallback_used"],
-          warnings,
+          notices: dedupeStrings([...notices, "html_fallback_used"]),
+          warnings: dedupeStrings(warnings),
         },
       };
     } catch (error) {
@@ -280,7 +325,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           message: `RIS HTML search response could not be parsed: ${message}`,
           details: { url, searchQuery },
         },
-        meta: { tool: "ris_search", source: "ris", notices, warnings },
+        meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
       };
     }
   }
@@ -296,7 +341,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         details: { html: lastUpstreamError, api: lastApiFailure },
         retryable: typeof lastUpstreamError.status === "number" ? lastUpstreamError.status >= 500 : true,
       },
-      meta: { tool: "ris_search", source: "ris", notices, warnings },
+      meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
     };
   }
 
@@ -309,7 +354,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         details: lastApiFailure.details,
         retryable: lastApiFailure.retryable,
       },
-      meta: { tool: "ris_search", source: "ris", notices, warnings },
+      meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
     };
   }
 
@@ -320,6 +365,6 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       message: "RIS API and HTML fallback returned no usable hits for any tried search variant",
       details: { searchQueries },
     },
-    meta: { tool: "ris_search", source: "ris", notices, warnings },
+    meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
   };
 }

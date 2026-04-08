@@ -9,6 +9,7 @@ import {
   resolveToolContextCacheRoot,
   runWithCacheRoot,
 } from "../src/cache/cache-runtime.ts";
+import { fetchHistoryApiRaw, searchGemeindenApiRaw } from "../src/ris-api/index.ts";
 import { juslineFetchDiscussionsStub } from "../src/tools/jusline_fetch_discussions.ts";
 import { juslineListDecisionsStub } from "../src/tools/jusline_list_decisions.ts";
 import { risFetchSegmentStub } from "../src/tools/ris_fetch_segment.ts";
@@ -197,6 +198,259 @@ await test("ris_search filters Landesrecht API hits by explicit state and tries 
   });
 });
 
+await test("ris_search ranks Stammnormen above authentische Interpretationen for free-text Landesrecht queries", async () => {
+  const apiJson = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '2' },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: 'LNO40026933', Applikation: 'LrKons' },
+                Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/lgbl/NI/2018/13/P0/LNO40026933' },
+                Landesrecht: {
+                  Kurztitel: 'Authentische Interpretation NÖ Bauordnung 2014 und NÖ Raumordnungsgesetz 2014',
+                  Bundesland: 'Niederösterreich',
+                  LrKons: {
+                    Dokumenttyp: 'Norm',
+                    ArtikelParagraphAnlage: '§ 0',
+                    Paragraphnummer: '0',
+                    Gesetzesnummer: '20001185',
+                    GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrNO&Gesetzesnummer=20001185',
+                  },
+                },
+              },
+              Dokumentliste: {
+                ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Landesnormen/LNO40026933/LNO40026933.html' }] } },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: 'LNO11001489', Applikation: 'LrKons' },
+                Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/lgbl/NI/2014/1/P0/LNO11001489' },
+                Landesrecht: {
+                  Kurztitel: 'NÖ Bauordnung 2014',
+                  Bundesland: 'Niederösterreich',
+                  LrKons: {
+                    Dokumenttyp: 'Norm',
+                    Typ: 'Stammfassung',
+                    ArtikelParagraphAnlage: '§ 0',
+                    Paragraphnummer: '0',
+                    Gesetzesnummer: '20001079',
+                    GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrNO&Gesetzesnummer=20001079',
+                  },
+                },
+              },
+              Dokumentliste: {
+                ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Landesnormen/LNO11001489/LNO11001489.html' }] } },
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes('data.bka.gv.at/ris/api/v2.6/Landesrecht')) {
+      return new Response(apiJson, { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('<html></html>', { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: 'Bauordnung', scope: 'land', state: 'Niederösterreich', limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.best_candidate?.source_id, 'LNO11001489');
+    assert.equal(result.data.best_candidate?.title, 'NÖ Bauordnung 2014');
+    assert.equal(result.data.best_candidate?.legal_type, 'Stammfassung');
+  });
+});
+
+await test("ris_search uses API pagination for Bundesrecht when more pages are needed", async () => {
+  const page1 = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '1', '#text': '2' },
+        OgdDocumentReference: {
+          Data: {
+            Metadaten: {
+              Technisch: { ID: 'NOR40198929', Applikation: 'BrKons' },
+              Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/jgs/1811/946/P0/NOR40198929' },
+              Bundesrecht: {
+                Kurztitel: 'Allgemeines bürgerliches Gesetzbuch',
+                BrKons: {
+                  Dokumenttyp: 'Norm',
+                  ArtikelParagraphAnlage: '§ 0',
+                  Paragraphnummer: '0',
+                  Abkuerzung: 'ABGB',
+                  Gesetzesnummer: '10001622',
+                  GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10001622',
+                },
+              },
+            },
+            Dokumentliste: {
+              ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40198929/NOR40198929.html' }] } },
+            },
+          },
+        },
+      },
+    },
+  });
+  const page2 = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '2', '@pageSize': '1', '#text': '2' },
+        OgdDocumentReference: {
+          Data: {
+            Metadaten: {
+              Technisch: { ID: 'NOR12019035', Applikation: 'BrKons' },
+              Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/jgs/1811/946/P1293/NOR12019035' },
+              Bundesrecht: {
+                Kurztitel: 'Allgemeines bürgerliches Gesetzbuch',
+                BrKons: {
+                  Dokumenttyp: 'Paragraph',
+                  ArtikelParagraphAnlage: '§ 1293',
+                  Paragraphnummer: '1293',
+                  Abkuerzung: 'ABGB',
+                  Gesetzesnummer: '10001622',
+                  GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10001622',
+                },
+              },
+            },
+            Dokumentliste: {
+              ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html' }] } },
+            },
+          },
+        },
+      },
+    },
+  });
+  let apiCalls = 0;
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes('data.bka.gv.at/ris/api/v2.6/Bundesrecht') && url.includes('Seitennummer=1')) {
+      apiCalls += 1;
+      return new Response(page1, { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (url.includes('data.bka.gv.at/ris/api/v2.6/Bundesrecht') && url.includes('Seitennummer=2')) {
+      apiCalls += 1;
+      return new Response(page2, { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('<html></html>', { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: '§ 1293 ABGB', limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(apiCalls, 2);
+    assert.equal(result.data.best_candidate?.source_id, 'NOR12019035');
+    assert.ok(result.meta.notices?.includes('api_pagination_used: Bundesrecht page 2'));
+  });
+});
+
+await test("searchGemeindenApiRaw builds the official Gemeinden API request", async () => {
+  let seenUrl = "";
+
+  await withMockedFetch(async (input) => {
+    seenUrl = String(input);
+    return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: { Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '0' } } } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }, async () => {
+    const result = await searchGemeindenApiRaw({ query: 'Bauordnung', state: 'Wien', municipality: 'Wien', authentic: true });
+    assert.ok(seenUrl.includes('/Gemeinden?'));
+    assert.ok(seenUrl.includes('Applikation=GrA'));
+    assert.ok(seenUrl.includes('SucheInWien=true'));
+    assert.ok(seenUrl.includes('Gemeinde=Wien'));
+    assert.equal(result.hitsMeta.totalHits, 0);
+  });
+});
+
+await test("ris_search supports municipal API discovery", async () => {
+  const apiJson = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '1' },
+        OgdDocumentReference: {
+          Data: {
+            Metadaten: {
+              Technisch: { ID: 'GEMREA_OB_40411_20260408_1', Applikation: 'GrA', Organ: 'Haigermoos' },
+              Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=GemeinderechtAuth&Dokumentnummer=GEMREA_OB_40411_20260408_1' },
+              Gemeinden: {
+                Kurztitel: 'Abfallgebührenordnung',
+                Titel: 'Verordnung des Gemeinderates der Gemeinde Haigermoos betreffend Abfallgebühren',
+                Bundesland: 'Oberösterreich',
+                Gemeinde: 'Haigermoos',
+                Typ: 'Verordnung',
+                GrA: {
+                  Bezirk: 'Braunau',
+                  KundmachungsorganNr: 'VBl. Nr. 1/2026',
+                  Kundmachungsdatum: '2026-04-08',
+                },
+              },
+            },
+            Dokumentliste: {
+              ContentReference: {
+                ContentType: 'MainDocument',
+                Name: 'Hauptdokument',
+                Urls: { ContentUrl: { DataType: 'Authentisch', Url: 'https://www.ris.bka.gv.at/Dokumente/GemeinderechtAuth/GEMREA_OB_40411_20260408_1/GEMREA_OB_40411_20260408_1.pdf' } },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes('/Gemeinden?')) {
+      assert.ok(url.includes('Applikation=GrA'));
+      assert.ok(url.includes('SucheInOberoesterreich=true'));
+      assert.ok(url.includes('Gemeinde=Haigermoos'));
+      return new Response(apiJson, { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('<html></html>', { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: 'Abfallgebührenordnung', scope: 'municipal', state: 'Oberösterreich', municipality: 'Haigermoos', authentic: true, limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.best_candidate?.application, 'GrA');
+    assert.equal(result.data.best_candidate?.scope, 'municipal');
+    assert.equal(result.data.best_candidate?.municipality, 'Haigermoos');
+    assert.equal(result.data.best_candidate?.district, 'Braunau');
+    assert.ok(result.meta.notices?.includes('api_search: Gemeinden'));
+    assert.ok(result.meta.notices?.includes('api_municipality_filter: Haigermoos'));
+  });
+});
+
+await test("fetchHistoryApiRaw builds the official History API request", async () => {
+  let seenUrl = "";
+
+  await withMockedFetch(async (input) => {
+    seenUrl = String(input);
+    return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: { Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '3' } } } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }, async () => {
+    const result = await fetchHistoryApiRaw({ changedFrom: '2026-04-01', changedTo: '2026-04-08', includeDeletedDocuments: true });
+    assert.ok(seenUrl.includes('/History?'));
+    assert.ok(!seenUrl.includes('Anwendung='));
+    assert.ok(seenUrl.includes('AenderungenVon=2026-04-01'));
+    assert.ok(seenUrl.includes('IncludeDeletedDocuments=true'));
+    assert.equal(result.hitsMeta.totalHits, 3);
+  });
+});
+
 await test("ris_search falls back to HTML when the RIS API is unavailable", async () => {
   const html = fixture("fixtures/ris/abgb-search-live.html");
 
@@ -217,6 +471,7 @@ await test("ris_search falls back to HTML when the RIS API is unavailable", asyn
     if (!result.ok) return;
     assert.ok(result.meta.notices?.includes("html_fallback_used"));
     assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("api_variant_failed:")));
+    assert.ok(result.meta.warnings?.includes("api_error_type: API_ERROR"));
   });
 });
 
@@ -441,6 +696,27 @@ await test("ris_fetch_segment prefers API-resolved content_url when sourceId is 
   });
 });
 
+await test("ris_fetch_segment accepts contentUrl directly and skips API lookup", async () => {
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      seenUrls.push(url);
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR12019035", contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(seenUrls.length, 1);
+      assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
+      assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
+    });
+  });
+});
+
 await test("ris_fetch_segment returns VALIDATION_ERROR without source identifier", async () => {
   const result = await risFetchSegmentStub({});
 
@@ -523,6 +799,27 @@ await test("ris_fetch_whole_law prefers API-resolved whole_law_url when sourceId
       const apiMeta = (result.data.artifact.metadata?.ris_api ?? {}) as Record<string, unknown>;
       assert.equal(apiMeta.law_id, "10000411");
       assert.ok(result.meta.notices?.includes("api_lookup_used: preferred whole_law_url for whole-law fetch"));
+    });
+  });
+});
+
+await test("ris_fetch_whole_law accepts wholeLawUrl directly and skips API lookup", async () => {
+  const html = fixture("fixtures/ris/abgb-whole-law-live.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      seenUrls.push(url);
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchWholeLawStub({ sourceId: "LOO11000699", wholeLawUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(seenUrls.length, 1);
+      assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
+      assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
     });
   });
 });

@@ -12,6 +12,11 @@ function asArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+function extractContentUrls(ref: RisApiDocumentReference): RisApiContentUrl[] {
+  const contentReferences = asArray(ref.Data?.Dokumentliste?.ContentReference as { Urls?: { ContentUrl?: RisApiContentUrl | RisApiContentUrl[] } } | { Urls?: { ContentUrl?: RisApiContentUrl | RisApiContentUrl[] } }[] | undefined);
+  return contentReferences.flatMap((entry) => asArray(entry?.Urls?.ContentUrl));
+}
+
 function findContentUrl(items: RisApiContentUrl[], dataType: string): string | undefined {
   return items.find((item) => item.DataType?.toLowerCase() === dataType.toLowerCase())?.Url;
 }
@@ -87,7 +92,7 @@ export function mapApiDocumentReferences(
       continue;
     }
 
-    const contentUrls = asArray(ref.Data?.Dokumentliste?.ContentReference?.Urls?.ContentUrl);
+    const contentUrls = extractContentUrls(ref);
     const htmlUrl = findContentUrl(contentUrls, "Html");
     const sourceUrl = general?.DokumentUrl ?? resolveScopedEli(ref, isBund) ?? htmlUrl;
     if (!sourceUrl) continue;
@@ -112,6 +117,15 @@ export function mapApiDocumentReferences(
       law_id: scopedDetails?.Gesetzesnummer,
       content_url: htmlUrl,
       whole_law_url: scopedDetails?.GesamteRechtsvorschriftUrl,
+      document_url: general?.DokumentUrl,
+      document_type: scopedDetails?.Dokumenttyp,
+      legal_type: scopedDetails?.Typ,
+      section_ref: sectionRef,
+      paragraph_number: scopedDetails?.Paragraphnummer,
+      law_abbreviation: isBund ? bundesrecht?.BrKons?.Abkuerzung : undefined,
+      promulgation: scopedDetails?.Kundmachungsorgan,
+      published_at: general?.Veroeffentlicht,
+      changed_at: general?.Geaendert,
     };
 
     hits.push({

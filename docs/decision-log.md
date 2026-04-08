@@ -31,3 +31,11 @@
 ## 2026-04-08 — Landesrecht bleibt trotz API-first defensiv
 **Entscheidung:** State-spezifische Titelvarianten bleiben aktiv, und bekannte API-Missgriffe werden offen als Limit dokumentiert statt schöngeredet.
 **Warum:** Die Live-Prüfung über alle Bundesländer war weitgehend brauchbar, aber nicht makellos; konkret liefert Niederösterreich für `Bauordnung` derzeit bevorzugt eine authentische Interpretation statt der Stammnorm.
+
+## 2026-04-08 — Gemeinderecht wird öffentlich über `ris_search` integriert
+**Entscheidung:** Gemeinderecht bleibt nicht bei internen Raw-Clients stehen, sondern wird als öffentlicher `ris_search`-Pfad mit `scope: "municipal"` nutzbar gemacht.
+**Warum:** Sonst wäre die API-Erweiterung nur halb umgesetzt. Die offizielle `/Gemeinden`-API liefert belastbare strukturierte Treffer, die sich in den bestehenden Discovery-Vertrag einpassen lassen.
+
+## 2026-04-08 — History bleibt intern und defensiv
+**Entscheidung:** Der History-Endpunkt wird vorerst als interner typed Raw-Client geführt, nicht als öffentliches Such-Tool.
+**Warum:** Live funktionierte das Zeitfenster ohne `Anwendung`-Filter, aber getestete `Anwendung`-Werte wie `BrKons` oder `LrKons` lieferten API-Fehler. Das taugt derzeit als Sync-/Diagnose-Baustein, nicht als sauberer User-Search-Contract.

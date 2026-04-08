@@ -18,7 +18,7 @@ import type { CachedArtifact, RisFetchWholeLawInput, RisFetchWholeLawOutput } fr
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
   let sourceUrl: string;
   try {
-    sourceUrl = buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    sourceUrl = input.wholeLawUrl?.trim() || buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
   } catch (error) {
     return {
       ok: false,
@@ -61,7 +61,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   let apiLookup = undefined as Awaited<ReturnType<typeof lookupRisApiBySourceId>>;
   let apiLookupWarning: string | undefined;
-  if (!input.sourceUrl) {
+  if (!input.sourceUrl && !input.wholeLawUrl) {
     try {
       apiLookup = await lookupRisApiBySourceId(sourceId);
     } catch (error) {
