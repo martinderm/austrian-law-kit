@@ -4,6 +4,10 @@ function normalizeSourceId(sourceId: string): string {
   return sourceId.trim();
 }
 
+function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Landesnormen" {
+  return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
+}
+
 export function extractSourceIdFromRisUrl(sourceUrl: string): string | null {
   let url: URL;
   try {
@@ -27,9 +31,10 @@ export function buildRisSegmentUrl(params: { sourceId?: string; sourceUrl?: stri
     throw new Error("Either sourceId or sourceUrl is required");
   }
 
+  const normalizedSourceId = normalizeSourceId(params.sourceId);
   const base = new URL("/Dokument.wxe", resolveRisBaseUrl());
-  base.searchParams.set("Abfrage", "Bundesnormen");
-  base.searchParams.set("Dokumentnummer", normalizeSourceId(params.sourceId));
+  base.searchParams.set("Abfrage", inferRisCollectionFromSourceId(normalizedSourceId));
+  base.searchParams.set("Dokumentnummer", normalizedSourceId);
   return base.toString();
 }
 

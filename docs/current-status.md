@@ -93,14 +93,18 @@ Relevante Dateien:
 ## RIS Fetch Segment (MVP)
 
 - `ris_fetch_segment` lädt einen einzelnen RIS-Eintrag via `sourceId` oder `sourceUrl`.
+- Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus eine konkretere `content_url` für den eigentlichen Abruf.
 - Ergebnis ist ein `norm_segment`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
+- API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
 - `segmentRef` ist bewusst außerhalb des MVP und liefert explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`.
 
 ## RIS Fetch Whole Law (MVP)
 
 - `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
+- Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus eine passende `whole_law_url` (`GeltendeFassung.wxe`) für den eigentlichen Abruf.
 - Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
+- API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
 - `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`.
 

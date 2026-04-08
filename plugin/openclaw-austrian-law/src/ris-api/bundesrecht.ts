@@ -10,7 +10,7 @@ function asArray<T>(value: T | T[] | undefined): T[] {
 export async function searchBundesrechtApi(request: RisApiSearchRequest): Promise<RisApiSearchResult> {
   const url = buildRisApiUrl("/Bundesrecht", {
     Applikation: "BrKons",
-    Titel: request.lawTitle ?? request.normalizedQuery,
+    Titel: request.lawTitle,
     Suchworte: request.keywords,
     Seitennummer: "1",
   });

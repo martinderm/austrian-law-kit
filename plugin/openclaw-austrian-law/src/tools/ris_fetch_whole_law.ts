@@ -1,5 +1,6 @@
 import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
+import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
 import {
   buildRisWholeLawUrl,
@@ -58,9 +59,20 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     };
   }
 
+  let apiLookup = undefined as Awaited<ReturnType<typeof lookupRisApiBySourceId>>;
+  let apiLookupWarning: string | undefined;
+  if (!input.sourceUrl) {
+    try {
+      apiLookup = await lookupRisApiBySourceId(sourceId);
+    } catch (error) {
+      apiLookupWarning = `api_lookup_failed: ${error instanceof Error ? error.message : "Unknown API lookup error"}`;
+    }
+  }
+  const effectiveSourceUrl = apiLookup?.wholeLawUrl ?? sourceUrl;
+
   let response: Response;
   try {
-    response = await fetch(sourceUrl, {
+    response = await fetch(effectiveSourceUrl, {
       method: "GET",
       headers: { accept: "text/html,application/xhtml+xml" },
     });
@@ -90,7 +102,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law request returned HTTP ${response.status}`,
-        details: { status: response.status, source_url: sourceUrl },
+        details: { status: response.status, source_url: effectiveSourceUrl },
         retryable: response.status >= 500,
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
@@ -127,7 +139,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       frontmatter: {
         stable_id: stableId,
         source: "ris",
-        source_url: sourceUrl,
+        source_url: effectiveSourceUrl,
         doc_type: "norm_document",
         title: parsed.title,
         fetched_at: new Date().toISOString(),
@@ -136,11 +148,28 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         source_id: sourceId,
       },
       content: parsed.content,
+      metadata: apiLookup ? {
+        ris_api: {
+          application: apiLookup.application,
+          scope: apiLookup.scope,
+          state: apiLookup.state,
+          law_id: apiLookup.lawId,
+          document_url: apiLookup.documentUrl,
+          content_url: apiLookup.contentUrl,
+          whole_law_url: apiLookup.wholeLawUrl,
+        },
+      } : undefined,
     };
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
-    const warnings = buildCacheWarnings({ cacheRead, cacheWrite });
+    const warnings = [
+      ...buildCacheWarnings({ cacheRead, cacheWrite }),
+      ...(apiLookupWarning ? [apiLookupWarning] : []),
+    ];
+    const notices = [
+      ...(apiLookup?.wholeLawUrl ? ["api_lookup_used: preferred whole_law_url for whole-law fetch"] : []),
+    ];
 
     return {
       ok: true,
@@ -153,6 +182,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
           source: "ris" as const,
           timestamp: new Date().toISOString(),
         }),
+        ...(notices.length > 0 ? { notices } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

@@ -1,0 +1,45 @@
+{
+  "OgdSearchResult": {
+    "OgdDocumentResults": {
+      "Hits": {
+        "@pageNumber": "1",
+        "@pageSize": "20",
+        "#text": "1"
+      },
+      "OgdDocumentReference": {
+        "Data": {
+          "Metadaten": {
+            "Technisch": {
+              "ID": "NOR12019035",
+              "Applikation": "BrKons"
+            },
+            "Allgemein": {
+              "DokumentUrl": "https://www.ris.bka.gv.at/eli/jgs/1811/946/P1293/NOR12019035"
+            },
+            "Bundesrecht": {
+              "Kurztitel": "Allgemeines bürgerliches Gesetzbuch",
+              "BrKons": {
+                "Dokumenttyp": "Paragraph",
+                "ArtikelParagraphAnlage": "§ 1293",
+                "Gesetzesnummer": "10001622",
+                "GesamteRechtsvorschriftUrl": "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10001622"
+              }
+            }
+          },
+          "Dokumentliste": {
+            "ContentReference": {
+              "Urls": {
+                "ContentUrl": [
+                  {
+                    "DataType": "Html",
+                    "Url": "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

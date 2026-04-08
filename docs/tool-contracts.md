@@ -59,6 +59,13 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Output (MVP):**
 - segmentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
 - Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
+- optional zusätzliche API-Metadaten unter `metadata.ris_api`, wenn ein offizieller Lookup für die `sourceId` erfolgreich war
+
+**Aktueller Abrufpfad (MVP):**
+- explizite `sourceUrl` wird direkt verwendet
+- bei bloßer `sourceId` versucht das Tool zuerst einen offiziellen RIS-API-Lookup
+- wenn verfügbar, wird eine konkretere `content_url` bevorzugt
+- wenn der Lookup fehlschlägt, bleibt der bisherige direkte RIS-Abruf als Fallback bestehen
 
 **Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`
@@ -80,6 +87,13 @@ Regel: mindestens `sourceId` oder `sourceUrl` muss vorhanden sein.
 **Output (MVP):**
 - dokumentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
 - Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
+- optional zusätzliche API-Metadaten unter `metadata.ris_api`, wenn ein offizieller Lookup für die `sourceId` erfolgreich war
+
+**Aktueller Abrufpfad (MVP):**
+- explizite `sourceUrl` wird direkt verwendet
+- bei bloßer `sourceId` versucht das Tool zuerst einen offiziellen RIS-API-Lookup
+- wenn verfügbar, wird eine passende `whole_law_url` bevorzugt
+- wenn der Lookup fehlschlägt, bleibt der bisherige direkte RIS-Abruf als Fallback bestehen
 
 **Fehlerklassen (MVP):**
 - `VALIDATION_ERROR`

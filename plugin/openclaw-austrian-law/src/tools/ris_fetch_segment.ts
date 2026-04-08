@@ -1,5 +1,6 @@
 import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
+import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
 import {
   buildRisSegmentUrl,
@@ -93,9 +94,20 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
+  let apiLookup = undefined as Awaited<ReturnType<typeof lookupRisApiBySourceId>>;
+  let apiLookupWarning: string | undefined;
+  if (!input.sourceUrl) {
+    try {
+      apiLookup = await lookupRisApiBySourceId(sourceId);
+    } catch (error) {
+      apiLookupWarning = `api_lookup_failed: ${error instanceof Error ? error.message : "Unknown API lookup error"}`;
+    }
+  }
+  const effectiveSourceUrl = apiLookup?.contentUrl ?? sourceUrl;
+
   let response: Response;
   try {
-    response = await fetch(sourceUrl, {
+    response = await fetch(effectiveSourceUrl, {
       method: "GET",
       headers: { accept: "text/html,application/xhtml+xml" },
     });
@@ -125,7 +137,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS segment request returned HTTP ${response.status}`,
-        details: { status: response.status, source_url: sourceUrl },
+        details: { status: response.status, source_url: effectiveSourceUrl },
         retryable: response.status >= 500,
       },
       meta: { tool: "ris_fetch_segment", source: "ris" },
@@ -171,7 +183,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       frontmatter: {
         stable_id: stableId,
         source: "ris",
-        source_url: sourceUrl,
+        source_url: effectiveSourceUrl,
         doc_type: "norm_segment",
         title: displayTitle,
         fetched_at: new Date().toISOString(),
@@ -199,12 +211,29 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
           law_slug: parsed.lawSlug,
           heading: parsed.heading,
         },
+        ...(apiLookup ? {
+          ris_api: {
+            application: apiLookup.application,
+            scope: apiLookup.scope,
+            state: apiLookup.state,
+            law_id: apiLookup.lawId,
+            document_url: apiLookup.documentUrl,
+            content_url: apiLookup.contentUrl,
+            whole_law_url: apiLookup.wholeLawUrl,
+          },
+        } : {}),
       },
     };
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);
 
-    const warnings = buildCacheWarnings({ cacheRead, cacheWrite });
+    const warnings = [
+      ...buildCacheWarnings({ cacheRead, cacheWrite }),
+      ...(apiLookupWarning ? [apiLookupWarning] : []),
+    ];
+    const notices = [
+      ...(apiLookup?.contentUrl ? ["api_lookup_used: preferred content_url for segment fetch"] : []),
+    ];
 
     return {
       ok: true,
@@ -217,6 +246,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
           source: "ris" as const,
           timestamp: new Date().toISOString(),
         }),
+        ...(notices.length > 0 ? { notices } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

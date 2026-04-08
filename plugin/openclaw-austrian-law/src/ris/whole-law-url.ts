@@ -1,5 +1,9 @@
 import { resolveRisBaseUrl } from "./runtime.js";
 
+function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Landesnormen" {
+  return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
+}
+
 export function extractSourceIdFromWholeLawUrl(sourceUrl: string): string | null {
   let url: URL;
   try {
@@ -23,9 +27,10 @@ export function buildRisWholeLawUrl(params: { sourceId?: string; sourceUrl?: str
     throw new Error("Either sourceId or sourceUrl is required");
   }
 
+  const normalizedSourceId = params.sourceId.trim();
   const base = new URL("/Dokument.wxe", resolveRisBaseUrl());
-  base.searchParams.set("Abfrage", "Bundesnormen");
-  base.searchParams.set("Dokumentnummer", params.sourceId.trim());
+  base.searchParams.set("Abfrage", inferRisCollectionFromSourceId(normalizedSourceId));
+  base.searchParams.set("Dokumentnummer", normalizedSourceId);
   return base.toString();
 }
 

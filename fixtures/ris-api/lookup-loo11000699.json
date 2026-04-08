@@ -1,0 +1,46 @@
+{
+  "OgdSearchResult": {
+    "OgdDocumentResults": {
+      "Hits": {
+        "@pageNumber": "1",
+        "@pageSize": "20",
+        "#text": "1"
+      },
+      "OgdDocumentReference": {
+        "Data": {
+          "Metadaten": {
+            "Technisch": {
+              "ID": "LOO11000699",
+              "Applikation": "LrKons"
+            },
+            "Allgemein": {
+              "DokumentUrl": "https://www.ris.bka.gv.at/eli/lgbl/OB/1994/66/P0/LOO11000699"
+            },
+            "Landesrecht": {
+              "Kurztitel": "Oö. Bauordnung 1994",
+              "Bundesland": "Oberösterreich",
+              "LrKons": {
+                "Dokumenttyp": "Norm",
+                "ArtikelParagraphAnlage": "§ 0",
+                "Gesetzesnummer": "10000411",
+                "GesamteRechtsvorschriftUrl": "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411"
+              }
+            }
+          },
+          "Dokumentliste": {
+            "ContentReference": {
+              "Urls": {
+                "ContentUrl": [
+                  {
+                    "DataType": "Html",
+                    "Url": "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LOO11000699/LOO11000699.html"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

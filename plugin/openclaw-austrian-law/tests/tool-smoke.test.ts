@@ -414,6 +414,33 @@ await test("ris_fetch_segment returns a usable artifact from a live-derived fixt
   });
 });
 
+await test("ris_fetch_segment prefers API-resolved content_url when sourceId is given", async () => {
+  const apiJson = fixture("fixtures/ris-api/lookup-nor12019035.json");
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      seenUrls.push(url);
+      if (url.includes("data.bka.gv.at/ris/api/v2.6/Bundesrecht")) {
+        return new Response(apiJson, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR12019035", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.ok(seenUrls.some((url) => url.includes("Suchworte=NOR12019035")));
+      assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
+      const apiMeta = (result.data.artifact.metadata?.ris_api ?? {}) as Record<string, unknown>;
+      assert.equal(apiMeta.law_id, "10001622");
+      assert.ok(result.meta.notices?.includes("api_lookup_used: preferred content_url for segment fetch"));
+    });
+  });
+});
+
 await test("ris_fetch_segment returns VALIDATION_ERROR without source identifier", async () => {
   const result = await risFetchSegmentStub({});
 
@@ -469,6 +496,33 @@ await test("ris_fetch_whole_law returns a usable artifact from a live-derived fi
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_document");
       assert.ok(result.data.artifact.content.trim().length > 100);
       assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
+    });
+  });
+});
+
+await test("ris_fetch_whole_law prefers API-resolved whole_law_url when sourceId is given", async () => {
+  const apiJson = fixture("fixtures/ris-api/lookup-loo11000699.json");
+  const html = fixture("fixtures/ris/abgb-whole-law-live.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      seenUrls.push(url);
+      if (url.includes("data.bka.gv.at/ris/api/v2.6/Landesrecht")) {
+        return new Response(apiJson, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchWholeLawStub({ sourceId: "LOO11000699", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.ok(seenUrls.some((url) => url.includes("Suchworte=LOO11000699")));
+      assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
+      const apiMeta = (result.data.artifact.metadata?.ris_api ?? {}) as Record<string, unknown>;
+      assert.equal(apiMeta.law_id, "10000411");
+      assert.ok(result.meta.notices?.includes("api_lookup_used: preferred whole_law_url for whole-law fetch"));
     });
   });
 });
