@@ -84,6 +84,7 @@ Relevante Dateien:
 - Für Bundesrecht läuft Discovery nun **API-first** über die offizielle OGD-RIS-API (`/Bundesrecht`, `Applikation=BrKons`); HTML-Suche bleibt Fallback.
 - Für Landesrecht gibt es einen ersten API-Pfad (`/Landesrecht`, `Applikation=LrKons`) mit explizitem Bundesland-Kontext, zusätzlichem clientseitigem State-Filter und state-spezifischen Titelvarianten (z. B. `Burgenländisches Baugesetz`, `Oö. Bauordnung`, `Wiener Bauordnung`), weil die API-Flags laut Live-Tests nicht zuverlässig nur das gewünschte Bundesland zurückliefern.
 - Für Gemeinderecht gibt es jetzt einen öffentlichen API-Pfad über `ris_search` mit `scope: "municipal"`; gesucht wird über `/Gemeinden` mit `Applikation=Gr` oder `GrA`, optional scoped nach Bundesland, Gemeinde und Bezirk.
+- Extern live bestätigt: Nach Bereinigung des doppelten Plugin-Ladepfads und ergänzter Plugin-Konfiguration akzeptiert der real exponierte Tool-Vertrag jetzt `scope`, `state`, `municipality` und liefert für Landesrecht wieder reguläre Treffer statt Schemafehler.
 - Für typische Normreferenzen probiert das Tool mehrere normalisierte Suchvarianten; bei API-Ausfall oder fehlenden Treffern wird auf HTML-Fallback mit Retry bei temporären 5xx-Fehlern zurückgegangen.
 - Treffer werden nicht nur roh zurückgegeben, sondern mit `best_candidate`, `match_reason`, grober `confidence` sowie ersten Metadaten wie `application`, `scope`, `law_id`, `content_url`, `whole_law_url`, `document_type`, `legal_type`, `section_ref`, `municipality` und `district` angereichert.
 - Der frühere kleine `ris_search`-Härtungsplan (Resolver, Retry/Fallbacks, Ranking, Doku-Nachzug) gilt im Wesentlichen als abgearbeitet; offener Restpunkt ist höchstens weitere Parser-Härtung.
@@ -105,6 +106,7 @@ Relevante Dateien:
 
 - `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
 - Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus eine passende `whole_law_url` (`GeltendeFassung.wxe`) für den eigentlichen Abruf.
+- Extern live bestätigt: Für `ris_fetch_whole_law(sourceId="NOR40214078")` verwendet der reale Laufzeitpfad nun wieder die korrekte `GeltendeFassung.wxe?...`-URL und liefert ein Whole-Law-Artifact statt des früheren alten Dokument-Links.
 - Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
 - API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
 - `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
