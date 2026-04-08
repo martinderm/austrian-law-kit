@@ -196,18 +196,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       metadata: {
         ris_extracted: {
           display_title: displayTitle,
-          law_title: parsed.lawTitle,
-          law_abbreviation: parsed.lawAbbreviation,
           law_slug: parsed.lawSlug,
-          law_type: parsed.lawType,
-          index_label: parsed.indexLabel,
-          promulgation: parsed.promulgation,
-          effective_date: parsed.effectiveDate,
-          effective_date_raw: parsed.effectiveDateRaw,
-          repealed_date: parsed.repealedDate,
-          repealed_date_raw: parsed.repealedDateRaw,
-          norm_status: parsed.normStatus,
-          segment_ref: parsed.segmentRef,
           heading: parsed.heading,
         },
       },
