@@ -1,7 +1,7 @@
 import { resolveRisQuery } from "../ris/query-resolver.js";
 import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
-import { parseRisSearchHtml } from "../ris/search-parser.js";
+import { parseRisDirectDocumentHit, parseRisSearchHtml } from "../ris/search-parser.js";
 import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
 
 const SEARCH_HEADERS = {
@@ -115,7 +115,16 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   let lastUpstreamError: { status?: number; url?: string; attempts?: number; message?: string } | undefined;
 
   for (const searchQuery of searchQueries) {
-    const url = buildRisSearchUrl({ query: searchQuery, limit });
+    const url = resolved.kind === "normRef"
+      ? buildRisSearchUrl({
+          query: searchQuery,
+          limit,
+          lawTitle: resolved.lawAbbreviation,
+          paragraphFrom: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
+          paragraphTo: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
+          keywords: searchQuery,
+        })
+      : buildRisSearchUrl({ query: searchQuery, limit });
     const fetchResult = await fetchWithRetry(url);
 
     if (fetchResult.error) {
@@ -150,6 +159,26 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       const html = await response.text();
       const hits = parseRisSearchHtml(html, limit);
       if (hits.length === 0) {
+        const directHit = parseRisDirectDocumentHit(html, url);
+        if (directHit) {
+          return {
+            ok: true,
+            data: {
+              hits: [directHit],
+              best_candidate: directHit,
+              normalized_query: resolved.normalizedQuery,
+              resolver_kind: resolved.kind,
+            },
+            meta: {
+              tool: "ris_search",
+              source: "ris",
+              timestamp: new Date().toISOString(),
+              notices: [...notices, `resolver_direct_document: ${searchQuery}`],
+              warnings,
+            },
+          };
+        }
+
         warnings.push(`search_variant_no_results: ${searchQuery}`);
         continue;
       }

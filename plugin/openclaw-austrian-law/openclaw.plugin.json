@@ -1,7 +1,7 @@
 {
   "id": "austrian-law-kit",
   "name": "Austrian Law Kit",
-  "description": "Plugin-Skelett für österreichische Rechtsquellen (ohne Parser/Fetching-Implementierung).",
+  "description": "OpenClaw-Plugin für österreichische Rechtsquellen mit RIS als Primärquelle und optionaler JUSLINE-Sekundärquelle.",
   "version": "0.1.0",
   "configSchema": {
     "type": "object",
@@ -13,12 +13,12 @@
       },
       "risBaseUrl": {
         "type": "string",
-        "description": "Basis-URL für RIS (Platzhalter, noch ungenutzt)",
+        "description": "Basis-URL für RIS",
         "default": "https://www.ris.bka.gv.at"
       },
       "juslineBaseUrl": {
         "type": "string",
-        "description": "Basis-URL für JUSLINE (Platzhalter, noch ungenutzt)",
+        "description": "Basis-URL für JUSLINE",
         "default": "https://www.jusline.at"
       },
       "enableJusline": {

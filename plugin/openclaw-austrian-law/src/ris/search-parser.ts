@@ -95,3 +95,22 @@ export function parseRisSearchHtml(html: string, maxHits: number): SearchHit[] {
 
   return hits;
 }
+
+export function parseRisDirectDocumentHit(html: string, fallbackUrl: string): SearchHit | undefined {
+  const sourceIdMatch = html.match(/\bNOR[0-9A-Z]+\b/i);
+  const sourceId = sourceIdMatch?.[0]?.toUpperCase();
+  if (!sourceId) return undefined;
+
+  const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
+  const title = stripTags(titleMatch?.[1] ?? "");
+  if (!title) return undefined;
+
+  return {
+    stable_id: toStableIdFromSourceId(sourceId) ?? "",
+    source_id: sourceId,
+    title,
+    source_url: fallbackUrl,
+    match_reason: "RIS search resolved directly to a document",
+    confidence: "high",
+  };
+}

@@ -1,6 +1,6 @@
 # austrian-law-kit (Plugin MVP)
 
-Natives Plugin-MVP für den Austrian-Law-Stack in OpenClaw.
+Natives OpenClaw-Plugin für österreichische Rechtsquellen mit **RIS als Primärquelle** und **JUSLINE als optionaler Sekundärquelle**.
 
 ## Struktur (OpenClaw-konform)
 
@@ -12,9 +12,9 @@ Natives Plugin-MVP für den Austrian-Law-Stack in OpenClaw.
   - Root-Entry-Point der Plugin-Extension (wird über `openclaw.extensions` geladen)
   - nutzt die dokumentierte `definePluginEntry`-Form aus `openclaw/plugin-sdk/core`
 - `src/index.ts`
-  - interne Konstante/Typen für geplante Toolnamen
-- `src/tools/`, `src/cache/`, `src/types/`
-  - reine Platzhalterstruktur
+  - interne Konstante/Typen für Toolnamen
+- `src/tools/`, `src/cache/`, `src/types/`, `src/ris/`, `src/jusline/`
+  - konkrete MVP-Implementierungen für Tool-Logik, Cache und Parser/Resolver
 
 ## Registrierte Tools
 
@@ -28,7 +28,7 @@ Produktiv im MVP:
 
 ## Datenvertrag als Voraussetzung
 
-Die spätere Tool-Implementierung hängt von folgenden Verträgen ab:
+Die Tool-Implementierung orientiert sich an folgenden Verträgen:
 - `docs/stable-id-strategy.md`
 - `docs/frontmatter-schema.md`
 - `docs/memory-layout.md`
@@ -66,4 +66,4 @@ Im Plugin-Ordner:
 
 ## Nächster Schritt
 
-Nächster sinnvoller Schritt sind kleine Edge-Case-Härtungen bei Fixtures/Parsern und danach breitere Tests jenseits der Smoke-Checks.
+Nächste sinnvolle Schritte sind Parser-Härtung gegen weitere RIS-/JUSLINE-Varianten, breitere Fixture-Abdeckung und weitere Verbesserungen an der RIS-Discovery-Logik.

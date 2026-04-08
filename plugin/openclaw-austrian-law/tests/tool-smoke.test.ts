@@ -98,7 +98,11 @@ await test("ris_search normalizes common norm references", async () => {
 
   await withMockedFetch(async (input) => {
     const url = String(input);
-    assert.ok(url.includes("Titel=ABGB+%C2%A7+1293") || url.includes("Titel=ABGB+%C2%A7%2B1293") || url.includes("Titel=ABGB+%C2%A7+1293"));
+    assert.ok(url.includes("Titel=ABGB"));
+    assert.ok(url.includes("VonParagraf=1293"));
+    assert.ok(url.includes("BisParagraf=1293"));
+    assert.ok(url.includes("Position=1"));
+    assert.ok(url.includes("SkipToDocumentPage=true"));
     return new Response(html, { status: 200 });
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
@@ -142,12 +146,8 @@ await test("ris_search retries on upstream 500 and succeeds on retry", async () 
 await test("ris_search falls back across normalized variants before returning NOT_FOUND", async () => {
   let calls = 0;
 
-  await withMockedFetch(async (input) => {
+  await withMockedFetch(async () => {
     calls += 1;
-    const url = String(input);
-    if (url.includes("Titel=ABGB+%C2%A7+1293") || url.includes("Titel=ABGB+1293") || url.includes("Titel=1293+ABGB")) {
-      return new Response("<html><body><table></table></body></html>", { status: 200 });
-    }
     return new Response("<html><body><table></table></body></html>", { status: 200 });
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
@@ -157,6 +157,20 @@ await test("ris_search falls back across normalized variants before returning NO
     assert.equal(result.error.code, "NOT_FOUND");
     assert.ok(calls >= 2);
     assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("search_variant_no_results:")));
+  });
+});
+
+await test("ris_search returns a direct document hit when RIS resolves uniquely", async () => {
+  const html = '<html><head><title>RIS - Allgemeines bürgerliches Gesetzbuch § 1293 - Bundesrecht konsolidiert</title></head><body>NOR12019035</body></html>';
+
+  await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+    const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
+    assert.equal(result.data.best_candidate?.confidence, "high");
+    assert.ok(result.meta?.notices?.some((entry) => entry.startsWith("resolver_direct_document:")));
   });
 });
 
