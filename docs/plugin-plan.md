@@ -16,10 +16,6 @@ Planung der nativen Plugin-Toolschicht, ohne bereits Parser/Fetching/Produktivlo
    - liefert optionale Diskussionen/Kommentare (Sekundärquelle)
 5. `jusline_list_decisions`
    - listet Entscheidungen aus JUSLINE (nur bei explizitem Bedarf)
-6. `law_cache_get`
-   - liest Artefakte aus dem lokalen Law-Cache
-7. `law_cache_put`
-   - schreibt/aktualisiert Artefakte im lokalen Law-Cache
 
 ## Abgrenzung Skill vs Plugin
 
@@ -35,11 +31,10 @@ Planung der nativen Plugin-Toolschicht, ohne bereits Parser/Fetching/Produktivlo
 
 ## Implementierungsreihenfolge (später)
 
-1. Tool-Registrierung als Stubs am Root-Entry
-2. Cache-Basis (`law_cache_get`, `law_cache_put`) gemäß Datenvertrag
-3. RIS primär (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
-4. JUSLINE sekundär (`jusline_fetch_discussions`, `jusline_list_decisions`)
-5. Integrationshärtung + Tests
+1. Tool-Registrierung am Root-Entry
+2. RIS primär (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
+3. JUSLINE sekundär (`jusline_fetch_discussions`, `jusline_list_decisions`)
+4. Integrationshärtung + Tests
 
 ## Leitplanke
 

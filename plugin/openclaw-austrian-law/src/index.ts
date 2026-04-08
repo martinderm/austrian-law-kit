@@ -6,8 +6,6 @@ export const TOOL_NAMES: readonly ToolName[] = [
   "ris_fetch_whole_law",
   "jusline_fetch_discussions",
   "jusline_list_decisions",
-  "law_cache_get",
-  "law_cache_put",
 ] as const;
 
 export interface PluginSkeletonInfo {

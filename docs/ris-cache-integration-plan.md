@@ -26,6 +26,6 @@ Nach einem **erfolgreichen** RIS-Ergebnis wird das erzeugte Artifact **optional*
 ## Bewusst noch nicht in diesem Schritt
 
 - kein Cache-First-Verhalten für RIS-Fetch-Tools
-- keine Änderungen an `law_cache_get` / `law_cache_put`-Vertrag
+- keine Änderungen am internen Persistenzvertrag für RIS-Artefakte
 - kein Retry-/Queue-Mechanismus für Cache-Schreibfehler
 - keine JUSLINE-bezogene Cache-Logik

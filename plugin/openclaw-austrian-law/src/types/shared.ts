@@ -3,11 +3,9 @@ export type ToolName =
   | "ris_fetch_segment"
   | "ris_fetch_whole_law"
   | "jusline_fetch_discussions"
-  | "jusline_list_decisions"
-  | "law_cache_get"
-  | "law_cache_put";
+  | "jusline_list_decisions";
 
-export type ToolSourceKind = "ris" | "jusline" | "internal";
+export type ToolSourceKind = "ris" | "jusline";
 
 export type ToolDefinitionStatus = "stub" | "mvp";
 

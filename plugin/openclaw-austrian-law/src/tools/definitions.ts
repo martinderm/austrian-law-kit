@@ -51,20 +51,4 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     inputSchemaRef: TOOL_SCHEMA_REFS.jusline_list_decisions,
     outputSchemaRef: "contracts:JuslineListDecisionsOutput",
   },
-  {
-    name: "law_cache_get",
-    sourceKind: "internal",
-    status: "stub",
-    description: "Liest Law-Cache-Artefakte per Stable ID.",
-    inputSchemaRef: TOOL_SCHEMA_REFS.law_cache_get,
-    outputSchemaRef: "contracts:LawCacheGetOutput",
-  },
-  {
-    name: "law_cache_put",
-    sourceKind: "internal",
-    status: "stub",
-    description: "Schreibt/aktualisiert Law-Cache-Artefakte.",
-    inputSchemaRef: TOOL_SCHEMA_REFS.law_cache_put,
-    outputSchemaRef: "contracts:LawCachePutOutput",
-  },
 ] as const;

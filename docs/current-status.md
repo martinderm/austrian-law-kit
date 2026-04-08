@@ -74,7 +74,6 @@ Relevante Dateien:
 - RIS-Produktivlogik umfasst aktuell `ris_search` + `ris_fetch_segment` + `ris_fetch_whole_law` (MVP).
 - JUSLINE-MVP umfasst aktuell `jusline_fetch_discussions` + `jusline_list_decisions` als klar getrennte Sekundärquellen-Funktionen.
 - Keine tiefe Segment-/Unterstrukturmodellierung, keine inhaltliche Norm-Parserlogik.
-- `law_cache_get` / `law_cache_put` arbeiten lokal über Dateisystem-I/O (ohne Netzlogik).
 
 ## RIS Search (MVP)
 
@@ -120,7 +119,6 @@ Relevante Dateien:
 ## Cache-Schicht (neu geschärft)
 
 - Cache-Root wird pro Tool-Aufruf aus dem Plugin-Tool-Kontext abgeleitet: standardmäßig aus dem Workspace des aufrufenden Agenten, optional mit `api.pluginConfig.cacheRoot` als Override; Env-Var bleibt nur Fallback.
-- `law_cache_get` akzeptiert optional `docType` zur Reduktion der DocType-Heuristik.
 - Beim Lesen wird Konsistenz geprüft: `frontmatter.source` und `frontmatter.doc_type` müssen zum angefragten Pfad passen, sonst `CONFLICT`.
 - RIS-Fetch-Tools nutzen optionales write-through Caching (Best-Effort, kein Hard-Fail auf Cache-Schreibfehler).
 - RIS-Fetch-Tools nutzen gezielte Cache-Read-Wiederverwendung bei eindeutigem Stable-ID-Match (kein globales Cache-First).
@@ -151,7 +149,6 @@ Relevante Dateien:
 
 - Feldverfügbarkeit/Benennung in echten RIS-/JUSLINE-Antworten kann von Annahmen abweichen.
 - Vereinfachte YAML-Serialisierung ist absichtlich eingeschränkt.
-- DocType-Heuristik in `law_cache_get` bleibt als Übergang aktiv, solange `docType` nicht immer explizit mitgegeben wird.
 - Die naheliegende Alternative zu Regex ist ein echter HTML-Parser mit DOM-/Selektor-Zugriff; sollte eingebaut werden.
 
 ## Empfohlene nächste 3 Schritte (Reihenfolge)

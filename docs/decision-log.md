@@ -22,4 +22,4 @@
 
 ## 2026-03-21 — Lokale Cache-Helfer vor I/O/Netzwerk
 **Entscheidung:** Stable-ID, Pfade, Serialisierung zuerst lokal und deterministisch bauen.
-**Warum:** Solide Basis für `law_cache_get/put` ohne externe Abhängigkeiten.
+**Warum:** Solide Basis für lokale Artefaktpersistenz ohne externe Abhängigkeiten.

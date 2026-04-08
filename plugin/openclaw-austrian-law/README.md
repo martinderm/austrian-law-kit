@@ -25,9 +25,6 @@ Produktiv im MVP:
 - `jusline_fetch_discussions`
 - `jusline_list_decisions`
 
-Derzeit noch Stubs:
-- `law_cache_get`
-- `law_cache_put`
 
 ## Datenvertrag als Voraussetzung
 

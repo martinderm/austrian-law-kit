@@ -13,8 +13,6 @@ Sicherstellen, dass alle geplanten Tools einen dokumentierten und typisierten Ve
   - `ris_fetch_whole_law`
   - `jusline_fetch_discussions`
   - `jusline_list_decisions`
-  - `law_cache_get`
-  - `law_cache_put`
 
 ## Fall 2: Quelle je Tool klar
 
