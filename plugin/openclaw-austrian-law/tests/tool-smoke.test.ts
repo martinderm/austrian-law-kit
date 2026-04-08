@@ -105,7 +105,7 @@ await test("ris_search normalizes common norm references", async () => {
     if (!result.ok) return;
     assert.equal(result.data.normalized_query, "§ 1293 abgb");
     assert.equal(result.data.resolver_kind, "normRef");
-    assert.ok(result.meta.notices?.some((entry) => entry.startsWith("resolver_variant: using normalized reference query")));
+    assert.ok(result.meta.notices?.some((entry) => entry.startsWith("resolver_variants:")));
   });
 });
 
@@ -115,6 +115,44 @@ await test("ris_search returns VALIDATION_ERROR for too-short query", async () =
   assert.equal(result.ok, false);
   if (result.ok) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
+});
+
+await test("ris_search retries on upstream 500 and succeeds on retry", async () => {
+  const html = fixture("fixtures/ris/abgb-search-live.html");
+  let attempts = 0;
+
+  await withMockedFetch(async () => {
+    attempts += 1;
+    if (attempts === 1) return new Response("upstream error", { status: 500 });
+    return new Response(html, { status: 200 });
+  }, async () => {
+    const result = await risSearchStub({ query: "ABGB", limit: 5 });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(attempts, 2);
+  });
+});
+
+await test("ris_search falls back across normalized variants before returning NOT_FOUND", async () => {
+  let calls = 0;
+
+  await withMockedFetch(async (input) => {
+    calls += 1;
+    const url = String(input);
+    if (url.includes("Titel=ABGB+%C2%A7+1293") || url.includes("Titel=ABGB+1293") || url.includes("Titel=1293+ABGB")) {
+      return new Response("<html><body><table></table></body></html>", { status: 200 });
+    }
+    return new Response("<html><body><table></table></body></html>", { status: 200 });
+  }, async () => {
+    const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
+
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.error.code, "NOT_FOUND");
+    assert.ok(calls >= 2);
+    assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("search_variant_no_results:")));
+  });
 });
 
 await test("ris_fetch_segment returns a usable artifact from a live-derived fixture-backed fetch", async () => {
