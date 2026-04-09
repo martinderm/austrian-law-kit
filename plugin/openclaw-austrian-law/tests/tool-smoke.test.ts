@@ -875,6 +875,24 @@ await test("ris_fetch_segment extracts full text for StGB § 111 live case html"
   });
 });
 
+await test("ris_fetch_segment extracts paragraph content from RIS contentBlock layout (NOR12029654)", async () => {
+  const html = await fetch("https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12029654/NOR12029654.html").then((response) => response.text());
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR12029654", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(result.data.artifact.frontmatter.law_title, "Strafgesetzbuch");
+      assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 111");
+      assert.ok(result.data.artifact.content.includes("Wer einen anderen in einer für einen Dritten wahrnehmbaren Weise"));
+      assert.ok(result.data.artifact.content.includes("Freiheitsstrafe bis zu sechs Monaten"));
+      assert.ok(result.data.artifact.content.length > 400);
+    });
+  });
+});
+
 await test("ris_fetch_whole_law returns NOT_FOUND on HTTP 404", async () => {
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response("not found", { status: 404 }), async () => {

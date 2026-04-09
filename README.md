@@ -85,6 +85,8 @@ Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege
 
 Aktuelle interne Plugin-ID: `austrian-law-kit`
 
+**Wichtig für lokale Entwicklung:** Ein bloßer Gateway-Reload reicht bei Plugin-Code-Änderungen nicht. OpenClaw lädt den tatsächlich installierten Plugin-Ordner unter `extensions/<plugin-id>`. Nach Änderungen im Repo daher zuerst den installierten Plugin-Stand per `openclaw plugins update austrian-law-kit` oder `openclaw plugins install --force <pfad-zum-pluginordner>` aktualisieren, erst danach den Gateway reloaden/restarten und den Installationsordner bzw. `openclaw plugins inspect austrian-law-kit` verifizieren.
+
 ## Skill mit ausrollen
 
 Das Plugin allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill

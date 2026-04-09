@@ -103,14 +103,25 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
 
 function extractFieldByHeading(html: string, heading: string): string | undefined {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    `<div\\b[^>]*class\\s*=\\s*["'][^"']*p[^"']*["'][^>]*>[\\s\\S]*?<h3>\\s*${escaped}\\s*<\\/h3>([\\s\\S]*?)<\\/div>`,
-    "i",
-  );
-  const raw = html.match(pattern)?.[1];
-  if (!raw) return undefined;
-  const value = normalizeText(raw);
-  return value.length > 0 ? value : undefined;
+  const patterns = [
+    new RegExp(
+      `<div\\b[^>]*class\\s*=\\s*["'][^"']*p[^"']*["'][^>]*>[\\s\\S]*?<h3>\\s*${escaped}\\s*<\\/h3>([\\s\\S]*?)<\\/div>`,
+      "i",
+    ),
+    new RegExp(
+      `<div\\b[^>]*class\\s*=\\s*["'][^"']*contentBlock[^"']*["'][^>]*>[\\s\\S]*?<h1\\b[^>]*class\\s*=\\s*["'][^"']*Titel[^"']*["'][^>]*>[\\s\\S]*?${escaped}[\\s\\S]*?<\\/h1>([\\s\\S]*?)<\\/div>`,
+      "i",
+    ),
+  ];
+
+  for (const pattern of patterns) {
+    const raw = html.match(pattern)?.[1];
+    if (!raw) continue;
+    const value = normalizeText(raw);
+    if (value.length > 0) return value;
+  }
+
+  return undefined;
 }
 
 function toIsoDate(value: string | undefined): string | undefined {
@@ -118,6 +129,15 @@ function toIsoDate(value: string | undefined): string | undefined {
   const match = value.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
   if (!match) return undefined;
   return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function normalizeSegmentRef(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const normalized = value
+    .replace(/\bParagraph\s+\d+[a-zA-Z]*\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function deriveLawSlug(lawAbbreviation: string | undefined): string | undefined {
@@ -337,8 +357,24 @@ function extractContent(html: string): string {
     if (fallbackContent) return fallbackContent;
   }
 
+  const textHeadingIndex = html.indexOf(">Text</h1>");
+  if (textHeadingIndex >= 0) {
+    const afterHeading = html.slice(textHeadingIndex + ">Text</h1>".length);
+    const nextContentBlockIndex = afterHeading.search(/<div\b[^>]*class\s*=\s*["'][^"']*contentBlock[^"']*["'][^>]*>/i);
+    const nextMainCloseIndex = afterHeading.search(/<\/main>|<\/body>/i);
+    const endCandidates = [nextContentBlockIndex, nextMainCloseIndex].filter((value) => value >= 0);
+    const textSection = endCandidates.length > 0
+      ? afterHeading.slice(0, Math.min(...endCandidates))
+      : afterHeading;
+
+    const rendered = dedupeAdjacentParagraphs(promoteOrphanHeadings(renderSegmentMarkdown(textSection)));
+    if (rendered && rendered.length > 30) return rendered;
+
+    const fallbackContent = dedupeAdjacentParagraphs(promoteOrphanHeadings(normalizeText(textSection)));
+    if (fallbackContent) return fallbackContent;
+  }
+
   const contentBlock = extractFirstNonEmpty(html, [
-    /<div\b[^>]*class\s*=\s*["'][^"']*contentBlock[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<main\b[^>]*>([\s\S]*?)<\/main>/i,
     /<article\b[^>]*>([\s\S]*?)<\/article>/i,
@@ -376,7 +412,9 @@ export function parseRisSegmentHtml(html: string): ParsedRisSegment {
   const repealedDateRaw = extractFieldByHeading(html, "Außerkrafttretensdatum") ?? extractFieldByHeading(html, "Außerkrafttretensdatum");
   const promulgation = extractFieldByHeading(html, "Kundmachungsorgan");
   const heading = extractHeading(html);
-  const segmentRef = extractFieldByHeading(html, "§/Artikel/Anlage") ?? extractFieldByHeading(html, "�/Artikel/Anlage");
+  const segmentRef = normalizeSegmentRef(
+    extractFieldByHeading(html, "§/Artikel/Anlage") ?? extractFieldByHeading(html, "�/Artikel/Anlage"),
+  );
   const repealedDate = toIsoDate(repealedDateRaw);
 
   return {
