@@ -40,3 +40,8 @@
 ## 2026-04-08 — History bleibt intern und defensiv
 **Entscheidung:** Der History-Endpunkt wird vorerst als interner typed Raw-Client geführt, nicht als öffentliches Such-Tool.
 **Warum:** Live funktionierte das Zeitfenster ohne `Anwendung`-Filter, aber getestete `Anwendung`-Werte wie `BrKons` oder `LrKons` lieferten API-Fehler. Das taugt derzeit als Sync-/Diagnose-Baustein, nicht als sauberer User-Search-Contract.
+
+## 2026-04-08 — Runtime-Zustand ist Teil der Abnahme, nicht nur der Repo-Stand
+**Entscheidung:** Für das Austrian-Law-Plugin gilt Arbeit erst dann als wirklich umgesetzt, wenn der reale OpenClaw-Toolvertrag extern geprüft zum Repo-Stand passt.
+**Warum:** Die Probleme rund um `ris_search`-Schema und `ris_fetch_whole_law` saßen zeitweise nicht mehr im Quellcode, sondern im tatsächlich geladenen Plugin-Zustand.
+**Folge:** Bei Plugin-Änderungen werden künftig nicht nur Repo-Code und Tests geprüft, sondern immer auch der reale Laufzeitpfad. Doppelte Ladepfade sind zu vermeiden; plugin-spezifische Konfiguration wie `risApiBaseUrl` muss im tatsächlich geladenen Eintrag vorhanden sein.

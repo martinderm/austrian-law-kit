@@ -1,6 +1,17 @@
 # Current Status
 
-Stand: 2026-04-07 (laufend aktualisiert)
+Stand: 2026-04-08 (laufend aktualisiert)
+
+## Kurzstand 2026-04-08
+
+- Der RIS-API-Migrationsblock ist auf Branch `feat/ris-api-client` fachlich und technisch umgesetzt und nach GitHub gepusht.
+- Der reale OpenClaw-Toolvertrag wurde extern über `avvocado` gegengeprüft.
+- `ris_search` akzeptiert jetzt im Live-Betrieb wieder `scope`, `state` und `municipality`.
+- `ris_search(scope="land", state="Oberösterreich", query="Bauordnung")` liefert live reguläre Landesrecht-Treffer, u. a. `LOO11000699` (`Oö. Bauordnung 1994`).
+- `ris_fetch_whole_law(sourceId="NOR40214078")` liefert live wieder ein echtes Whole-Law-Artifact mit korrekter `GeltendeFassung.wxe?...`-URL.
+- Der konkrete Gemeinderecht-Testfall `Flächenwidmungsplan` / `Gänserndorf` lief technisch sauber, ergab aber `NOT_FOUND`.
+- Die frühere Runtime-Diskrepanz war kein reiner Repo-Codefehler, sondern hing am real geladenen Plugin-Zustand; bereinigt wurden doppelter Ladepfad plus ergänzte Plugin-Konfiguration (`risApiBaseUrl`).
+- Offen für morgen: Merge-/Abschlussschritt nach `master`, letzter Gesamtcheck und ggf. Schlussdoku für Release-Nähe.
 
 ## Was bereits umgesetzt ist
 
