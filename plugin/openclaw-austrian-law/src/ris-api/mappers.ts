@@ -94,7 +94,8 @@ export function mapApiDocumentReferences(
 
     const contentUrls = extractContentUrls(ref);
     const htmlUrl = findContentUrl(contentUrls, "Html");
-    const sourceUrl = general?.DokumentUrl ?? resolveScopedEli(ref, isBund) ?? htmlUrl;
+    const xmlUrl = findContentUrl(contentUrls, "Xml");
+    const sourceUrl = general?.DokumentUrl ?? resolveScopedEli(ref, isBund) ?? htmlUrl ?? xmlUrl;
     if (!sourceUrl) continue;
     if (seen.has(sourceUrl)) continue;
 
@@ -134,7 +135,9 @@ export function mapApiDocumentReferences(
       scope: isBund ? "bund" : "land",
       state: normalizeAustrianState(state),
       lawId: scopedDetails?.Gesetzesnummer,
+      lawAbbreviation: isBund ? bundesrecht?.BrKons?.Abkuerzung : undefined,
       contentUrl: htmlUrl,
+      xmlContentUrl: xmlUrl,
       wholeLawUrl: scopedDetails?.GesamteRechtsvorschriftUrl,
       documentUrl: general?.DokumentUrl,
     });

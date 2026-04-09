@@ -107,9 +107,10 @@ Relevante Dateien:
 ## RIS Fetch Segment (MVP)
 
 - `ris_fetch_segment` lädt einen einzelnen RIS-Eintrag via `sourceId` oder `sourceUrl`.
-- Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus eine konkretere `content_url` für den eigentlichen Abruf.
+- Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus für den eigentlichen Abruf zuerst `xml_content_url`, sonst `content_url`.
+- Für komplexere RIS-Segmente wird damit bevorzugt die XML-Repräsentation interpretiert; HTML bleibt Fallback.
 - Ergebnis ist ein `norm_segment`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
-- API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
+- API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `xml_content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
 - `segmentRef` ist bewusst außerhalb des MVP und liefert explizit `NOT_IMPLEMENTED`.
 - Fehlerbehandlung: `VALIDATION_ERROR`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`.
 
@@ -157,6 +158,7 @@ Relevante Dateien:
 - RIS-Parser wurden gegen echte Live-Snapshots nachgeschärft, damit Segment-/Whole-Law-Fetches den Normtext statt Navigationsstub extrahieren.
 - Zusätzlicher Regressionstest für den konkreten StGB-§-111-Fall (`NOR40173633`) stellt sicher, dass nicht bloß Kurztitel-Metadaten, sondern der eigentliche Paragraphentext extrahiert wird.
 - RIS-Segment-Artefakte enthalten jetzt exemplarisch reichere Metadaten wie Kurztitel, Abkürzung, Slug, Typ, Inkrafttretensdatum, Index, Kundmachungsorgan und Überschrift.
+- Neu geschärft: Der problematische StGB-Fall `NOR40254282` mit verschachtelten Listen wird über XML jetzt vollständig genug extrahiert, ohne die frühere HTML-Regex-Bastelei weiter aufzublasen.
 - Fetch-Tools unterstützen jetzt optional `refresh`, um vorhandene Cache-Artefakte gezielt zu ignorieren und frisch neu zu laden.
 - JUSLINE nutzt zusätzlich einen Query-Index mit 24h TTL über `query + kind + limit`; bei `refresh=true` wird dieser Index bewusst ignoriert und frisch aufgebaut, inklusive Bypass von Query-Index- und Artefakt-Reuse.
 - JUSLINE-MVP-Härtung: robustere Link-/Snippet-Erkennung, sauberere Negativfälle und zusätzliche Fixture-Varianten ohne Vertragsänderung.

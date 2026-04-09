@@ -2,6 +2,7 @@ import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
+import { parseRisSegmentXml } from "../ris/segment-xml-parser.js";
 import {
   buildRisSegmentUrl,
   extractSourceIdFromRisUrl,
@@ -103,13 +104,18 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       apiLookupWarning = `api_lookup_failed: ${error instanceof Error ? error.message : "Unknown API lookup error"}`;
     }
   }
-  const effectiveSourceUrl = apiLookup?.contentUrl ?? sourceUrl;
+  const directXmlUrl = /\.xml(?:$|[?#])/i.test(sourceUrl) ? sourceUrl : undefined;
+  const directHtmlUrl = directXmlUrl ? undefined : sourceUrl;
+  const effectiveXmlUrl = apiLookup?.xmlContentUrl ?? directXmlUrl;
+  const effectiveHtmlUrl = apiLookup?.contentUrl ?? directHtmlUrl ?? sourceUrl;
+  const effectiveSourceUrl = effectiveXmlUrl ?? effectiveHtmlUrl;
 
   let response: Response;
+  let responseFormat: "xml" | "html" = effectiveXmlUrl ? "xml" : "html";
   try {
     response = await fetch(effectiveSourceUrl, {
       method: "GET",
-      headers: { accept: "text/html,application/xhtml+xml" },
+      headers: { accept: responseFormat === "xml" ? "application/xml,text/xml,text/html,application/xhtml+xml" : "text/html,application/xhtml+xml,application/xml,text/xml" },
     });
   } catch (error) {
     return {
@@ -144,9 +150,13 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
-  let html: string;
+  let rawBody: string;
   try {
-    html = await response.text();
+    rawBody = await response.text();
+    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+    if (contentType.includes("xml") || /^\s*<\?xml\b/i.test(rawBody)) {
+      responseFormat = "xml";
+    }
   } catch (error) {
     return {
       ok: false,
@@ -158,7 +168,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
-  if (looksLikeRisNotFound(html)) {
+  if (responseFormat === "html" && looksLikeRisNotFound(rawBody)) {
     return {
       ok: false,
       error: { code: "NOT_FOUND", message: "RIS did not return a matching document" },
@@ -167,11 +177,13 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   }
 
   try {
-    const parsed = parseRisSegmentHtml(html);
+    const parsed = responseFormat === "xml"
+      ? parseRisSegmentXml(rawBody)
+      : parseRisSegmentHtml(rawBody);
 
     const displayTitle = buildDisplayTitle({
       segmentRef: parsed.segmentRef,
-      lawAbbreviation: parsed.lawAbbreviation,
+      lawAbbreviation: parsed.lawAbbreviation ?? apiLookup?.lawAbbreviation,
       lawTitle: parsed.lawTitle,
       heading: parsed.heading,
       normStatus: parsed.normStatus,
@@ -197,7 +209,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         norm_status: parsed.normStatus,
         segment_ref: parsed.segmentRef,
         law_title: parsed.lawTitle,
-        law_abbreviation: parsed.lawAbbreviation,
+        law_abbreviation: parsed.lawAbbreviation ?? apiLookup?.lawAbbreviation,
         law_slug: parsed.lawSlug,
         law_type: parsed.lawType,
         index_label: parsed.indexLabel,
@@ -208,8 +220,9 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       metadata: {
         ris_extracted: {
           display_title: displayTitle,
-          law_slug: parsed.lawSlug,
+          law_slug: parsed.lawSlug ?? apiLookup?.lawAbbreviation?.toLowerCase(),
           heading: parsed.heading,
+          law_abbreviation: parsed.lawAbbreviation ?? apiLookup?.lawAbbreviation,
         },
         ...(apiLookup ? {
           ris_api: {
@@ -219,6 +232,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
             law_id: apiLookup.lawId,
             document_url: apiLookup.documentUrl,
             content_url: apiLookup.contentUrl,
+            xml_content_url: apiLookup.xmlContentUrl,
             whole_law_url: apiLookup.wholeLawUrl,
           },
         } : {}),
@@ -232,7 +246,9 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       ...(apiLookupWarning ? [apiLookupWarning] : []),
     ];
     const notices = [
-      ...(apiLookup?.contentUrl ? ["api_lookup_used: preferred content_url for segment fetch"] : []),
+      ...(apiLookup?.xmlContentUrl ? ["api_lookup_used: preferred xml_content_url for segment fetch"]
+        : apiLookup?.contentUrl ? ["api_lookup_used: preferred content_url for segment fetch"]
+        : []),
     ];
 
     return {

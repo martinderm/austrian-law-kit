@@ -24,7 +24,9 @@ export interface RisApiSearchCandidate {
   municipality?: string;
   district?: string;
   lawId?: string;
+  lawAbbreviation?: string;
   contentUrl?: string;
+  xmlContentUrl?: string;
   wholeLawUrl?: string;
   documentUrl?: string;
 }

@@ -62,10 +62,11 @@ Typischer Ablauf:
 4. `ris_search` unterstützt derzeit drei Discovery-Scope-Pfade: Bundesrecht (`bund`), Landesrecht (`land`) und Gemeinderecht (`municipal`). Gemeinderecht läuft über `/Gemeinden` mit `Gr` oder `GrA` und kann zusätzlich nach Bundesland, Gemeinde und Bezirk eingegrenzt werden.
 5. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlässige Landesrecht-State-Filter in der offiziellen API. Der aktuelle Landesrecht-Pfad versucht das mit clientseitigem State-Filter und state-spezifischen Titelvarianten abzufedern, garantiert aber noch keine beliebige Freitext-Suche. Der bekannte Niederösterreich-Sonderfall (`Bauordnung` -> authentische Interpretation statt Stammnorm) ist bewusst dokumentiert und bis auf Weiteres geparkt.
 6. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden. `ris_fetch_whole_law` unterstützt zusätzlich direkte `GeltendeFassung.wxe?...&Gesetzesnummer=...`-URLs als Whole-Law-Einstieg.
-7. Wenn `ris_search` bereits `content_url` oder `whole_law_url` liefert, diese URLs bevorzugt direkt in die Fetch-Tools weiterreichen.
+7. Wenn `ris_search` bereits `content_url`, `xml_content_url` oder `whole_law_url` liefert, diese URLs bevorzugt direkt in die Fetch-Tools weiterreichen.
 8. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine belastbare RIS-ID oder Whole-Law-URL ableitbar ist.
 9. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
-10. Erst danach gezielt Segment oder Gesamtdokument laden.
+10. `ris_fetch_segment` bevorzugt für RIS-Segmente jetzt XML (`ContentUrl` mit `DataType=Xml`), wenn verfügbar; HTML bleibt Fallback für einfachere oder ältere Fälle.
+11. Erst danach gezielt Segment oder Gesamtdokument laden.
 11. Für History/Änderungsstände derzeit keinen öffentlichen Suchfluss modellieren; der aktuelle History-Client ist bewusst ein interner, typed Baustein für spätere Sync-/Update-Logik.
 12. Erst danach zusammenfassen oder vorsichtig einordnen.
 
