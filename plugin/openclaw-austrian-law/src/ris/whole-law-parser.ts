@@ -1,6 +1,7 @@
 export interface ParsedRisWholeLaw {
   title: string;
   content: string;
+  lawTitle?: string;
 }
 
 function decodeHtml(text: string): string {
@@ -44,7 +45,7 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
   return null;
 }
 
-function extractTitle(html: string): string {
+function extractDocumentHeadingTitle(html: string): string {
   const title = extractFirstNonEmpty(html, [
     /<h1\b[^>]*id\s*=\s*["']Title["'][^>]*>([\s\S]*?)<\/h1>/i,
     /<title\b[^>]*>([\s\S]*?)<\/title>/i,
@@ -52,6 +53,13 @@ function extractTitle(html: string): string {
 
   if (title) return title;
   throw new Error("Unable to extract title from RIS whole-law page");
+}
+
+function extractLawTitle(html: string): string | undefined {
+  return extractFirstNonEmpty(html, [
+    /<div\b[^>]*class\s*=\s*["'][^"']*p[^"']*["'][^>]*>[\s\S]*?<h3>\s*Langtitel\s*<\/h3>([\s\S]*?)<\/div>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*p[^"']*["'][^>]*>[\s\S]*?<h3>\s*Kurztitel\s*<\/h3>([\s\S]*?)<\/div>/i,
+  ]) ?? undefined;
 }
 
 function extractDocumentContentBlocks(html: string): string[] {
@@ -91,8 +99,12 @@ export function looksLikeRisWholeLawNotFound(html: string): boolean {
 }
 
 export function parseRisWholeLawHtml(html: string): ParsedRisWholeLaw {
+  const headingTitle = extractDocumentHeadingTitle(html);
+  const lawTitle = extractLawTitle(html);
+
   return {
-    title: extractTitle(html),
+    title: lawTitle ?? headingTitle,
     content: extractContent(html),
+    lawTitle,
   };
 }

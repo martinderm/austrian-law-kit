@@ -28,3 +28,4 @@ Sicherstellen, dass Frontmatter-Pflichtfelder typseitig sichtbar sind.
 **Erwartung:**
 - optionale Felder sind vorhanden, aber nicht über-spezialisiert.
 - keine erzwungene Vollspezialisierung pro Dokumenttyp in dieser Phase.
+- `representation` ist als optionales Enum-Feld typseitig sichtbar (`segment` | `whole_law`).

@@ -6,6 +6,7 @@ export type DocType =
   | "discussion"
   | "commentary"
   | "decision";
+export type RepresentationKind = "segment" | "whole_law";
 
 // Basistyp gemäß docs/frontmatter-schema.md (Pflichtfelder explizit).
 export interface FrontmatterBase {
@@ -42,4 +43,5 @@ export interface FrontmatterBase {
   supersedes?: string;
   checksum?: string;
   notes?: string;
+  representation?: RepresentationKind;
 }

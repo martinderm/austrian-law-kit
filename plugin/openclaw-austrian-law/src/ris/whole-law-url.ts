@@ -4,6 +4,14 @@ function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Lan
   return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
 }
 
+function inferCollectionFromWholeLawUrl(url: URL): "Bundesnormen" | "Landesnormen" | null {
+  const queryAbfrage = url.searchParams.get("Abfrage")?.trim();
+  if (!queryAbfrage) return null;
+  if (/^Bundesnormen$/i.test(queryAbfrage)) return "Bundesnormen";
+  if (/^Lr[A-Z]/.test(queryAbfrage) || /^Landesnormen$/i.test(queryAbfrage)) return "Landesnormen";
+  return null;
+}
+
 export function extractSourceIdFromWholeLawUrl(sourceUrl: string): string | null {
   let url: URL;
   try {
@@ -14,6 +22,13 @@ export function extractSourceIdFromWholeLawUrl(sourceUrl: string): string | null
 
   const docNo = url.searchParams.get("Dokumentnummer")?.trim();
   if (docNo && docNo.length > 0) return docNo;
+
+  const lawId = url.searchParams.get("Gesetzesnummer")?.trim();
+  if (lawId && lawId.length > 0) {
+    const collection = inferCollectionFromWholeLawUrl(url);
+    if (collection) return `LAW:${collection}:${lawId}`;
+  }
+
   return null;
 }
 

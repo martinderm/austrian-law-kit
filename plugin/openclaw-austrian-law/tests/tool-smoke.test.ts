@@ -770,6 +770,11 @@ await test("ris_fetch_whole_law returns a usable artifact from a live-derived fi
       assert.equal(result.ok, true);
       if (!result.ok) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_document");
+      assert.equal(result.data.artifact.frontmatter.title, "Allgemeines bürgerliches Gesetzbuch für die gesammten deutschen Erbländer der Oesterreichischen Monarchie\nStF: JGS Nr. 946/1811");
+      assert.equal(result.data.artifact.frontmatter.law_title, "Allgemeines bürgerliches Gesetzbuch für die gesammten deutschen Erbländer der Oesterreichischen Monarchie\nStF: JGS Nr. 946/1811");
+      assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
+      const extractedMeta = (result.data.artifact.metadata?.ris_extracted ?? {}) as Record<string, unknown>;
+      assert.equal(extractedMeta.representation, "whole_law");
       assert.ok(result.data.artifact.content.trim().length > 100);
       assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
     });
@@ -796,6 +801,9 @@ await test("ris_fetch_whole_law prefers API-resolved whole_law_url when sourceId
       if (!result.ok) return;
       assert.ok(seenUrls.some((url) => url.includes("Suchworte=LOO11000699")));
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
+      assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
+      const extractedMeta = (result.data.artifact.metadata?.ris_extracted ?? {}) as Record<string, unknown>;
+      assert.equal(extractedMeta.representation, "whole_law");
       const apiMeta = (result.data.artifact.metadata?.ris_api ?? {}) as Record<string, unknown>;
       assert.equal(apiMeta.law_id, "10000411");
       assert.ok(result.meta.notices?.includes("api_lookup_used: preferred whole_law_url for whole-law fetch"));
@@ -820,6 +828,49 @@ await test("ris_fetch_whole_law accepts wholeLawUrl directly and skips API looku
       assert.equal(seenUrls.length, 1);
       assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
+      assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
+    });
+  });
+});
+
+await test("ris_fetch_whole_law accepts Bundesnormen wholeLawUrl with Gesetzesnummer without Dokumentnummer", async () => {
+  const html = fixture("fixtures/ris/abgb-whole-law-live.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      seenUrls.push(url);
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchWholeLawStub({ wholeLawUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(seenUrls.length, 1);
+      assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296");
+      assert.equal(result.data.artifact.frontmatter.source_id, "LAW:Bundesnormen:10002296");
+      assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296");
+      assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
+    });
+  });
+});
+
+await test("ris_fetch_segment extracts full text for StGB § 111 live case html", async () => {
+  const html = String.raw`<!doctype html><html lang="de"><head><title>RIS Dokument</title></head><body><main><div class="p"><h3>Kurztitel</h3><div>Strafgesetzbuch</div></div><div class="p"><h3>Typ</h3><div>BG</div></div><div class="p"><h3>Inkrafttretensdatum</h3><div>01.01.2016</div></div><div class="p"><h3>Abkürzung</h3><div>StGB</div></div><div class="p"><h3>Index</h3><div>24/01 Strafgesetzbuch</div></div><div class="p"><h3>§/Artikel/Anlage</h3><div>§ 111</div></div><div id="foo_TextContainer_bar" class="embeddedContent"><h3>Text</h3><div><h4 class="UeberschrPara"><span aria-hidden="true">Vierter Abschnitt</span></h4><h5 class="GldSymbol"><span aria-hidden="true">§ 111. Üble Nachrede.</span></h5><div class="Abs AlignJustify">Wer einen anderen in einer für einen Dritten wahrnehmbaren Weise einer verächtlichen Eigenschaft oder Gesinnung zeiht oder eines unehrenhaften Verhaltens oder eines gegen die guten Sitten verstoßenden Verhaltens beschuldigt, das geeignet ist, ihn in der öffentlichen Meinung verächtlich zu machen oder herabzusetzen, ist mit Freiheitsstrafe bis zu sechs Monaten oder mit Geldstrafe bis zu 360 Tagessätzen zu bestrafen.</div><div class="Abs AlignJustify">Wer die Tat in einem Druckwerk, im Rundfunk oder sonst auf eine Weise begeht, wodurch die üble Nachrede einer breiten Öffentlichkeit zugänglich wird, ist mit Freiheitsstrafe bis zu einem Jahr oder mit Geldstrafe bis zu 720 Tagessätzen zu bestrafen.</div></div></div><div class="p"><h3>Gesetzesnummer</h3><div>10002296</div></div><div class="p"><h3>Dokumentnummer</h3><div>NOR40173633</div></div></main></body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40173633", refresh: true });
+
+      assert.equal(result.ok, true);
+      if (!result.ok) return;
+      assert.equal(result.data.artifact.frontmatter.law_title, "Strafgesetzbuch");
+      assert.equal(result.data.artifact.frontmatter.law_abbreviation, "StGB");
+      assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 111");
+      assert.ok(result.data.artifact.content.includes("verächtlichen Eigenschaft oder Gesinnung"));
+      assert.ok(result.data.artifact.content.includes("Freiheitsstrafe bis zu sechs Monaten"));
+      assert.ok(result.data.artifact.content.length > 250);
     });
   });
 });

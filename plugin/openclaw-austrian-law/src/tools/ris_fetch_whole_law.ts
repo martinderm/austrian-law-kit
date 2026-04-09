@@ -146,19 +146,27 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         version_label: "unknown",
         fassung_typ: "Arbeitsfassung",
         source_id: sourceId,
+        law_title: parsed.lawTitle,
+        representation: "whole_law",
       },
       content: parsed.content,
-      metadata: apiLookup ? {
-        ris_api: {
-          application: apiLookup.application,
-          scope: apiLookup.scope,
-          state: apiLookup.state,
-          law_id: apiLookup.lawId,
-          document_url: apiLookup.documentUrl,
-          content_url: apiLookup.contentUrl,
-          whole_law_url: apiLookup.wholeLawUrl,
+      metadata: {
+        ris_extracted: {
+          representation: "whole_law",
+          law_title: parsed.lawTitle,
         },
-      } : undefined,
+        ...(apiLookup ? {
+          ris_api: {
+            application: apiLookup.application,
+            scope: apiLookup.scope,
+            state: apiLookup.state,
+            law_id: apiLookup.lawId,
+            document_url: apiLookup.documentUrl,
+            content_url: apiLookup.contentUrl,
+            whole_law_url: apiLookup.wholeLawUrl,
+          },
+        } : {}),
+      },
     };
 
     const cacheWrite = await writeThroughCacheForRisArtifact(artifact);

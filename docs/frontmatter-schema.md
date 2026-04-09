@@ -26,6 +26,7 @@ Diese Spezifikation gilt für gecachte Markdown-Dateien unter `memory/references
 - `supersedes` (string) — stable_id einer ersetzten älteren Fassung
 - `checksum` (string) — Hash des normalisierten Inhalts
 - `notes` (string) — kurze Zusatzhinweise
+- `representation` (enum: `segment` | `whole_law`) — Darstellungsform des Normabrufs, ohne den `doc_type` zu verändern
 
 ## Bedeutungsabgrenzung (kritisch)
 
@@ -56,11 +57,12 @@ stable_id: ris:doc:bundesrecht.bgbli_2000_100:v2026-01-01
 source: ris
 source_url: https://www.ris.bka.gv.at/...
 doc_type: norm_document
-title: Beispielgesetz (Gesamtdokument)
+title: Beispielgesetz
 fetched_at: 2026-03-21T12:01:00+01:00
 version_label: konsolidiert
 fassung_typ: Arbeitsfassung
 source_id: bundesrecht.bgbli_2000_100
+representation: whole_law
 language: de
 jurisdiction: AT
 ```

@@ -118,6 +118,8 @@ Relevante Dateien:
 - `ris_fetch_whole_law` lädt ein RIS-Gesamtdokument via `sourceId` oder `sourceUrl`.
 - Wenn nur `sourceId` vorliegt, versucht das Tool jetzt zuerst einen offiziellen RIS-API-Lookup und bevorzugt daraus eine passende `whole_law_url` (`GeltendeFassung.wxe`) für den eigentlichen Abruf.
 - Extern live bestätigt: Für `ris_fetch_whole_law(sourceId="NOR40214078")` verwendet der reale Laufzeitpfad nun wieder die korrekte `GeltendeFassung.wxe?...`-URL und liefert ein Whole-Law-Artifact statt des früheren alten Dokument-Links.
+- Zusätzlich gehärtet: `ris_fetch_whole_law` akzeptiert nun auch direkte `GeltendeFassung.wxe?...&Gesetzesnummer=...`-URLs ohne `Dokumentnummer`; dazu existiert ein gezielter Regressionstest.
+- Whole-Law-Artefakte setzen jetzt `representation=whole_law` im Frontmatter und in den JSON-Metadaten; der kanonische Titel wird dabei auf den eigentlichen Langtitel der Norm reduziert.
 - Ergebnis ist ein `norm_document`-Artifact mit Pflicht-Frontmatter + minimal bereinigtem `content`.
 - API-abgeleitete Zusatzinfos wie `application`, `scope`, `state`, `law_id`, `content_url`, `whole_law_url` landen zusätzlich unter `metadata.ris_api`, sofern verfügbar.
 - `stable_id` wird robust aus `source_id` abgeleitet; keine leeren Stable IDs.
@@ -153,6 +155,7 @@ Relevante Dateien:
 - Kleine RIS-MVP-Härtung: gemeinsame Mini-Helfer für Source-ID-Auflösung/Cache-Meta reduzieren Duplikate ohne Verhaltensänderung.
 - Parser-Härtung: robustere Titel-/Content-Fallbacks und toleranteres HTML-Decoding bei kleinen Seitenvariationen.
 - RIS-Parser wurden gegen echte Live-Snapshots nachgeschärft, damit Segment-/Whole-Law-Fetches den Normtext statt Navigationsstub extrahieren.
+- Zusätzlicher Regressionstest für den konkreten StGB-§-111-Fall (`NOR40173633`) stellt sicher, dass nicht bloß Kurztitel-Metadaten, sondern der eigentliche Paragraphentext extrahiert wird.
 - RIS-Segment-Artefakte enthalten jetzt exemplarisch reichere Metadaten wie Kurztitel, Abkürzung, Slug, Typ, Inkrafttretensdatum, Index, Kundmachungsorgan und Überschrift.
 - Fetch-Tools unterstützen jetzt optional `refresh`, um vorhandene Cache-Artefakte gezielt zu ignorieren und frisch neu zu laden.
 - JUSLINE nutzt zusätzlich einen Query-Index mit 24h TTL über `query + kind + limit`; bei `refresh=true` wird dieser Index bewusst ignoriert und frisch aufgebaut, inklusive Bypass von Query-Index- und Artefakt-Reuse.

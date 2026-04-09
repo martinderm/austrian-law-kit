@@ -27,6 +27,8 @@ Absichern, dass gecachte Markdown-Dateien den Frontmatter-Vertrag einhalten.
 **Erwartung:**
 - `source=ris`
 - `doc_type=norm_document`
+- `representation=whole_law`
+- Titel ist der eigentliche Langtitel der Norm, nicht die ausschweifende RIS-Seitenüberschrift
 - Stable ID passt zum `ris:doc:`-Schema
 
 ## Fall 3: JUSLINE Kommentar
