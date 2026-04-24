@@ -50,28 +50,46 @@ function scoreNormRefHit(hit: SearchHit, resolved: RisResolvedQuery & { kind: "n
   const lawAbbreviation = normalize(hit.law_abbreviation);
   const sectionRef = normalize(hit.section_ref);
   const paragraphNumber = normalize(hit.paragraph_number);
+  const documentType = normalize(hit.document_type);
 
   let score = scoreSourceMetadata(hit);
   let matchReason = "resolved sourceId candidate from RIS result";
   let confidence: "high" | "medium" | "low" = "low";
 
   const hasLaw = title.includes(law) || lawAbbreviation === law;
-  const hasSection = title.includes(section) || sectionRef === section || paragraphNumber === sectionNumber;
+  const sectionMention = title.includes(section) || title.includes(`§ ${sectionNumber}`) || title.includes(`art ${sectionNumber}`);
+  const exactSectionRef = sectionRef === section;
+  const exactParagraphNumber = paragraphNumber === sectionNumber;
+  const hasSection = sectionMention || exactSectionRef || exactParagraphNumber;
+  const hasWrongParagraph = !!sectionNumber && !!paragraphNumber && paragraphNumber !== sectionNumber;
+  const isWholeLaw = documentType === "norm" && (sectionRef === "" || sectionRef === "§ 0" || paragraphNumber === "0");
 
-  if (hasLaw && hasSection) {
+  if (hasWrongParagraph) {
+    score -= 140;
+  }
+
+  if (isWholeLaw && hasLaw && !hasSection) {
+    score -= 90;
+  }
+
+  if (exactSectionRef || exactParagraphNumber) {
+    score += 140;
+    matchReason = hasLaw ? "exact paragraph metadata matches requested norm reference" : "exact paragraph metadata matches requested section";
+    confidence = hasLaw ? "high" : "medium";
+  } else if (hasLaw && sectionMention) {
     score += 120;
     matchReason = "title matches law and section reference";
     confidence = "high";
   } else if (hasSection) {
-    score += 95;
+    score += 85;
     matchReason = "title matches section reference";
     confidence = "medium";
   } else if (hasLaw) {
-    score += 60;
-    matchReason = "title matches law reference";
-    confidence = "medium";
+    score += 35;
+    matchReason = "title matches law reference only";
+    confidence = isWholeLaw ? "low" : "medium";
   } else if (sourceId) {
-    score += 40;
+    score += 20;
   }
 
   return { score, matchReason, confidence };

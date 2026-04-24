@@ -37,6 +37,11 @@ const STATE_TITLE_SUFFIXES: Record<string, string[]> = {
 
 const MAX_API_PAGES = 3;
 
+function extractRequestedParagraph(normalizedQuery: string): string | undefined {
+  const match = normalizedQuery.match(/(?:^|\s)(?:§|art)\s*([0-9]+[a-zA-Z]?)(?:\s|$)/i);
+  return match?.[1]?.toLowerCase();
+}
+
 function dedupe(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -101,6 +106,8 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
         Applikation: "LrKons",
         Titel: titleVariant,
         Suchworte: request.keywords,
+        VonParagraf: request.paragraphNumber,
+        VonArtikel: request.articleNumber,
         Seitennummer: String(page),
         [stateFlag ?? ""]: stateFlag ? "true" : undefined,
       });
@@ -133,6 +140,22 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
     }
 
     const dedupedHits = dedupeCandidates(variantHits);
+    const requestedParagraph = extractRequestedParagraph(request.normalizedQuery);
+    const exactParagraphHits = requestedParagraph
+      ? dedupedHits.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
+      : [];
+    if (exactParagraphHits.length > 0) {
+      return {
+        ok: true,
+        hits: exactParagraphHits.slice(0, request.limit),
+        notices: [
+          ...aggregateNotices,
+          `api_land_title_variant_used: ${titleVariant}`,
+          `api_exact_paragraph_match_count: ${exactParagraphHits.length}`,
+        ],
+        warnings: [...aggregateWarnings, ...(stateFlag ? [`api_state_flag_used: ${stateFlag}`] : [])],
+      };
+    }
     if (dedupedHits.length > 0) {
       return {
         ok: true,

@@ -21,6 +21,7 @@ export type RisResolvedQuery =
       normalizedQuery: string;
       lawAbbreviation: string;
       sectionRef: string;
+      headingRemainder?: string;
       searchVariants: string[];
     }
   | {
@@ -51,6 +52,50 @@ function dedupe(values: string[]): string[] {
   return result;
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractNormRef(
+  normalizedQuery: string,
+): { lawAbbreviation: string; sectionRef: string; headingRemainder?: string } | null {
+  const paragraphFirst = normalizedQuery.match(/^(§|Art)\s*([0-9]+[a-zA-Z]?)\s+([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)\b(?:\s+(.*))?$/i);
+  if (paragraphFirst) {
+    const marker = /^art$/i.test(paragraphFirst[1]) ? "Art" : "§";
+    const sectionNumber = paragraphFirst[2];
+    const lawAbbreviation = normalizeLawToken(paragraphFirst[3]);
+    const sectionRef = `${marker} ${sectionNumber}`;
+    const remainder = collapseWhitespace(paragraphFirst[4] ?? "");
+    return {
+      lawAbbreviation,
+      sectionRef,
+      headingRemainder: remainder || undefined,
+    };
+  }
+
+  const lawTokens = Object.keys(LAW_ALIASES)
+    .map((key) => LAW_ALIASES[key])
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .sort((a, b) => b.length - a.length);
+
+  for (const alias of lawTokens) {
+    const aliasPattern = escapeRegex(alias);
+    const lawFirst = normalizedQuery.match(new RegExp(`^(${aliasPattern})\\s+(§|Art)?\\s*([0-9]+[a-zA-Z]?)\\b(?:\\s+(.*))?$`, "i"));
+    if (!lawFirst) continue;
+    const marker = lawFirst[2] && /^art$/i.test(lawFirst[2]) ? "Art" : "§";
+    const sectionNumber = lawFirst[3];
+    const sectionRef = `${marker} ${sectionNumber}`;
+    const remainder = collapseWhitespace(lawFirst[4] ?? "");
+    return {
+      lawAbbreviation: normalizeLawToken(lawFirst[1]),
+      sectionRef,
+      headingRemainder: remainder || undefined,
+    };
+  }
+
+  return null;
+}
+
 export function resolveRisQuery(query: string): RisResolvedQuery {
   const rawQuery = query;
   const normalizedQuery = collapseWhitespace(
@@ -73,44 +118,23 @@ export function resolveRisQuery(query: string): RisResolvedQuery {
     };
   }
 
-  const paragraphFirst = normalizedQuery.match(/^(§|Art)\s*([0-9]+[a-zA-Z]?)\s+([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)$/i);
-  if (paragraphFirst) {
-    const marker = /^art$/i.test(paragraphFirst[1]) ? "Art" : "§";
-    const sectionNumber = paragraphFirst[2];
-    const lawAbbreviation = normalizeLawToken(paragraphFirst[3]);
-    const sectionRef = `${marker} ${sectionNumber}`;
+  const normRef = extractNormRef(normalizedQuery);
+  if (normRef) {
+    const sectionNumber = normRef.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, "");
     return {
       kind: "normRef",
       rawQuery,
       normalizedQuery,
-      lawAbbreviation,
-      sectionRef,
+      lawAbbreviation: normRef.lawAbbreviation,
+      sectionRef: normRef.sectionRef,
+      headingRemainder: normRef.headingRemainder,
       searchVariants: dedupe([
-        `${lawAbbreviation} ${sectionRef}`,
-        `${sectionRef} ${lawAbbreviation}`,
-        `${lawAbbreviation} ${sectionNumber}`,
-        `${sectionNumber} ${lawAbbreviation}`,
-      ]),
-    };
-  }
-
-  const lawFirst = normalizedQuery.match(/^([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)\s+(§|Art)?\s*([0-9]+[a-zA-Z]?)$/i);
-  if (lawFirst) {
-    const lawAbbreviation = normalizeLawToken(lawFirst[1]);
-    const marker = lawFirst[2] && /^art$/i.test(lawFirst[2]) ? "Art" : "§";
-    const sectionNumber = lawFirst[3];
-    const sectionRef = `${marker} ${sectionNumber}`;
-    return {
-      kind: "normRef",
-      rawQuery,
-      normalizedQuery,
-      lawAbbreviation,
-      sectionRef,
-      searchVariants: dedupe([
-        `${lawAbbreviation} ${sectionRef}`,
-        `${sectionRef} ${lawAbbreviation}`,
-        `${lawAbbreviation} ${sectionNumber}`,
-        `${sectionNumber} ${lawAbbreviation}`,
+        `${normRef.lawAbbreviation} ${normRef.sectionRef}`,
+        `${normRef.sectionRef} ${normRef.lawAbbreviation}`,
+        `${normRef.lawAbbreviation} ${sectionNumber}`,
+        `${sectionNumber} ${normRef.lawAbbreviation}`,
+        normRef.headingRemainder ? `${normRef.lawAbbreviation} ${normRef.sectionRef} ${normRef.headingRemainder}` : "",
+        normRef.headingRemainder ? `${normRef.sectionRef} ${normRef.lawAbbreviation} ${normRef.headingRemainder}` : "",
       ]),
     };
   }

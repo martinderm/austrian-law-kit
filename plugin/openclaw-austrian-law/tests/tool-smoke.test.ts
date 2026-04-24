@@ -112,6 +112,18 @@ await test("ris_search resolves Landesrecht sourceId without upstream fetch", as
   });
 });
 
+await test("ris_search recognizes norm references with trailing heading text", async () => {
+  const { resolveRisQuery } = await import("../src/ris/query-resolver.ts");
+  const parsed = resolveRisQuery("§ 74 StGB Andere Begriffsbestimmungen");
+
+  assert.equal(parsed.kind, "normRef");
+  if (parsed.kind !== "normRef") return;
+  assert.equal(parsed.lawAbbreviation, "StGB");
+  assert.equal(parsed.sectionRef, "§ 74");
+  assert.ok(parsed.searchVariants.includes("StGB § 74 Andere Begriffsbestimmungen"));
+  assert.ok(parsed.searchVariants.includes("§ 74 StGB Andere Begriffsbestimmungen"));
+});
+
 await test("ris_search uses the official RIS API first for Bundesrecht norm references", async () => {
   const apiJson = fixture("fixtures/ris-api/bundesrecht-abgb-1293.json");
   let htmlFetchCount = 0;
@@ -268,6 +280,102 @@ await test("ris_search ranks Stammnormen above authentische Interpretationen for
     assert.equal(result.data.best_candidate?.source_id, 'LNO11001489');
     assert.equal(result.data.best_candidate?.title, 'NÖ Bauordnung 2014');
     assert.equal(result.data.best_candidate?.legal_type, 'Stammfassung');
+  });
+});
+
+await test("ris_search prefers exact paragraph API hits for StGB § 74 and ignores wrong ones", async () => {
+  const apiJson = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { '@pageNumber': '1', '@pageSize': '20', '#text': '3' },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: 'NOR11002319', Applikation: 'BrKons' },
+                Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/bgbl/1974/60/P0/NOR11002319' },
+                Bundesrecht: {
+                  Kurztitel: 'Strafgesetzbuch',
+                  Abkuerzung: 'StGB',
+                  BrKons: {
+                    Dokumenttyp: 'Norm',
+                    ArtikelParagraphAnlage: '§ 0',
+                    Paragraphnummer: '0',
+                    Gesetzesnummer: '10002296',
+                    GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296',
+                  },
+                },
+              },
+              Dokumentliste: {
+                ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR11002319/NOR11002319.html' }] } },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: 'NOR40211111', Applikation: 'BrKons' },
+                Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/bgbl/1974/60/P64/NOR40211111' },
+                Bundesrecht: {
+                  Kurztitel: '§ 64 StGB',
+                  Abkuerzung: 'StGB',
+                  BrKons: {
+                    Dokumenttyp: 'Paragraph',
+                    ArtikelParagraphAnlage: '§ 64',
+                    Paragraphnummer: '64',
+                    Gesetzesnummer: '10002296',
+                    GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296',
+                  },
+                },
+              },
+              Dokumentliste: {
+                ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40211111/NOR40211111.html' }] } },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: 'NOR40254282', Applikation: 'BrKons' },
+                Allgemein: { DokumentUrl: 'https://www.ris.bka.gv.at/eli/bgbl/1974/60/P74/NOR40254282' },
+                Bundesrecht: {
+                  Kurztitel: '§ 74 StGB – Andere Begriffsbestimmungen',
+                  Abkuerzung: 'StGB',
+                  BrKons: {
+                    Dokumenttyp: 'Paragraph',
+                    ArtikelParagraphAnlage: '§ 74',
+                    Paragraphnummer: '74',
+                    Gesetzesnummer: '10002296',
+                    GesamteRechtsvorschriftUrl: 'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296',
+                  },
+                },
+              },
+              Dokumentliste: {
+                ContentReference: { Urls: { ContentUrl: [{ DataType: 'Html', Url: 'https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40254282/NOR40254282.html' }] } },
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/Bundesrecht")) {
+      assert.ok(url.includes("VonParagraf=74"));
+      assert.ok(!url.includes("BisParagraf=74"));
+      return new Response(apiJson, { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response("<html></html>", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "StGB § 74", limit: 10, docType: "norm", scope: "bund", authentic: true });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.best_candidate?.source_id, "NOR40254282");
+    assert.equal(result.data.best_candidate?.section_ref, "§ 74");
+    assert.ok(result.data.hits.every((hit) => hit.paragraph_number === "74"));
   });
 });
 

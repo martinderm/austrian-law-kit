@@ -155,7 +155,7 @@ export async function searchGemeindenApi(request: RisApiSearchRequest): Promise<
   for (let page = 1; page <= MAX_API_PAGES; page += 1) {
     try {
       const raw = await searchGemeindenApiRaw({
-        query: request.keywords ?? request.normalizedQuery,
+        query: request.paragraphNumber ?? request.articleNumber ?? request.keywords ?? request.normalizedQuery,
         state: request.state,
         municipality: request.municipality,
         district: request.district,

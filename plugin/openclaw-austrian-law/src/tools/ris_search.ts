@@ -23,6 +23,18 @@ function dedupeStrings(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.trim().length > 0))];
 }
 
+function extractRequestedSectionNumber(resolved: ReturnType<typeof resolveRisQuery>): string | undefined {
+  if (resolved.kind !== "normRef") return undefined;
+  return resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, "").trim() || undefined;
+}
+
+function filterExactSectionHits(hits: SearchHit[], resolved: ReturnType<typeof resolveRisQuery>): SearchHit[] {
+  const requestedSection = extractRequestedSectionNumber(resolved);
+  if (!requestedSection) return hits;
+  const exact = hits.filter((hit) => (hit.paragraph_number ?? "").trim().toLowerCase() === requestedSection.toLowerCase());
+  return exact.length > 0 ? exact : [];
+}
+
 function validateInput(input: RisSearchInput): string | null {
   if (typeof input.query !== "string" || input.query.trim().length < 2) {
     return "query must be a non-empty string with at least 2 characters";
@@ -158,7 +170,16 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       scope,
       state,
       lawTitle: resolved.kind === "normRef" ? resolved.lawAbbreviation : searchQuery,
-      keywords: searchQuery,
+      keywords: resolved.kind === "normRef"
+        ? (resolved.headingRemainder ?? searchQuery)
+        : searchQuery,
+      paragraphNumber: resolved.kind === "normRef" && /^§/i.test(resolved.sectionRef)
+        ? resolved.sectionRef.replace(/^§\s*/i, "")
+        : undefined,
+      articleNumber: resolved.kind === "normRef" && /^Art/i.test(resolved.sectionRef)
+        ? resolved.sectionRef.replace(/^Art\s*/i, "")
+        : undefined,
+      headingRemainder: resolved.kind === "normRef" ? resolved.headingRemainder : undefined,
       municipality: input.municipality?.trim() || undefined,
       district: input.district?.trim() || undefined,
       authentic: input.authentic,
@@ -168,26 +189,31 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     warnings.push(...(apiResult.warnings ?? []));
 
     if (apiResult.ok) {
-      const rankedHits = rankRisSearchHits(apiResult.hits.map((entry) => entry.hit), resolved).slice(0, limit);
-      return {
-        ok: true,
-        data: {
-          hits: rankedHits,
-          best_candidate: rankedHits[0],
-          normalized_query: resolved.normalizedQuery,
-          resolver_kind: resolved.kind,
-        },
-        meta: {
-          tool: "ris_search",
-          source: "ris",
-          timestamp: new Date().toISOString(),
-          notices: dedupeStrings(notices),
-          warnings: dedupeStrings(warnings),
-        },
-      };
+      const apiHits = apiResult.hits.map((entry) => entry.hit);
+      const exactSectionHits = resolved.kind === "normRef" ? filterExactSectionHits(apiHits, resolved) : apiHits;
+      if (resolved.kind !== "normRef" || exactSectionHits.length > 0) {
+        const rankedHits = rankRisSearchHits(exactSectionHits, resolved).slice(0, limit);
+        return {
+          ok: true,
+          data: {
+            hits: rankedHits,
+            best_candidate: rankedHits[0],
+            normalized_query: resolved.normalizedQuery,
+            resolver_kind: resolved.kind,
+          },
+          meta: {
+            tool: "ris_search",
+            source: "ris",
+            timestamp: new Date().toISOString(),
+            notices: dedupeStrings(notices),
+            warnings: dedupeStrings(warnings),
+          },
+        };
+      }
+      warnings.push(`api_variant_exact_section_missing: ${searchQuery}`);
     }
 
-    if (apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
+    if (!apiResult.ok && apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
       lastApiFailure = {
         message: apiResult.message,
         retryable: apiResult.retryable,
@@ -298,7 +324,13 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         continue;
       }
 
-      const rankedHits = rankRisSearchHits(hits, resolved);
+      const filteredHtmlHits = resolved.kind === "normRef" ? filterExactSectionHits(hits, resolved) : hits;
+      if (resolved.kind === "normRef" && filteredHtmlHits.length === 0) {
+        warnings.push(`html_variant_exact_section_missing: ${searchQuery}`);
+        continue;
+      }
+
+      const rankedHits = rankRisSearchHits(filteredHtmlHits, resolved);
 
       return {
         ok: true,

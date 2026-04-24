@@ -14,6 +14,9 @@ export interface RisApiSearchRequest {
   authentic?: boolean;
   lawTitle?: string;
   keywords?: string;
+  paragraphNumber?: string;
+  articleNumber?: string;
+  headingRemainder?: string;
 }
 
 export interface RisApiSearchCandidate {
