@@ -145,7 +145,7 @@ npx tsx D:/users/dagobert/agents/skills/austrian-law-kit/plugin/openclaw-austria
 ```
 
 ### Optionen
-- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
+- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen! Zwingend erforderlich bei gemeinsam genutztem Skill-Repository zur Datenisolation zwischen den Agenten).
 - `--cache-root <dir>`: Setzt einen absoluten Pfad für den Dokumenten-Cache fest (der Metadaten-Cache wird dabei automatisch im selben Elternverzeichnis unter `data/` abgeleitet).
 - `--ris-base-url <url>`: Überschreibt die RIS-Web-URL.
 - `--ris-api-base-url <url>`: Überschreibt die RIS-API-URL.

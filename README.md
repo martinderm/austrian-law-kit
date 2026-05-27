@@ -92,7 +92,7 @@ npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_fetch_segment
 
 ### CLI-Optionen
 
-- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
+- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen! Zwingend erforderlich bei gemeinsam genutztem Skill-Repository zur Datenisolation zwischen den Agenten).
 - `--cache-root <dir>`: Setzt einen direkten absoluten Pfad für den Dokumenten-Cache fest (der Metadaten-Cache wird dabei automatisch im selben Elternverzeichnis unter `data/` abgeleitet).
 - `--ris-base-url <url>`: Optionale Überschreibung der RIS Web-URL.
 - `--ris-api-base-url <url>`: Optionale Überschreibung der OGD-RIS-API-URL.
