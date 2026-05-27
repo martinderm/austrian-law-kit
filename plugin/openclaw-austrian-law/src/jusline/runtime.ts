@@ -1,3 +1,5 @@
+import { getSettings } from "../config/settings.js";
+
 const DEFAULT_JUSLINE_BASE_URL = "https://www.jusline.at";
 
 let juslineBaseUrlOverride: string | undefined;
@@ -8,5 +10,12 @@ export function configureJuslineBaseUrl(baseUrl: string | undefined): void {
 }
 
 export function resolveJuslineBaseUrl(): string {
-  return juslineBaseUrlOverride ?? DEFAULT_JUSLINE_BASE_URL;
+  if (juslineBaseUrlOverride) {
+    return juslineBaseUrlOverride;
+  }
+  const settings = getSettings();
+  if (settings.juslineBaseUrl && settings.juslineBaseUrl.trim().length > 0) {
+    return settings.juslineBaseUrl.trim();
+  }
+  return DEFAULT_JUSLINE_BASE_URL;
 }
