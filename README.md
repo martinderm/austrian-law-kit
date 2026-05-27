@@ -74,6 +74,30 @@ Im Verzeichnis `plugin/openclaw-austrian-law/`:
 - Tool-Smoke-Tests: `npm run test:tool-smoke`
 - beide Smoke-Test-Sets zusammen: `npm run test:smoke`
 
+## Standalone CLI-Nutzung (Harness-Agnostisch)
+
+Das Toolkit ist so konzipiert, dass es **vollständig unabhängig** von einer laufenden OpenClaw-Gateway-Instanz als eigenständiges CLI-Tool ausgeführt werden kann. Die Tools werden über das integrierte TypeScript-CLI-Interface unter `plugin/openclaw-austrian-law/bin/cli.ts` ausgeführt.
+
+### CLI-Ausführung
+
+Navigiere in den Plugin-Ordner `plugin/openclaw-austrian-law/` und führe Befehle über `npx tsx bin/cli.ts` aus:
+
+```powershell
+# 1. Suche nach Normen (z. B. ABGB § 1293)
+npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
+
+# 2. Segment abrufen (z. B. NOR12019035)
+npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
+```
+
+### CLI-Optionen
+
+- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
+- `--cache-root <dir>`: Setzt einen direkten absoluten Pfad für den Dokumenten-Cache fest (der Metadaten-Cache wird dabei automatisch im selben Elternverzeichnis unter `data/` abgeleitet).
+- `--ris-base-url <url>`: Optionale Überschreibung der RIS Web-URL.
+- `--ris-api-base-url <url>`: Optionale Überschreibung der OGD-RIS-API-URL.
+- `--jusline-base-url <url>`: Optionale Überschreibung der JUSLINE Web-URL.
+
 ## Plugin lokal einbinden
 
 Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege:
