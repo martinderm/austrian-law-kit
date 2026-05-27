@@ -14,6 +14,7 @@ import { configureRisBaseUrl } from "./src/ris/runtime.js";
 import { TOOL_REGISTRY } from "./src/tools/registry.js";
 import { formatToolResult } from "./src/tools/format-result.js";
 import { validateToolRegistry } from "./src/tools/validate-registry.js";
+import { runWithWorkspaceDir } from "./src/config/settings.js";
 
 function extractConfiguredCacheRoot(api: OpenClawPluginApi): string | undefined {
   const candidate = api.pluginConfig?.cacheRoot;
@@ -69,7 +70,9 @@ export default definePluginEntry({
         parameters: entry.inputSchema,
         execute: async (_toolCallId, params) => {
           const cacheRoot = resolveEffectiveCacheRoot(api, ctx);
-          const result = await runWithCacheRoot(cacheRoot, () => entry.stub(params));
+          const result = await runWithWorkspaceDir(ctx.workspaceDir, () =>
+            runWithCacheRoot(cacheRoot, () => entry.stub(params))
+          );
           return formatToolResult(result);
         },
       }));

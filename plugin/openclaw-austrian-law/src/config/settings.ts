@@ -1,8 +1,10 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
-import { resolveDataRoot } from "../cache/cache-runtime.js";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface Settings {
+  cacheRoot?: string;
+  dataRoot?: string;
   risBaseUrl?: string;
   risApiBaseUrl?: string;
   juslineBaseUrl?: string;
@@ -10,31 +12,101 @@ export interface Settings {
 }
 
 let loadedSettings: Settings | null = null;
-let lastResolvedDataRoot: string | null = null;
+let settingsFileDir: string | null = null;
+let configuredWorkspaceDir: string | undefined;
+
+const workspaceDirScope = new AsyncLocalStorage<string | undefined>();
+
+export function configureSettingsWorkspaceDir(workspaceDir: string | undefined): void {
+  configuredWorkspaceDir = workspaceDir ? path.resolve(workspaceDir) : undefined;
+  clearSettingsCache();
+}
+
+export async function runWithWorkspaceDir<T>(
+  workspaceDir: string | undefined,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const resolved = workspaceDir ? path.resolve(workspaceDir) : undefined;
+  return await workspaceDirScope.run(resolved, fn);
+}
+
+export function resolveWorkspaceDir(): string {
+  const scoped = workspaceDirScope.getStore();
+  if (scoped) {
+    return scoped;
+  }
+  return configuredWorkspaceDir ?? process.cwd();
+}
+
+export function getSettingsFileDir(): string {
+  if (!loadedSettings) {
+    getSettings();
+  }
+  return settingsFileDir ?? resolveWorkspaceDir();
+}
 
 export function getSettings(): Settings {
-  const dataRoot = resolveDataRoot();
-  if (loadedSettings && lastResolvedDataRoot === dataRoot) {
+  if (loadedSettings) {
     return loadedSettings;
   }
 
-  lastResolvedDataRoot = dataRoot;
-  const settingsPath = path.join(dataRoot, "settings.json");
-  if (existsSync(settingsPath)) {
-    try {
-      const raw = readFileSync(settingsPath, "utf8");
-      loadedSettings = JSON.parse(raw) as Settings;
-    } catch (e) {
-      console.warn(`[austrian-law-kit] Warning: Failed to parse settings.json at ${settingsPath}`, e);
-      loadedSettings = {};
-    }
-  } else {
-    loadedSettings = {};
+  const workspaceDir = resolveWorkspaceDir();
+  const lookupDirs: string[] = [workspaceDir];
+  if (workspaceDir !== process.cwd()) {
+    lookupDirs.push(process.cwd());
   }
+
+  // Check env variable
+  const envSettingsPath = process.env.OPENCLAW_AUSTRIAN_LAW_SETTINGS_PATH;
+  if (envSettingsPath) {
+    const resolvedEnv = path.resolve(envSettingsPath);
+    if (existsSync(resolvedEnv)) {
+      try {
+        const stats = statSync(resolvedEnv);
+        if (stats.isDirectory()) {
+          lookupDirs.unshift(resolvedEnv);
+        } else {
+          const raw = readFileSync(resolvedEnv, "utf8");
+          loadedSettings = JSON.parse(raw) as Settings;
+          settingsFileDir = path.dirname(resolvedEnv);
+          return loadedSettings;
+        }
+      } catch (e) {
+        console.warn(`[austrian-law-kit] Warning: Failed to parse settings from env path ${resolvedEnv}`, e);
+      }
+    }
+  }
+
+  // Search candidates
+  for (const dir of lookupDirs) {
+    const candidates = [
+      path.join(dir, "settings.json"),
+      path.join(dir, "data", "austrian-law", "settings.json")
+    ];
+    for (const file of candidates) {
+      if (existsSync(file)) {
+        try {
+          const raw = readFileSync(file, "utf8");
+          loadedSettings = JSON.parse(raw) as Settings;
+          if (file.replace(/\\/g, "/").endsWith("data/austrian-law/settings.json")) {
+            settingsFileDir = dir;
+          } else {
+            settingsFileDir = path.dirname(file);
+          }
+          return loadedSettings;
+        } catch (e) {
+          console.warn(`[austrian-law-kit] Warning: Failed to parse settings at ${file}`, e);
+        }
+      }
+    }
+  }
+
+  loadedSettings = {};
+  settingsFileDir = workspaceDir;
   return loadedSettings;
 }
 
 export function clearSettingsCache(): void {
   loadedSettings = null;
-  lastResolvedDataRoot = null;
+  settingsFileDir = null;
 }

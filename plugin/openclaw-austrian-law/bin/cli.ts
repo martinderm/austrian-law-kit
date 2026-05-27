@@ -1,4 +1,5 @@
 import { configureCacheRoot } from "../src/cache/cache-runtime.js";
+import { configureSettingsWorkspaceDir } from "../src/config/settings.js";
 import { configureRisBaseUrl } from "../src/ris/runtime.js";
 import { configureRisApiBaseUrl } from "../src/ris-api/runtime.js";
 import { configureJuslineBaseUrl } from "../src/jusline/runtime.js";
@@ -27,7 +28,7 @@ async function main() {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--workspace" && i + 1 < args.length) {
       const workspaceDir = args[i + 1];
-      configureCacheRoot(path.resolve(workspaceDir, "memory/references/austrian-law"));
+      configureSettingsWorkspaceDir(workspaceDir);
       i++;
     } else if (args[i] === "--cache-root" && i + 1 < args.length) {
       configureCacheRoot(path.resolve(args[i + 1]));

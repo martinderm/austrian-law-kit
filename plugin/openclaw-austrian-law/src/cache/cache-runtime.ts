@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import path from "node:path";
+import { getSettings, getSettingsFileDir, configureSettingsWorkspaceDir } from "../config/settings.js";
 
 const CACHE_ROOT_ENV = "OPENCLAW_AUSTRIAN_LAW_CACHE_ROOT";
 const DEFAULT_CACHE_ROOT = path.join("memory", "references", "austrian-law");
@@ -13,6 +14,10 @@ export function configureCacheRoot(cacheRoot: string | undefined): void {
 }
 
 export function deriveWorkspaceScopedCacheRoot(workspaceDir: string): string {
+  const settings = getSettings();
+  if (settings.cacheRoot && settings.cacheRoot.trim().length > 0) {
+    return path.resolve(workspaceDir, settings.cacheRoot.trim());
+  }
   return path.resolve(workspaceDir, DEFAULT_CACHE_ROOT);
 }
 
@@ -20,12 +25,16 @@ export function resolveToolContextCacheRoot(params: {
   configuredCacheRoot?: string;
   workspaceDir?: string;
 }): string | undefined {
+  const workspaceDir = params.workspaceDir?.trim();
+  if (workspaceDir) {
+    configureSettingsWorkspaceDir(workspaceDir);
+  }
+
   const configured = params.configuredCacheRoot?.trim();
   if (configured) {
     return path.resolve(configured);
   }
 
-  const workspaceDir = params.workspaceDir?.trim();
   if (workspaceDir) {
     return deriveWorkspaceScopedCacheRoot(workspaceDir);
   }
@@ -57,7 +66,12 @@ export function resolveCacheRoot(): string {
     return path.resolve(fromEnv);
   }
 
-  return path.resolve(process.cwd(), DEFAULT_CACHE_ROOT);
+  const settings = getSettings();
+  if (settings.cacheRoot && settings.cacheRoot.trim().length > 0) {
+    return path.resolve(getSettingsFileDir(), settings.cacheRoot.trim());
+  }
+
+  return path.resolve(getSettingsFileDir(), DEFAULT_CACHE_ROOT);
 }
 
 const DATA_ROOT_ENV = "OPENCLAW_AUSTRIAN_LAW_DATA_ROOT";
@@ -79,6 +93,11 @@ export function resolveDataRoot(): string {
     return path.resolve(fromEnv);
   }
 
+  const settings = getSettings();
+  if (settings.dataRoot && settings.dataRoot.trim().length > 0) {
+    return path.resolve(getSettingsFileDir(), settings.dataRoot.trim());
+  }
+
   const normalizedSuffix = DEFAULT_CACHE_ROOT.replace(/\\/g, "/");
 
   const scopedCacheRoot = cacheRootScope.getStore();
@@ -98,5 +117,5 @@ export function resolveDataRoot(): string {
     }
   }
 
-  return path.resolve(process.cwd(), DEFAULT_DATA_ROOT);
+  return path.resolve(getSettingsFileDir(), DEFAULT_DATA_ROOT);
 }
