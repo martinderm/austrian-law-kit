@@ -15,4 +15,6 @@ Thumbs.db
 
 tests/live/results/
 plugin/openclaw-austrian-law/memory/
+plugin/openclaw-austrian-law/data/
 memory/
+data/

@@ -2,12 +2,16 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { CachedArtifact } from "../types/tool-contracts.js";
 import { buildCacheRelativePaths } from "./cache-paths.js";
-import { resolveCacheRoot } from "./cache-runtime.js";
+import { resolveCacheRoot, resolveDataRoot } from "./cache-runtime.js";
 import { parseSerializedArtifactMarkdown } from "./parse-artifact.js";
 import { buildSerializedArtifact } from "./serialize-artifact.js";
 
-export function toAbsoluteCachePath(relativePath: string): string {
+export function toAbsoluteMarkdownPath(relativePath: string): string {
   return path.join(resolveCacheRoot(), relativePath);
+}
+
+export function toAbsoluteMetadataPath(relativePath: string): string {
+  return path.join(resolveDataRoot(), relativePath);
 }
 
 async function ensureParentDir(filePath: string): Promise<void> {
@@ -25,7 +29,7 @@ export async function readArtifactByStableId(params: {
     frontmatter: { source: params.source, doc_type: params.docType },
   });
 
-  const markdownPath = toAbsoluteCachePath(paths.markdownPath);
+  const markdownPath = toAbsoluteMarkdownPath(paths.markdownPath);
   const markdownRaw = await fs.readFile(markdownPath, "utf8");
   const parsed = parseSerializedArtifactMarkdown(markdownRaw);
 
@@ -43,7 +47,7 @@ export async function readArtifactByStableId(params: {
 
   let metadata: Record<string, unknown> | undefined;
   if (params.includeMetadata) {
-    const metadataPath = toAbsoluteCachePath(paths.metadataPath);
+    const metadataPath = toAbsoluteMetadataPath(paths.metadataPath);
     const metadataRaw = await fs.readFile(metadataPath, "utf8");
     const metadataParsed = JSON.parse(metadataRaw) as { metadata?: Record<string, unknown> };
     metadata = metadataParsed.metadata ?? {};
@@ -60,8 +64,8 @@ export async function readArtifactByStableId(params: {
 export async function writeArtifact(artifact: CachedArtifact): Promise<{ markdownPath: string }> {
   const serialized = buildSerializedArtifact(artifact);
 
-  const markdownPath = toAbsoluteCachePath(serialized.markdownPath);
-  const metadataPath = toAbsoluteCachePath(serialized.metadataPath);
+  const markdownPath = toAbsoluteMarkdownPath(serialized.markdownPath);
+  const metadataPath = toAbsoluteMetadataPath(serialized.metadataPath);
 
   await ensureParentDir(markdownPath);
   await ensureParentDir(metadataPath);
@@ -85,7 +89,7 @@ export async function artifactExistsByStableId(params: {
   });
 
   try {
-    await fs.access(toAbsoluteCachePath(paths.markdownPath));
+    await fs.access(toAbsoluteMarkdownPath(paths.markdownPath));
     return true;
   } catch {
     return false;

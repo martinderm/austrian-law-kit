@@ -59,3 +59,44 @@ export function resolveCacheRoot(): string {
 
   return path.resolve(process.cwd(), DEFAULT_CACHE_ROOT);
 }
+
+const DATA_ROOT_ENV = "OPENCLAW_AUSTRIAN_LAW_DATA_ROOT";
+const DEFAULT_DATA_ROOT = path.join("data", "austrian-law");
+let dataRootOverride: string | undefined;
+
+export function configureDataRoot(dataRoot: string | undefined): void {
+  const normalized = dataRoot?.trim();
+  dataRootOverride = normalized && normalized.length > 0 ? normalized : undefined;
+}
+
+export function resolveDataRoot(): string {
+  if (dataRootOverride) {
+    return path.resolve(dataRootOverride);
+  }
+
+  const fromEnv = process.env[DATA_ROOT_ENV]?.trim();
+  if (fromEnv && fromEnv.length > 0) {
+    return path.resolve(fromEnv);
+  }
+
+  const normalizedSuffix = DEFAULT_CACHE_ROOT.replace(/\\/g, "/");
+
+  const scopedCacheRoot = cacheRootScope.getStore();
+  if (scopedCacheRoot) {
+    const normPath = scopedCacheRoot.replace(/\\/g, "/");
+    if (normPath.endsWith(normalizedSuffix)) {
+      const workspaceDir = normPath.substring(0, normPath.length - normalizedSuffix.length);
+      return path.resolve(workspaceDir, DEFAULT_DATA_ROOT);
+    }
+  }
+
+  if (cacheRootOverride) {
+    const normPath = cacheRootOverride.replace(/\\/g, "/");
+    if (normPath.endsWith(normalizedSuffix)) {
+      const workspaceDir = normPath.substring(0, normPath.length - normalizedSuffix.length);
+      return path.resolve(workspaceDir, DEFAULT_DATA_ROOT);
+    }
+  }
+
+  return path.resolve(process.cwd(), DEFAULT_DATA_ROOT);
+}
