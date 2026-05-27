@@ -106,22 +106,23 @@ Zielstruktur für Instanzen:
 - `memory/references/austrian-law/ris/...`
 - `memory/references/austrian-law/jusline/...`
 
-Im aktuellen Plugin-Stand werden Cache/Artefakte standardmäßig aus dem **Workspace des aufrufenden Agenten** abgeleitet. 
-
-Einstellungen und Pfade können vollautomatisch über eine `settings.json`-Datei geladen werden, die im Workspace-Root (`settings.json`) oder unter `data/austrian-law/settings.json` gesucht wird.
+Einstellungen und Pfade können vollautomatisch über eine `settings.json`-Datei geladen werden, die im Workspace-Root (`settings.json`) gesucht wird. Um Konflikte mit anderen Workspace-Einstellungen zu vermeiden, sind die Konfigurationen unter dem Namensraum `"austrian-law-kit"` zu schachteln.
 
 Beispiel für `settings.json`:
 ```json
 {
-  "cacheRoot": "memory/references/austrian-law",
-  "dataRoot": "data/austrian-law",
-  "risBaseUrl": "https://www.ris.bka.gv.at",
-  "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
-  "juslineBaseUrl": "https://www.jusline.at"
+  "austrian-law-kit": {
+    "cacheRoot": "memory/references/austrian-law",
+    "dataRoot": "data/austrian-law",
+    "risBaseUrl": "https://www.ris.bka.gv.at",
+    "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
+    "juslineBaseUrl": "https://www.jusline.at"
+  }
 }
 ```
 
-Pfade in `settings.json` können relativ zum Verzeichnis der Einstellungsdatei oder absolut angegeben werden. Explizite CLI-Optionen oder Umgebungsvariablen überschreiben die Werte in `settings.json`.
+Pfade in `settings.json` können relativ zum Workspace-Root (Verzeichnis der Einstellungsdatei) oder absolut angegeben werden. Explizite CLI-Optionen oder Umgebungsvariablen überschreiben die Werte in `settings.json`.
+
 
 Dateien mit stabilen Identifikatoren benennen und YAML-Frontmatter verwenden.
 Für RIS-Gesamtdokumente `doc_type=norm_document` beibehalten und die Darstellungsform zusätzlich über `representation=whole_law` kennzeichnen; der kanonische `title` soll dabei der eigentliche Langtitel der Norm sein, nicht die ausschweifende RIS-Seitenüberschrift.

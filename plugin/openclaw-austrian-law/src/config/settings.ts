@@ -11,6 +11,11 @@ export interface Settings {
   [key: string]: unknown;
 }
 
+interface GlobalSettings {
+  "austrian-law-kit"?: Settings;
+  [key: string]: unknown;
+}
+
 let loadedSettings: Settings | null = null;
 let settingsFileDir: string | null = null;
 let configuredWorkspaceDir: string | undefined;
@@ -67,7 +72,8 @@ export function getSettings(): Settings {
           lookupDirs.unshift(resolvedEnv);
         } else {
           const raw = readFileSync(resolvedEnv, "utf8");
-          loadedSettings = JSON.parse(raw) as Settings;
+          const parsed = JSON.parse(raw) as GlobalSettings;
+          loadedSettings = parsed["austrian-law-kit"] ?? {};
           settingsFileDir = path.dirname(resolvedEnv);
           return loadedSettings;
         }
@@ -79,24 +85,16 @@ export function getSettings(): Settings {
 
   // Search candidates
   for (const dir of lookupDirs) {
-    const candidates = [
-      path.join(dir, "settings.json"),
-      path.join(dir, "data", "austrian-law", "settings.json")
-    ];
-    for (const file of candidates) {
-      if (existsSync(file)) {
-        try {
-          const raw = readFileSync(file, "utf8");
-          loadedSettings = JSON.parse(raw) as Settings;
-          if (file.replace(/\\/g, "/").endsWith("data/austrian-law/settings.json")) {
-            settingsFileDir = dir;
-          } else {
-            settingsFileDir = path.dirname(file);
-          }
-          return loadedSettings;
-        } catch (e) {
-          console.warn(`[austrian-law-kit] Warning: Failed to parse settings at ${file}`, e);
-        }
+    const file = path.join(dir, "settings.json");
+    if (existsSync(file)) {
+      try {
+        const raw = readFileSync(file, "utf8");
+        const parsed = JSON.parse(raw) as GlobalSettings;
+        loadedSettings = parsed["austrian-law-kit"] ?? {};
+        settingsFileDir = path.dirname(file);
+        return loadedSettings;
+      } catch (e) {
+        console.warn(`[austrian-law-kit] Warning: Failed to parse settings at ${file}`, e);
       }
     }
   }

@@ -100,20 +100,23 @@ npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_fetch_segment
 
 ### Konfiguration über settings.json
 
-Das Toolkit sucht beim Start (oder bei der Übergabe des `--workspace`-Parameters) automatisch nach einer `settings.json` im Workspace-Root (`settings.json`) oder unter `data/austrian-law/settings.json`.
+Das Toolkit sucht beim Start (oder bei der Übergabe des `--workspace`-Parameters) automatisch nach einer `settings.json` direkt im Workspace-Root (`settings.json`). Um Konflikte mit anderen Workspace-Einstellungen zu vermeiden, sind alle Parameter unter dem Namensraum `"austrian-law-kit"` geschachtelt.
 
 Beispiel für `settings.json`:
 ```json
 {
-  "cacheRoot": "memory/references/austrian-law",
-  "dataRoot": "data/austrian-law",
-  "risBaseUrl": "https://www.ris.bka.gv.at",
-  "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
-  "juslineBaseUrl": "https://www.jusline.at"
+  "austrian-law-kit": {
+    "cacheRoot": "memory/references/austrian-law",
+    "dataRoot": "data/austrian-law",
+    "risBaseUrl": "https://www.ris.bka.gv.at",
+    "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
+    "juslineBaseUrl": "https://www.jusline.at"
+  }
 }
 ```
 
-Wenn relative Pfade in `settings.json` angegeben werden, werden diese relativ zum Verzeichnis aufgelöst, in dem sich die Einstellungsdatei befindet (typischerweise der Workspace-Root). CLI-Parameter oder Umgebungsvariablen haben stets Vorrang vor den Werten aus `settings.json`.
+Wenn relative Pfade in `settings.json` angegeben werden, werden diese relativ zum Workspace-Root (Verzeichnis der Einstellungsdatei) aufgelöst. CLI-Parameter oder Umgebungsvariablen haben stets Vorrang vor den Werten aus `settings.json`.
+
 
 
 ## Plugin lokal einbinden
