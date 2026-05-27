@@ -24,7 +24,9 @@ Dann Code:
 
 ## Nächster konkreter Implementierungsschritt
 
-**Nach der agentbezogenen Cache-Ableitung: nur noch sehr kleine Zusatzinvarianten oder gezielte Fixture-Klärungen ergänzen:**
+**Top Priority:** Plugin-Packaging auf compiled Runtime-Output umstellen (`index.ts`/ggf. `setup-entry.ts` -> `dist/*.js`), damit Doctor-/Discovery-Warnungen verschwinden.
+
+**Danach nur noch sehr kleine Zusatzinvarianten oder gezielte Fixture-Klärungen ergänzen:**
 - klare Trennung von Diskussionen/Kommentaren und Entscheidungen beibehalten
 - RIS-first-Architektur unverändert lassen
 - agentbezogene Cache-Isolation bei weiteren Plugin-Schritten nicht wieder auf globalen `process.cwd()`-Default zurückfallen lassen
