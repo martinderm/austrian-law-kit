@@ -1,9 +1,10 @@
 ---
-name: austrian-law
+name: austrian-law-kit
 description: Workspace-Skill für die strukturierte, quellenklare Arbeit mit österreichischen Rechtstexten. Verwende ihn für österreichische Rechtsrecherche mit klarer Quellenhierarchie (RIS primär, JUSLINE sekundär/opt-in), transparenter Unsicherheitskommunikation und sauberer Trennung von Wortlaut, Einordnung, Diskussionen/Kommentaren und Entscheidungen.
 ---
 
-# Skill: austrian-law
+# Skill: austrian-law-kit
+
 
 ## Zweck
 
@@ -109,3 +110,27 @@ Im aktuellen Plugin-Stand werden Cache/Artefakte standardmäßig aus dem **Works
 
 Dateien mit stabilen Identifikatoren benennen und YAML-Frontmatter verwenden.
 Für RIS-Gesamtdokumente `doc_type=norm_document` beibehalten und die Darstellungsform zusätzlich über `representation=whole_law` kennzeichnen; der kanonische `title` soll dabei der eigentliche Langtitel der Norm sein, nicht die ausschweifende RIS-Seitenüberschrift.
+
+## Harness-Agnostische Tool-Ausführung (CLI)
+
+Da dieser Skill harness-agnostisch konzipiert ist, können die RIS- und JUSLINE-Werkzeuge direkt über die CLI ausgeführt werden. Verwende dafür das TypeScript-CLI unter `plugin/openclaw-austrian-law/bin/cli.ts` mittels `npx tsx`:
+
+```powershell
+# Syntax:
+npx tsx <pfad-zu-diesem-skill>/plugin/openclaw-austrian-law/bin/cli.ts [Optionen] <tool_name> '[json_arguments]'
+
+# Beispiele:
+# 1. Freitextsuche im Bundesrecht:
+npx tsx D:/users/dagobert/agents/skills/austrian-law-kit/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
+
+# 2. Gesetzessegment abrufen:
+npx tsx D:/users/dagobert/agents/skills/austrian-law-kit/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
+```
+
+### Optionen
+- `--workspace <dir>`: Leitet den Cache-Ordner (`memory/references/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
+- `--cache-root <dir>`: Setzt einen absoluten Pfad für den Cache-Ordner fest.
+- `--ris-base-url <url>`: Überschreibt die RIS-Web-URL.
+- `--ris-api-base-url <url>`: Überschreibt die RIS-API-URL.
+- `--jusline-base-url <url>`: Überschreibt die JUSLINE-URL.
+

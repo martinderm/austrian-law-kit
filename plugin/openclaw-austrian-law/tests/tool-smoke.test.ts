@@ -595,17 +595,17 @@ await test("ris_search normalizes common norm references for the HTML fallback p
       });
     }
     assert.ok(url.includes("Titel=ABGB"));
-    assert.ok(url.includes("VonParagraf=1293"));
-    assert.ok(url.includes("BisParagraf=1293"));
+    assert.ok(url.includes("VonParagraf=2"));
+    assert.ok(url.includes("BisParagraf=2"));
     assert.ok(url.includes("Position=1"));
     assert.ok(url.includes("SkipToDocumentPage=true"));
     return new Response(html, { status: 200 });
   }, async () => {
-    const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
+    const result = await risSearchStub({ query: "§ 2 abgb", limit: 5 });
 
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.equal(result.data.normalized_query, "§ 1293 abgb");
+    assert.equal(result.data.normalized_query, "§ 2 abgb");
     assert.equal(result.data.resolver_kind, "normRef");
     assert.ok(result.data.best_candidate);
     assert.ok(result.data.best_candidate?.match_reason);

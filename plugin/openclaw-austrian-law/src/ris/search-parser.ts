@@ -83,11 +83,16 @@ export function parseRisSearchHtml(html: string, maxHits: number): SearchHit[] {
     const title = stripTags(titleMatch?.[1] ?? linkMatch[2] ?? "");
     if (!title) continue;
 
+    const linkTextDecoded = decodeHtml(linkMatch[2]);
+    const paragraphMatch = linkTextDecoded.match(/(?:§|&#167;|art\.?)\s*([0-9]+[a-zA-Z]*)/i);
+    const paragraph_number = paragraphMatch?.[1];
+
     hits.push({
       stable_id: toStableIdFromSourceId(sourceId) ?? "",
       source_id: sourceId,
       title,
       source_url: sourceUrl,
+      paragraph_number,
     });
 
     seen.add(sourceUrl);
