@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 - Harness-Agnostischer CLI-Support, Cache-Path-Splitting & Namespaced Settings
+- **Harness-Agnostisches CLI**: `bin/cli.ts` hinzugefügt, um die Tools standalone über `npx tsx bin/cli.ts` auszuführen.
+- **Zwei-Wege-Cache**: Physische Trennung von Referenz-Dokumenten (Markdown in `memory/references/`) und strukturierten Metadaten (JSON in `data/`).
+- **Namenraum-Einstellungen**: Einstellungen werden nun automatisch aus `settings.json` im Workspace-Root unter dem Namensraum `"austrian-law-kit"` geladen.
+- **Pfade konfigurierbar**: Unterstützung für benutzerdefinierte `cacheRoot`- und `dataRoot`-Pfade in `settings.json`, relativ zum Workspace-Root aufgelöst.
+- **Thread-sichere Scopes**: Integration von `AsyncLocalStorage` zur dynamischen und isolierten Pfadauflösung während multi-tenanter Agenten-Läufe in OpenClaw.
+- **Dokumentations-Härtung**: `README.md` und `SKILL.md` umfassend aktualisiert, um den harness-agnostischen Ansatz, die `settings.json`-Spezifikation und Datenisolations-Vorschriften für geteilte Repositories zu dokumentieren.
+- **Repository-Umbenennung**: Repository auf `austrian-law-kit` umgestellt und die Standard-Branch-Konfiguration auf `main` aktualisiert.
+
 ## 0.12.0 - JUSLINE Query-Index + Refresh-Semantik
 - JUSLINE-Query-Index für `query + kind + limit` ergänzt, damit Artefaktmengen vor erneutem Upstream-Fetch wiederverwendet werden können
 - Query-Index-TTL auf 24 Stunden festgelegt
