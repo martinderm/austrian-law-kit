@@ -1,19 +1,20 @@
-# openclaw-austrian-law-kit
+# austrian-law-kit
 
-Portables Scaffold-Repository für einen österreichischen Rechts-Agenten in OpenClaw.
+Portables, harness-agnostisches Toolkit für österreichische Rechts-Agenten (mit optionaler OpenClaw-Integration).
 
 ## Zweck
 
-Dieses Repository liefert eine übertragbare Grundstruktur für:
-- Workspace-Skill (MVP)
-- spätere native Plugin-Entwicklung
-- dokumentiertes Memory-/Cache-Zielmodell
-- Tests, Fixtures und Beispiel-Config
-- Installation und Migration in neue Instanzen
+Dieses Repository liefert eine übertragbare, agenten-agnostische Grundstruktur für:
+- **Harness-Agnostische CLI-Nutzung**: Direkte Ausführung der RIS- und JUSLINE-Tools über eine Standalone-CLI ohne Abhängigkeit von einem bestimmten Agenten-Harness oder laufendem Gateway.
+- **Workspace-Skill (MVP)**: Fachliche Prompts und Richtlinien für Rechts-Agenten.
+- **Optionale OpenClaw-Integration**: Native Plugin-Registrierung für OpenClaw-Instanzen.
+- **Dokumentiertes Memory-/Cache-Zielmodell**: Saubere physische Trennung von Referenzen (Markdown) und Metadaten (JSON).
+- **Tests, Fixtures und Beispiel-Config**: Lokale Entwicklung und Smoke-Tests.
 
 ## Leitprinzipien
 
-1. **Repository-first, portabel**: Keine harte Kopplung an eine konkrete lokale Instanz.
+1. **Harness-Agnostisch & Portabel**: Keine harte Kopplung an eine konkrete lokale Instanz oder ein bestimmtes Agenten-Framework. Kann standalone als CLI-Tool betrieben werden.
+
 2. **Quellenhierarchie**: RIS ist Primärquelle, JUSLINE Sekundärquelle.
 3. **Transparenz**: Antworten trennen Wortlaut, Quelle, Unsicherheit und Einordnung.
 4. **Inkrementelle Umsetzung**: Erst Skill + Doku, dann Plugin + Parser + Caching.
@@ -30,9 +31,9 @@ Wichtig zur Quellnutzung:
 
 ## Scope (aktueller Stand)
 
-Enthalten sind:
+Enhalten sind:
 - Dokumentations- und Vertragsbasis
-- Skill-Gerüst unter `skills/austrian-law/`
+- Skill-Richtlinien (`SKILL.md`) im Root-Verzeichnis
 - produktive RIS-MVP-Tools:
   - `ris_search`
   - `ris_fetch_segment`
@@ -60,11 +61,13 @@ Bewusst noch eingeschränkt:
 ## Strukturüberblick
 
 - `docs/` Architektur, Quellenpolitik, Memory-Layout, Status/Übergaben
-- `skills/austrian-law/` fachliches Skill-Gerüst
+- `SKILL.md` fachliche Skill-Richtlinien und CLI-Dokumentation im Root
+- `references/` Fachliche Referenzen (z.B. `jusline.md`)
 - `example-config/` übertragbare Konfigurationsbeispiele
-- `plugin/` native Plugin-Implementierung (MVP + Stubs)
+- `plugin/` native Plugin-Implementierung und CLI-Wrapper (bin/cli.ts)
 - `tests/`, `fixtures/` testbare Entwicklung inkl. realitätsnaher Snapshot-Extrakte
 - `templates/memory/` optionale Vorlagen für Instanzen
+
 
 ## Lokaler Smoke-Test-Workflow
 
@@ -119,9 +122,9 @@ Wenn relative Pfade in `settings.json` angegeben werden, werden diese relativ zu
 
 
 
-## Plugin lokal einbinden
+## Optionale OpenClaw-Integration (Plugin lokal einbinden)
 
-Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege:
+Wenn du das Toolkit innerhalb von OpenClaw nutzen möchtest, kannst du es als Plugin lokal einbinden. Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege:
 
 - normale Installation (OpenClaw legt eine Kopie unter `extensions/<plugin-id>` an):
   `openclaw plugins install <pfad-zum-pluginordner>`
@@ -132,30 +135,30 @@ Aktuelle interne Plugin-ID: `austrian-law-kit`
 
 **Wichtig für lokale Entwicklung:** Ein bloßer Gateway-Reload reicht bei Plugin-Code-Änderungen nicht. OpenClaw lädt den tatsächlich installierten Plugin-Ordner unter `extensions/<plugin-id>`. Nach Änderungen im Repo daher zuerst den installierten Plugin-Stand per `openclaw plugins update austrian-law-kit` oder `openclaw plugins install --force <pfad-zum-pluginordner>` aktualisieren, erst danach den Gateway reloaden/restarten und den Installationsordner bzw. `openclaw plugins inspect austrian-law-kit` verifizieren.
 
-## Skill mit ausrollen
+## Skill mit ausrollen (Workspace-Skill)
 
-Das Plugin allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill
-`skills/austrian-law/` in den Ziel-Agent-Workspace übernommen werden, damit Quellenhierarchie, Antwortstruktur,
-Rechtsberatungsgrenze, JUSLINE-Trennung und die saubere RIS-Fetch-Disziplin auch promptseitig wirksam sind.
+Das Plugin (oder CLI-Tool) allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill `SKILL.md` (und `references/jusline.md`) in den Ziel-Agent-Workspace übernommen werden, damit Quellenhierarchie, Antwortstruktur, Rechtsberatungsgrenze, JUSLINE-Trennung und die saubere RIS-Fetch-Disziplin auch promptseitig wirksam sind.
 
 Kurz gesagt:
-- **Plugin** = Tools, Cache, technische Laufzeit
+- **Plugin/CLI** = Tools, Cache, technische Laufzeit
 - **Skill** = fachliche Orchestrierung, Antwortdisziplin, Quellenpolitik
 
 ## 🚦 Projektstatus (Übergabe)
 
 ### Bereits abgeschlossene Phasen
 - Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
-- Workspace-Skill `skills/austrian-law/` auf aktuellen MVP-Stand nachgezogen
+- Workspace-Skill `SKILL.md` auf aktuellen MVP-Stand nachgezogen
 - Datenvertrag: Stable ID, Frontmatter, Memory-Layout
-- OpenClaw-formnahes Plugin-MVP (Manifest + `openclaw.extensions` + Entry)
+- Harness-agnostische CLI-Ausführung (`bin/cli.ts`) und optionaler OpenClaw-Plugin-Entrypoint (`index.ts`)
 - Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
 - Produktive JUSLINE-MVP-Funktionen (`jusline_fetch_discussions`, `jusline_list_decisions`) als Sekundärquelle
 - optionale JUSLINE-Detail-Previews für Kommentare und Entscheidungsdetailseiten mit angereicherten Metadaten
-- Lokale Cache-I/O inkl. write-through + gezielte cache-read Wiederverwendung
+- Lokale Cache-I/O mit klarer Trennung von Referenz-Dokumenten (Markdown in `memory/references/`) und Metadaten (JSON in `data/`)
+- Automatische settings.json-Auflösung unter dem Namensraum `"austrian-law-kit"` im Workspace-Root
 - JUSLINE-Query-Index mit 24h TTL und `refresh=true` als Force-Reload-Semantik
 - Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
-- kleine ausführbare Parser-/Tool-Smoke-Tests für den aktuellen MVP-Stand
+- kleine ausführbare Parser-/Tool-Smoke-Tests für den aktuellen Stand
+
 
 ### Nächster empfohlener Schritt
 - kleine Parser-Smoke-Edge-Cases oder minimale Fixture-Klärungen nachziehen, ohne RIS-Primärlogik anzutasten.
