@@ -138,10 +138,10 @@ npx tsx <pfad-zu-diesem-skill>/plugin/openclaw-austrian-law/bin/cli.ts [Optionen
 
 # Beispiele:
 # 1. Freitextsuche im Bundesrecht:
-npx tsx D:/users/dagobert/agents/skills/austrian-law-kit/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
+npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
 
 # 2. Gesetzessegment abrufen:
-npx tsx D:/users/dagobert/agents/skills/austrian-law-kit/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
+npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
 ```
 
 ### Optionen
