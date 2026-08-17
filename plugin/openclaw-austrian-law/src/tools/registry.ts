@@ -4,6 +4,7 @@ import { TOOL_INPUT_SCHEMAS, type ToolInputSchema } from "./schemas.js";
 import { risSearchStub } from "./ris_search.js";
 import { risFetchSegmentStub } from "./ris_fetch_segment.js";
 import { risFetchWholeLawStub } from "./ris_fetch_whole_law.js";
+import { risSyncLawsStub } from "./ris_sync_laws.js";
 import { juslineFetchDiscussionsStub } from "./jusline_fetch_discussions.js";
 import { juslineListDecisionsStub } from "./jusline_list_decisions.js";
 
@@ -13,6 +14,7 @@ export const TOOL_STUBS: Record<ToolName, ToolStub> = {
   ris_search: risSearchStub as ToolStub,
   ris_fetch_segment: risFetchSegmentStub as ToolStub,
   ris_fetch_whole_law: risFetchWholeLawStub as ToolStub,
+  ris_sync_laws: risSyncLawsStub as ToolStub,
   jusline_fetch_discussions: juslineFetchDiscussionsStub as ToolStub,
   jusline_list_decisions: juslineListDecisionsStub as ToolStub,
 };

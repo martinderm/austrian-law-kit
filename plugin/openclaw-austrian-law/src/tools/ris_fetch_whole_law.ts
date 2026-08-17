@@ -13,9 +13,44 @@ import {
   buildRefreshMeta,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
+import { risSearchStub } from "./ris_search.js";
 import type { CachedArtifact, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
 
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
+  if (!input.wholeLawUrl && !input.sourceId && !input.sourceUrl && input.query?.trim()) {
+    const searchResult = await risSearchStub({
+      query: input.query.trim(),
+      scope: input.scope,
+      state: input.state,
+      limit: 5,
+    });
+    if (!searchResult.ok) {
+      return {
+        ok: false,
+        error: searchResult.error,
+        meta: { tool: "ris_fetch_whole_law", source: "ris" },
+      };
+    }
+    const candidate = searchResult.data.best_candidate?.whole_law_url
+      ? searchResult.data.best_candidate
+      : searchResult.data.hits.find((h) => !!h.whole_law_url);
+    if (!candidate || !candidate.whole_law_url) {
+      return {
+        ok: false,
+        error: {
+          code: "NOT_FOUND",
+          message: `Could not resolve whole law URL for query '${input.query}'`,
+        },
+        meta: { tool: "ris_fetch_whole_law", source: "ris" },
+      };
+    }
+    input = {
+      ...input,
+      wholeLawUrl: candidate.whole_law_url,
+      sourceId: candidate.source_id,
+    };
+  }
+
   let sourceUrl: string;
   try {
     sourceUrl = input.wholeLawUrl?.trim() || buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });

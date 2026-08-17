@@ -74,12 +74,47 @@ export interface RisFetchSegmentInput {
 export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
 
 export interface RisFetchWholeLawInput {
+  query?: string;
   sourceId?: string;
   sourceUrl?: string;
   wholeLawUrl?: string;
+  scope?: RisScope;
+  state?: AustrianState;
   refresh?: boolean;
 }
 export type RisFetchWholeLawOutput = ToolResult<{ artifact: CachedArtifact }>;
+
+export interface RisSyncLawsItem {
+  query?: string;
+  sourceId?: string;
+  wholeLawUrl?: string;
+  scope?: RisScope;
+  state?: AustrianState;
+  refresh?: boolean;
+}
+
+export interface RisSyncLawsInput {
+  laws: RisSyncLawsItem[];
+}
+
+export interface SyncedLawResult {
+  query?: string;
+  stable_id?: string;
+  title?: string;
+  law_id?: string;
+  source_url?: string;
+  cached: boolean;
+  ok: boolean;
+  error?: string;
+}
+
+export type RisSyncLawsOutput = ToolResult<{
+  total: number;
+  synced: number;
+  cached: number;
+  failed: number;
+  laws: SyncedLawResult[];
+}>;
 
 export interface JuslineFetchDiscussionsInput {
   query: string;

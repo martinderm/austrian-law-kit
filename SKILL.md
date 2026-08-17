@@ -52,9 +52,10 @@ Bei sehr kleinen, rein mechanischen Nachfragen darf die Antwort knapper sein, di
 
 ### RIS (Primärquelle)
 Primär diese MVP-Tools nutzen:
-- `ris_search` (nur als optionale Discovery-Hilfe)
-- `ris_fetch_segment`
-- `ris_fetch_whole_law`
+- `ris_sync_laws` (Synchronisation/Download mehrerer Gesetze in einem einzigen Schritt)
+- `ris_fetch_whole_law` (Gesetzesvolltext; unterstützt direkte `wholeLawUrl` oder `query` für Auto-Resolve)
+- `ris_fetch_segment` (Einzelner Paragraf)
+- `ris_search` (Discovery-Hilfe für Gesetze, Paragrafen & Judikatur)
 
 Typischer Ablauf:
 1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
@@ -128,26 +129,60 @@ Dateien mit stabilen Identifikatoren benennen und YAML-Frontmatter verwenden.
 Für RIS-Gesamtdokumente `doc_type=norm_document` beibehalten und die Darstellungsform zusätzlich über `representation=whole_law` kennzeichnen; der kanonische `title` soll dabei der eigentliche Langtitel der Norm sein, nicht die ausschweifende RIS-Seitenüberschrift.
 
 
-## Harness-Agnostische Tool-Ausführung (CLI)
+## Harness-Agnostische Tool-Ausführung (CLI & JSON-Modus)
 
-Da dieser Skill harness-agnostisch konzipiert ist, können die RIS- und JUSLINE-Werkzeuge direkt über die CLI ausgeführt werden. Verwende dafür das TypeScript-CLI unter `plugin/openclaw-austrian-law/bin/cli.ts` mittels `npx tsx`:
+Da dieser Skill harness-agnostisch konzipiert ist, können die RIS- und JUSLINE-Werkzeuge direkt über die CLI ausgeführt werden. Verwende dafür das TypeScript-CLI unter `plugin/openclaw-austrian-law/bin/cli.ts` mittels `npx tsx` oder `npm run cli`:
 
 ```powershell
-# Syntax:
-npx tsx <pfad-zu-diesem-skill>/plugin/openclaw-austrian-law/bin/cli.ts [Optionen] <tool_name> '[json_arguments]'
+# 1. Direkte Ausführung mit Argument-String:
+npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." ris_search '{"query": "Mietrechtsgesetz"}'
 
-# Beispiele:
-# 1. Freitextsuche im Bundesrecht:
-npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
+# 2. JSON-gesteuerter Modus mit Datei (für Freigabe-Workflows):
+npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." --file request.json --output result.json
 
-# 2. Gesetzessegment abrufen:
-npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "C:/absolute/path/to/your/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
+# 3. Pipe / Stdin:
+Get-Content request.json | npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." --stdin
 ```
 
-### Optionen
-- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen! Zwingend erforderlich bei gemeinsam genutztem Skill-Repository zur Datenisolation zwischen den Agenten).
-- `--cache-root <dir>`: Setzt einen absoluten Pfad für den Dokumenten-Cache fest (der Metadaten-Cache wird dabei automatisch im selben Elternverzeichnis unter `data/` abgeleitet).
+### JSON-Input Formate (Freigabe & Batch)
+
+#### Einzelaufruf (Envelope)
+```json
+{
+  "tool": "ris_fetch_segment",
+  "arguments": {
+    "sourceId": "NOR12032493"
+  }
+}
+```
+
+#### Batch-Aufruf (Mehrere Anfragen in einer Freigabedatei)
+```json
+{
+  "calls": [
+    {
+      "id": "suche-mrg",
+      "tool": "ris_search",
+      "arguments": { "query": "Mietrechtsgesetz" }
+    },
+    {
+      "id": "segment-mrg-2",
+      "tool": "ris_fetch_segment",
+      "arguments": { "sourceId": "NOR12032493" }
+    }
+  ]
+}
+```
+
+### CLI-Optionen
+- `-f, --file, -i, --input <pfad>`: Liest das JSON-Payload aus einer Datei ein (unterstützt Envelope, Batch oder rohe Tool-Parameter).
+- `-o, --output, --out <pfad>`: Speichert das Ergebnis-JSON strukturiert in eine Datei.
+- `--stdin, -`: Liest das JSON aus der Standard-Eingabe (Pipe).
+- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
+- `--cache-root <dir>`: Setzt einen expliziten Pfad für das Cache-Wurzelverzeichnis fest.
 - `--ris-base-url <url>`: Überschreibt die RIS-Web-URL.
 - `--ris-api-base-url <url>`: Überschreibt die RIS-API-URL.
 - `--jusline-base-url <url>`: Überschreibt die JUSLINE-URL.
+- `-h, --help`: Zeigt die Hilfe mit Beispielen an.
+
 

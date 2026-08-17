@@ -2,6 +2,7 @@ export type ToolName =
   | "ris_search"
   | "ris_fetch_segment"
   | "ris_fetch_whole_law"
+  | "ris_sync_laws"
   | "jusline_fetch_discussions"
   | "jusline_list_decisions";
 

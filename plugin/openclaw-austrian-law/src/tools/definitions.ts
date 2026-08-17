@@ -36,6 +36,14 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
     outputSchemaRef: "contracts:RisFetchWholeLawOutput",
   },
   {
+    name: "ris_sync_laws",
+    sourceKind: "ris",
+    status: "mvp",
+    description: "Synchronisiert mehrere Gesetze in einem Aufruf via Name/Query oder URL (MVP).",
+    inputSchemaRef: TOOL_SCHEMA_REFS.ris_sync_laws,
+    outputSchemaRef: "contracts:RisSyncLawsOutput",
+  },
+  {
     name: "jusline_fetch_discussions",
     sourceKind: "jusline",
     status: "mvp",

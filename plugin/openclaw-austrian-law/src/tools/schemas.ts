@@ -38,11 +38,35 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
     type: "object",
     additionalProperties: false,
     properties: {
+      query: { type: "string" },
       sourceId: { type: "string" },
       sourceUrl: { type: "string" },
       wholeLawUrl: { type: "string" },
+      scope: { type: "string", enum: ["bund", "land", "municipal"] },
+      state: { type: "string", enum: ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"] },
       refresh: { type: "boolean" },
     },
+  },
+  ris_sync_laws: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      laws: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            query: { type: "string" },
+            sourceId: { type: "string" },
+            wholeLawUrl: { type: "string" },
+            scope: { type: "string", enum: ["bund", "land", "municipal"] },
+            state: { type: "string", enum: ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"] },
+            refresh: { type: "boolean" },
+          },
+        },
+      },
+    },
+    required: ["laws"],
   },
   jusline_fetch_discussions: {
     type: "object",
@@ -70,6 +94,7 @@ export const TOOL_SCHEMA_REFS: Record<ToolName, string> = {
   ris_search: "schemas:ris_search.input",
   ris_fetch_segment: "schemas:ris_fetch_segment.input",
   ris_fetch_whole_law: "schemas:ris_fetch_whole_law.input",
+  ris_sync_laws: "schemas:ris_sync_laws.input",
   jusline_fetch_discussions: "schemas:jusline_fetch_discussions.input",
   jusline_list_decisions: "schemas:jusline_list_decisions.input",
 };

@@ -7,10 +7,11 @@
   "main": "index.ts",
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
-    "cli": "tsx bin/cli.ts",
+    "cli": "npm exec --yes --package tsx -- tsx bin/cli.ts",
     "test:parser-smoke": "npm exec --yes --package tsx -- tsx tests/parser-smoke.test.ts",
     "test:tool-smoke": "npm exec --yes --package tsx -- tsx tests/tool-smoke.test.ts",
-    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke"
+    "test:cli-json": "npm exec --yes --package tsx -- tsx tests/cli-json.test.ts",
+    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke && npm run test:cli-json"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
