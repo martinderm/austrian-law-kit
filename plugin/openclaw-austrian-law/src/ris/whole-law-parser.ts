@@ -5,33 +5,94 @@ export interface ParsedRisWholeLaw {
 }
 
 function decodeHtml(text: string): string {
-  return text
+  const decoded = text
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x27;/gi, "'")
+    .replace(/&#167;/gi, "§")
     .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
     .replace(/&#([0-9]+);?/g, (_, num) => String.fromCodePoint(parseInt(num, 10)))
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">");
+  return fixMojibake(decoded);
+}
+
+function fixMojibake(text: string): string {
+  if (!/[ÃÂâǬ]/.test(text)) return text;
+  const replacements: Array<[RegExp, string]> = [
+    [/â€“/g, "–"],
+    [/â€”/g, "—"],
+    [/â€ž/g, "„"],
+    [/â€œ/g, "“"],
+    [/â€ /g, "”"],
+    [/â€™/g, "’"],
+    [/â€˜/g, "‘"],
+    [/â€¦/g, "…"],
+    [/Ã¤/g, "ä"],
+    [/Ã¶/g, "ö"],
+    [/Ã¼/g, "ü"],
+    [/Ã„/g, "Ä"],
+    [/Ã–/g, "Ö"],
+    [/Ãœ/g, "Ü"],
+    [/ÃŸ/g, "ß"],
+    [/Â§/g, "§"],
+    [/Â /g, " "],
+  ];
+  let fixed = text;
+  for (const [pattern, replacement] of replacements) {
+    fixed = fixed.replace(pattern, replacement);
+  }
+  return fixed;
+}
+
+function deduplicateExpandedSentences(text: string): string {
+  return text.replace(/([A-ZÄÖÜ][^\n.!?]+(?:Abs\.|Absatz)[^\n.!?]+[.!?])\s+([A-ZÄÖÜ][^\n.!?]+(?:Abs\.|Absatz)[^\n.!?]+[.!?])/g, (full, s1, s2) => {
+    const norm1 = s1.toLowerCase().replace(/absatz\s+(?:eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|\d+)/g, "abs").replace(/[^a-z0-9]/g, "");
+    const norm2 = s2.toLowerCase().replace(/absatz\s+(?:eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|\d+)/g, "abs").replace(/[^a-z0-9]/g, "");
+    if (norm1 === norm2) {
+      return s1.includes("Abs.") ? s1 : s2;
+    }
+    return full;
+  });
+}
+
+function cleanScreenreaderAndFormatting(text: string): string {
+  let cleaned = text
+    .replace(/§\s*(\d+[a-zA-Z]*)\.\s*Paragraph\s*(?:\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|[a-zA-Z]+),?\s*/gi, "§ $1.\n")
+    .replace(/(?:^|\n)\s*-\s*\((\d+)\)\s*Absatz\s*(?:\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|[a-zA-Z]+),?\s*/gi, "\n($1) ")
+    .replace(/\((\d+)\)\s*Absatz\s*(?:\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|[a-zA-Z]+),?\s*/gi, "($1) ")
+    .replace(/^§\s*0\s*\n+Langtitel/gim, "## Langtitel")
+    .replace(/^§\s*0\s*\n+Kurztitel/gim, "## Kurztitel")
+    .replace(/^(\d+\.\s*Teil:[^\n]+)/gim, "## $1")
+    .replace(/^([I|V|X]+\.\s*Hauptstück:[^\n]+)/gim, "## $1")
+    .replace(/^([I|V|X]+\.\s*Abschnitt:[^\n]+)/gim, "## $1")
+    .replace(/^§\s*(\d+[a-zA-Z]*)\s*\n+Text(?:\s*\n+([^\n]+))?/gim, (_, num, subtitle) => {
+      return subtitle ? `### § ${num} ${subtitle}` : `### § ${num}`;
+    })
+    .replace(/\n+Text\n+/g, "\n\n");
+
+  cleaned = deduplicateExpandedSentences(cleaned);
+  return cleaned.replace(/\s*\n\s*/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function normalizeText(html: string): string {
-  return decodeHtml(html)
+  const strippedHtml = html
+    .replace(/<span\b[^>]*class\s*=\s*["'][^"']*(?:sr-only|screenreader|visually-hidden)[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
     .replace(/<\/div>/gi, "\n")
-    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
     .replace(/<li\b[^>]*>/gi, "\n- ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/[ \t\f\v]+/g, " ")
-    .replace(/\s*\n\s*/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .replace(/<[^>]+>/g, " ");
+
+  const decoded = decodeHtml(strippedHtml);
+  const collapsed = decoded.replace(/[ \t\f\v]+/g, " ");
+  return cleanScreenreaderAndFormatting(collapsed);
 }
 
 function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {

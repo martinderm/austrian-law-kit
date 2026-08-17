@@ -26,9 +26,29 @@ export function decodeHtmlEntities(text: string | undefined): string | null {
     .trim();
 }
 
+function cleanScreenreaderAndDuplicates(text: string): string {
+  let cleaned = text
+    .replace(/§\s*(\d+[a-zA-Z]*)\.\s*Paragraph\s*(?:\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|[a-zA-Z]+),?\s*/gi, "§ $1 ")
+    .replace(/\((\d+)\)\s*Absatz\s*(?:\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|[a-zA-Z]+),?\s*/gi, "($1) ")
+    .replace(/Paragraph\s+(\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn),\s*Absatz\s+(\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn),?\s*/gi, "§ $1 Abs $2 ")
+    .replace(/Absatz\s+(\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn),?\s*/gi, "Abs $1 ");
+
+  cleaned = cleaned.replace(/([A-ZÄÖÜ][^\n.!?]+[.!?])\s+([A-ZÄÖÜ][^\n.!?]+[.!?])/g, (full, s1, s2) => {
+    const norm1 = s1.toLowerCase().replace(/paragraph|absatz|abs|\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn/g, "").replace(/[^a-z]/g, "");
+    const norm2 = s2.toLowerCase().replace(/paragraph|absatz|abs|\d+|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn/g, "").replace(/[^a-z]/g, "");
+    if (norm1.length > 10 && norm1 === norm2) {
+      return s1.includes("§") ? s1 : s2;
+    }
+    return full;
+  });
+
+  return cleaned;
+}
+
 export function stripTags(html: string): string {
-  return decodeHtmlEntities(
+  const decoded = decodeHtmlEntities(
     html
+      .replace(/<span\b[^>]*class\s*=\s*["'][^"']*(?:sr-only|screenreader|visually-hidden)[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, " ")
       .replace(/<!--[^]*?-->/g, " ")
       .replace(/<script[^]*?<\/script>/gi, " ")
       .replace(/<style[^]*?<\/style>/gi, " ")
@@ -39,6 +59,8 @@ export function stripTags(html: string): string {
       .replace(/\n{3,}/g, "\n\n")
       .trim(),
   ) ?? "";
+
+  return cleanScreenreaderAndDuplicates(decoded);
 }
 
 export function parseAustrianDate(raw: string | undefined): { iso?: string; raw?: string } {

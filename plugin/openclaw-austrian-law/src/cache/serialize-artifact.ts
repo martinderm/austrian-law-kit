@@ -23,7 +23,10 @@ export function serializeFrontmatterYaml(frontmatter: Record<string, unknown>): 
     "fassung_typ",
   ];
 
-  const keys = Object.keys(frontmatter);
+  const keys = Object.keys(frontmatter).filter((k) => {
+    const val = frontmatter[k];
+    return val !== undefined && val !== null && val !== "";
+  });
   const ordered = [
     ...preferredOrder.filter((k) => keys.includes(k)),
     ...keys.filter((k) => !preferredOrder.includes(k)).sort(),

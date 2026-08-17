@@ -47,7 +47,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     input = {
       ...input,
       wholeLawUrl: candidate.whole_law_url,
-      sourceId: candidate.source_id,
+      sourceId: extractSourceIdFromWholeLawUrl(candidate.whole_law_url) ?? candidate.source_id,
     };
   }
 

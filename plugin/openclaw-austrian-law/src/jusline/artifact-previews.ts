@@ -147,6 +147,8 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
     }
     if (detail.rechtssatz) {
       contentLines.push("", "### Rechtssatz", "", detail.rechtssatz);
+    } else if (entry.teaser) {
+      contentLines.push("", "### Leitsatz / Vorschau", "", `> ${entry.teaser}`);
     }
     if (detail.entscheidungstexte && detail.entscheidungstexte.length > 0) {
       contentLines.push("", "### Entscheidungstexte", "");
