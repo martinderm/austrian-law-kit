@@ -45,3 +45,13 @@
 **Entscheidung:** Für das Austrian-Law-Plugin gilt Arbeit erst dann als wirklich umgesetzt, wenn der reale OpenClaw-Toolvertrag extern geprüft zum Repo-Stand passt.
 **Warum:** Die Probleme rund um `ris_search`-Schema und `ris_fetch_whole_law` saßen zeitweise nicht mehr im Quellcode, sondern im tatsächlich geladenen Plugin-Zustand.
 **Folge:** Bei Plugin-Änderungen werden künftig nicht nur Repo-Code und Tests geprüft, sondern immer auch der reale Laufzeitpfad. Doppelte Ladepfade sind zu vermeiden; plugin-spezifische Konfiguration wie `risApiBaseUrl` muss im tatsächlich geladenen Eintrag vorhanden sein.
+
+## 2026-08-23 — TypeScript als bewusste Sprachentscheidung (dokumentierte Ausnahme)
+**Entscheidung:** Die Plugin- und Tool-Implementierung bleibt in TypeScript, nicht Python.
+**Warum:** Das OpenClaw-Plugin-System ist nativ TypeScript-basiert (ESM, `openclaw.extensions`, `registerTool()`). Eine Python-Implementierung müsste über einen Subprocess-Bridge-Layer angebunden werden, was zusätzliche Komplexität und Latenz erzeugt. TypeScript ermöglicht direkte Plugin-Integration, typisierte Tool-Contracts und Wiederverwendung des OpenClaw-SDK.
+**Grundlage:** Die `agent-architecture/skill-engineering-and-modularity.md` erlaubt seit 2026-08-23 explizit alternative Scriptsprachen bei dokumentierter, nachvollziehbarer Begründung (Ökosystem-Kompatibilität).
+**Folge:** Die allgemeinen Skill-Prinzipien (Structured CLI Envelope, Cross-Platform-Invarianten, atomare Dateioperationen) gelten weiterhin sprachunabhängig.
+
+## 2026-08-23 — blast_radius auf workspace_scoped korrigiert
+**Entscheidung:** `blast_radius` von `read_only` auf `workspace_scoped` geändert.
+**Warum:** Der Skill schreibt aktiv Cache-Dateien in `memory/references/austrian-law/` und `data/austrian-law/` im Workspace. Das sind Filesystem-Mutationen, die über reines Lesen hinausgehen — auch wenn nur Cache-Daten betroffen sind.

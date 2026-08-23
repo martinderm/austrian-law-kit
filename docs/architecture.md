@@ -11,7 +11,7 @@
 
 ## Schichtenmodell
 
-1. **Skill-Schicht (`skills/austrian-law/`)**
+1. **Skill-Schicht (`SKILL.md` im Repo-Root)**
    - Definiert Quellenpolitik, Antwortstruktur und Verhaltensgrenzen.
    - Steuert, wann welche Quelle genutzt werden darf.
 
@@ -30,8 +30,6 @@
 - **Stable IDs** für Dateinamen und Referenzen statt Freitext-Titel.
 - **YAML-Frontmatter** in gecachten Markdown-Dateien für Nachvollziehbarkeit.
 
-## Nicht-Ziele in diesem Schritt
-
-- Keine produktive Plugin-Implementierung
-- Keine Parserlogik
-- Keine Netzwerk-/Abrufautomatisierung
+## Implementierungsstand
+ 
+- Plugin-Implementierung, Parserlogik und Netzwerk-/Abrufautomatisierung sind nun vollständig als MVP implementiert.

@@ -1,10 +1,13 @@
 ---
 name: austrian-law-kit
 description: Workspace-Skill für die strukturierte, quellenklare Arbeit mit österreichischen Rechtstexten. Verwende ihn für österreichische Rechtsrecherche mit klarer Quellenhierarchie (RIS primär, JUSLINE sekundär/opt-in), transparenter Unsicherheitskommunikation und sauberer Trennung von Wortlaut, Einordnung, Diskussionen/Kommentaren und Entscheidungen.
+triggers: [austrian law, österreichisches recht, statute, regulation, RIS, JUSLINE, Gesetz, Paragraf]
+category: legal
+blast_radius: workspace_scoped
+language: typescript
 ---
 
 # Skill: austrian-law-kit
-
 
 ## Zweck
 
@@ -48,141 +51,26 @@ Bei sehr kleinen, rein mechanischen Nachfragen darf die Antwort knapper sein, di
 - Lücken müssen ausdrücklich benannt werden.
 - Wortlaut, Paraphrase und ergänzende Interpretation sauber auseinanderhalten.
 
-## Tool-Orchestrierung (MVP)
+## Verfügbare Tools
 
 ### RIS (Primärquelle)
-Primär diese MVP-Tools nutzen:
-- `ris_sync_laws` (Synchronisation/Download mehrerer Gesetze in einem einzigen Schritt)
-- `ris_fetch_whole_law` (Gesetzesvolltext; unterstützt direkte `wholeLawUrl` oder `query` für Auto-Resolve)
-- `ris_fetch_segment` (Einzelner Paragraf)
-- `ris_search` (Discovery-Hilfe für Gesetze, Paragrafen & Judikatur)
-
-Typischer Ablauf:
-1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
-2. `ris_search` nur dann einsetzen, wenn die RIS-Referenz **noch nicht bekannt** ist und erst aus einer Suchanfrage aufgelöst werden muss.
-3. `ris_search` nutzt inzwischen einen Resolver für direkte `NOR...`-/`LOO...`-/Gemeinderecht-IDs, typische Normreferenzen sowie API-first-Pfade über die offizielle OGD-RIS-API; diese Discovery-Hilfe ist nützlich, ersetzt aber keinen belastbaren Fallback-Pfad.
-4. `ris_search` unterstützt derzeit drei Discovery-Scope-Pfade: Bundesrecht (`bund`), Landesrecht (`land`) und Gemeinderecht (`municipal`). Gemeinderecht läuft über `/Gemeinden` mit `Gr` oder `GrA` und kann zusätzlich nach Bundesland, Gemeinde und Bezirk eingegrenzt werden.
-5. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlässige Landesrecht-State-Filter in der offiziellen API. Der aktuelle Landesrecht-Pfad versucht das mit clientseitigem State-Filter und state-spezifischen Titelvarianten abzufedern, garantiert aber noch keine beliebige Freitext-Suche. Der bekannte Niederösterreich-Sonderfall (`Bauordnung` -> authentische Interpretation statt Stammnorm) ist bewusst dokumentiert und bis auf Weiteres geparkt.
-6. Für `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit auflösbarer `Dokumentnummer` verwenden. `ris_fetch_whole_law` unterstützt zusätzlich direkte `GeltendeFassung.wxe?...&Gesetzesnummer=...`-URLs als Whole-Law-Einstieg.
-7. Wenn `ris_search` bereits `content_url`, `xml_content_url` oder `whole_law_url` liefert, diese URLs bevorzugt direkt in die Fetch-Tools weiterreichen.
-8. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs füttern, wenn daraus keine belastbare RIS-ID oder Whole-Law-URL ableitbar ist.
-9. Wenn alte Cache-Artefakte einen Re-Test verfälschen könnten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
-10. `ris_fetch_segment` bevorzugt für RIS-Segmente jetzt XML (`ContentUrl` mit `DataType=Xml`), wenn verfügbar; HTML bleibt Fallback für einfachere oder ältere Fälle.
-11. Erst danach gezielt Segment oder Gesamtdokument laden.
-11. Für History/Änderungsstände derzeit keinen öffentlichen Suchfluss modellieren; der aktuelle History-Client ist bewusst ein interner, typed Baustein für spätere Sync-/Update-Logik.
-12. Erst danach zusammenfassen oder vorsichtig einordnen.
+- `ris_sync_laws` — Batch-Synchronisation mehrerer Gesetze
+- `ris_fetch_whole_law` — Gesetzesvolltext
+- `ris_fetch_segment` — Einzelner Paragraf
+- `ris_search` — Discovery-Hilfe (nicht als alleiniger Einstieg modellieren)
 
 ### JUSLINE (Sekundärquelle)
-JUSLINE nur ergänzend nutzen und intern sauber trennen:
-- `jusline_fetch_discussions` -> Diskussionen/Kommentare
-- `jusline_list_decisions` -> Entscheidungslisten
+- `jusline_fetch_discussions` — Diskussionen/Kommentare
+- `jusline_list_decisions` — Entscheidungslisten
 
-Regeln:
-- Diskussionen/Kommentare und Entscheidungen niemals vermischen.
-- JUSLINE-Inhalte nicht als Primärbeleg für Normwortlaut darstellen.
-- Wenn JUSLINE verwendet wird, das in der Quellenlage klar kenntlich machen.
-- `refresh: true` als gezielten Force-Reload verwenden, wenn ein Re-Test nicht durch ältere Artefakte oder Query-Index-Reuse verfälscht werden soll.
-- Bei JUSLINE berücksichtigt der Cache zusätzlich einen Query-Index über `query + kind + limit` mit 24h TTL; ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
-- JUSLINE-Treffer liefern je nach Tool und Seitentyp über die Basistreffer hinaus nur optional angereicherte Metadaten; fehlende Felder nicht erraten.
+Bekannte `sourceId` oder RIS-URL → direkt Fetch-Tools nutzen.
+`ris_search` nur wenn Referenz unbekannt. Bei unklarer Lage: Quellenstatus klären vor Interpretation.
 
-Typische JUSLINE-Nutzung:
-1. Zuerst RIS-Wortlaut bzw. RIS-Fundstelle klären.
-2. Nur bei ausdrücklichem Bedarf oder erkennbarem Zusatznutzen ergänzend JUSLINE laden.
-3. Für Kommentare `jusline_fetch_discussions`, für Entscheidungslisten `jusline_list_decisions` verwenden.
-4. Bei Re-Checks oder Parser-Tests `refresh: true` setzen.
-5. In der Antwort klar trennen: RIS für Normwortlaut, JUSLINE nur für Zusatzkontext.
+## Referenzen (bei Bedarf laden)
 
-Für konkrete JUSLINE-Felder, Detail-Previews, Grenzen und Antwortdisziplin siehe `references/jusline.md`.
-
-### Bei unklarer Lage
-- Zuerst Quellenstatus klären, dann interpretieren.
-- Bei `VALIDATION_ERROR` der RIS-Fetch-Tools zuerst prüfen, ob eine belastbare `sourceId` oder RIS-URL ermittelbar ist; `ris_search` ist dafür nur eine optionale Hilfe, nicht die einzige zulässige Auflösungsstufe.
-- Nicht vorschnell auf `web_fetch` oder allgemeine Websuche ausweichen, wenn das Ziel eigentlich eine RIS-Primärquelle ist.
-- `web_fetch` für RIS-Normtexte nur als Notbehelf verwenden und dann die geringere Verlässlichkeit ausdrücklich markieren.
-- Lieber enger und sauberer antworten als zu weit extrapolieren.
-
-## Caching-/Memory-Hinweis & Konfiguration (settings.json)
-
-Zielstruktur für Instanzen:
-- `memory/references/austrian-law/ris/...`
-- `memory/references/austrian-law/jusline/...`
-
-Einstellungen und Pfade können vollautomatisch über eine `settings.json`-Datei geladen werden, die im Workspace-Root (`settings.json`) gesucht wird. Um Konflikte mit anderen Workspace-Einstellungen zu vermeiden, sind die Konfigurationen unter dem Namensraum `"austrian-law-kit"` zu schachteln.
-
-Beispiel für `settings.json`:
-```json
-{
-  "austrian-law-kit": {
-    "cacheRoot": "memory/references/austrian-law",
-    "dataRoot": "data/austrian-law",
-    "risBaseUrl": "https://www.ris.bka.gv.at",
-    "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
-    "juslineBaseUrl": "https://www.jusline.at"
-  }
-}
-```
-
-Pfade in `settings.json` können relativ zum Workspace-Root (Verzeichnis der Einstellungsdatei) oder absolut angegeben werden. Explizite CLI-Optionen oder Umgebungsvariablen überschreiben die Werte in `settings.json`.
-
-
-Dateien mit stabilen Identifikatoren benennen und YAML-Frontmatter verwenden.
-Für RIS-Gesamtdokumente `doc_type=norm_document` beibehalten und die Darstellungsform zusätzlich über `representation=whole_law` kennzeichnen; der kanonische `title` soll dabei der eigentliche Langtitel der Norm sein, nicht die ausschweifende RIS-Seitenüberschrift.
-
-
-## Harness-Agnostische Tool-Ausführung (CLI & JSON-Modus)
-
-Da dieser Skill harness-agnostisch konzipiert ist, können die RIS- und JUSLINE-Werkzeuge direkt über die CLI ausgeführt werden. Verwende dafür das TypeScript-CLI unter `plugin/openclaw-austrian-law/bin/cli.ts` mittels `npx tsx` oder `npm run cli`:
-
-```powershell
-# 1. Direkte Ausführung mit Argument-String:
-npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." ris_search '{"query": "Mietrechtsgesetz"}'
-
-# 2. JSON-gesteuerter Modus mit Datei (für Freigabe-Workflows):
-npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." --file request.json --output result.json
-
-# 3. Pipe / Stdin:
-Get-Content request.json | npx tsx <pfad-zu-austrian-law-kit>/plugin/openclaw-austrian-law/bin/cli.ts --workspace "." --stdin
-```
-
-### JSON-Input Formate (Freigabe & Batch)
-
-#### Einzelaufruf (Envelope)
-```json
-{
-  "tool": "ris_fetch_segment",
-  "arguments": {
-    "sourceId": "NOR12032493"
-  }
-}
-```
-
-#### Batch-Aufruf (Mehrere Anfragen in einer Freigabedatei)
-```json
-{
-  "calls": [
-    {
-      "id": "suche-mrg",
-      "tool": "ris_search",
-      "arguments": { "query": "Mietrechtsgesetz" }
-    },
-    {
-      "id": "segment-mrg-2",
-      "tool": "ris_fetch_segment",
-      "arguments": { "sourceId": "NOR12032493" }
-    }
-  ]
-}
-```
-
-### CLI-Optionen
-- `-f, --file, -i, --input <pfad>`: Liest das JSON-Payload aus einer Datei ein (unterstützt Envelope, Batch oder rohe Tool-Parameter).
-- `-o, --output, --out <pfad>`: Speichert das Ergebnis-JSON strukturiert in eine Datei.
-- `--stdin, -`: Liest das JSON aus der Standard-Eingabe (Pipe).
-- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen!).
-- `--cache-root <dir>`: Setzt einen expliziten Pfad für das Cache-Wurzelverzeichnis fest.
-- `--ris-base-url <url>`: Überschreibt die RIS-Web-URL.
-- `--ris-api-base-url <url>`: Überschreibt die RIS-API-URL.
-- `--jusline-base-url <url>`: Überschreibt die JUSLINE-URL.
-- `-h, --help`: Zeigt die Hilfe mit Beispielen an.
-
-
+- **Tool-Orchestrierung & Ablaufdetails**: `references/tool-orchestration.md`
+- **JUSLINE-Felder, Grenzen, Antwortdisziplin**: `references/jusline.md`
+- **Tool-Verträge (Input/Output/Fehler)**: `docs/tool-contracts.md`
+- **CLI-Nutzung & JSON-Formate**: `README.md`
+- **Frontmatter-Schema**: `docs/frontmatter-schema.md`
+- **Stable-ID-Strategie**: `docs/stable-id-strategy.md`

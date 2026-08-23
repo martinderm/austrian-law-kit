@@ -2,25 +2,27 @@
 
 ## So weitermachen (kurz)
 
-1. Erst Verträge lesen.
-2. Dann den aktuellen Plugin-Stand prüfen.
-3. Danach nur den nächsten klar abgegrenzten Schritt umsetzen (derzeit: höchstens noch 1-2 kleine Tool-/Parser-Smoke-Edge-Cases oder eine minimale Fixture-Ergänzung), ohne Scope-Sprung. Vorher bei Bedarf `npm run test:smoke` im Plugin-Verzeichnis ausführen.
+1. Erst Verträge lesen (`docs/tool-contracts.md`, `docs/frontmatter-schema.md`).
+2. Dann den aktuellen Plugin-Stand prüfen (`docs/current-status.md`).
+3. Offene Verbesserungen in `docs/open-improvements.md` prüfen.
+4. Danach nur den nächsten klar abgegrenzten Schritt umsetzen, ohne Scope-Sprung. Vorher bei Bedarf `npm run test:smoke` im Plugin-Verzeichnis ausführen.
 
 ## Reihenfolge: Welche Dateien zuerst lesen
 
 1. `README.md`
 2. `docs/current-status.md`
-3. `docs/tool-contracts.md`
-4. `docs/tool-registration-plan.md`
-5. `docs/cache-implementation-plan.md`
-6. `docs/frontmatter-schema.md`
-7. `docs/stable-id-strategy.md`
+3. `docs/open-improvements.md`
+4. `docs/tool-contracts.md`
+5. `docs/frontmatter-schema.md`
+6. `docs/stable-id-strategy.md`
+7. `docs/decision-log.md`
 
 Dann Code:
 - `plugin/openclaw-austrian-law/index.ts`
-- `plugin/openclaw-austrian-law/src/tools/registry.ts`
-- `plugin/openclaw-austrian-law/src/tools/jusline_fetch_discussions.ts`
-- `plugin/openclaw-austrian-law/src/jusline/*`
+- `plugin/openclaw-austrian-law/src/index.ts`
+- `plugin/openclaw-austrian-law/src/tools/`
+
+Abgeschlossene Implementierungspläne liegen archiviert in `docs/archive/` (mit Version-Mapping in `docs/archive/README.md`).
 
 ## Nächster konkreter Implementierungsschritt
 

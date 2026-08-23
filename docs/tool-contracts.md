@@ -186,3 +186,41 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `wholeLawUrl` muss vorhanden sein
 - `NOT_FOUND`
 - `UPSTREAM_UNAVAILABLE`
 
+## Tool: `ris_sync_laws` (Primärquelle)
+
+**Zweck:** Batch-Synchronisation mehrerer Gesetze in einem einzigen Schritt. Iteriert intern über `ris_fetch_whole_law` und aggregiert die Ergebnisse mit Cache-Statistiken.
+
+**Input (MVP):**
+- `laws: RisSyncLawsItem[]` (Array, mindestens 1 Element)
+  - Je Item:
+    - `query?: string`
+    - `sourceId?: string`
+    - `wholeLawUrl?: string`
+    - `scope?: "bund" | "land" | "municipal"`
+    - `state?: AustrianState`
+    - `refresh?: boolean`
+
+**Output (MVP):**
+- `total: number` — Gesamtanzahl angeforderter Gesetze
+- `synced: number` — frisch abgerufene Gesetze
+- `cached: number` — aus Cache bediente Gesetze
+- `failed: number` — fehlgeschlagene Abrufe
+- `laws: SyncedLawResult[]` — pro Gesetz:
+  - `query?: string`
+  - `stable_id?: string`
+  - `title?: string`
+  - `law_id?: string`
+  - `source_url?: string`
+  - `cached: boolean`
+  - `ok: boolean`
+  - `error?: string`
+
+**Verhalten:**
+- Wenn alle Gesetze fehlschlagen, liefert das Tool `ok: false` mit `UPSTREAM_UNAVAILABLE`.
+- Teilfehler werden pro Item in `laws[].error` gemeldet; das Gesamtergebnis bleibt `ok: true`.
+- Cache-Hits werden über `meta.notices` signalisiert (`synced:N`, `cached:N`, `failed:N`).
+
+**Fehlerklassen (MVP):**
+- `VALIDATION_ERROR`
+- `UPSTREAM_UNAVAILABLE`
+
