@@ -7,7 +7,7 @@ Portables Übertragen des Scaffold-Setups in eine frische oder bestehende Instan
 ## Migrations-Checkliste
 
 1. Repository in der neuen Instanz bereitstellen.
-2. Skill `skills/austrian-law/` einbinden.
+2. Skill `austrian-law-kit` einbinden.
 3. Beispiel-Config aus `example-config/` als Vorlage nutzen (nicht blind übernehmen).
 4. Memory-Zielstruktur nach `docs/memory-layout.md` anlegen.
 5. Tests/Fixtures lokal ergänzen, bevor produktive Logik aktiviert wird.
