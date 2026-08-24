@@ -43,7 +43,7 @@ function buildDisplayTitle(params: {
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
   if (input.segmentRef && input.segmentRef.trim().length > 0) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "NOT_IMPLEMENTED",
         message: "segmentRef-specific extraction is outside current ris_fetch_segment MVP scope",
@@ -57,7 +57,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     sourceUrl = input.contentUrl?.trim() || buildRisSegmentUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: error instanceof Error ? error.message : "Invalid ris_fetch_segment input",
@@ -73,7 +73,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   });
   if (!sourceId) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
@@ -89,7 +89,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
   if (cacheRead.hit && cacheRead.artifact) {
     return {
-      ok: true,
+      success: true,
       data: { artifact: cacheRead.artifact },
       meta: buildCacheHitMeta("ris_fetch_segment"),
     };
@@ -119,7 +119,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS segment request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
@@ -131,7 +131,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   if (response.status === 404) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "RIS document not found" },
       meta: { tool: "ris_fetch_segment", source: "ris" },
     };
@@ -139,7 +139,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   if (!response.ok) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS segment request returned HTTP ${response.status}`,
@@ -159,7 +159,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     }
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS response body could not be read: ${error instanceof Error ? error.message : "Unknown body read error"}`,
@@ -170,7 +170,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   if (responseFormat === "html" && looksLikeRisNotFound(rawBody)) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "RIS did not return a matching document" },
       meta: { tool: "ris_fetch_segment", source: "ris" },
     };
@@ -252,7 +252,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     ];
 
     return {
-      ok: true,
+      success: true,
       data: {
         artifact,
       },
@@ -268,7 +268,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS segment response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,

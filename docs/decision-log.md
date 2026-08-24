@@ -55,3 +55,8 @@
 ## 2026-08-23 — blast_radius auf workspace_scoped korrigiert
 **Entscheidung:** `blast_radius` von `read_only` auf `workspace_scoped` geändert.
 **Warum:** Der Skill schreibt aktiv Cache-Dateien in `memory/references/austrian-law/` und `data/austrian-law/` im Workspace. Das sind Filesystem-Mutationen, die über reines Lesen hinausgehen — auch wenn nur Cache-Daten betroffen sind.
+
+## 2026-08-24 — CLI Envelope: `ok` → `success` (Standard-Alignment)
+**Entscheidung:** Das ToolResult-Envelope-Feld `ok` wird auf `success` umbenannt, gemäß dem Shared-Skills CLI-Envelope-Standard.
+**Warum:** Der Standard definiert `success`/`action`/`state`/`message`/`data`/`error`. Das alte `ok`-Feld war funktional identisch, aber nicht standard-konform. Da die primären Konsumenten LLMs sind, die die aktuelle Doku lesen, gibt es keinen praktischen Breaking-Change-Impact.
+**Scope:** `ToolResult<T>` in `shared.ts`, `RisApiSearchResult` in `ris-api/types.ts`, alle Tool- und API-Implementierungen, Smoke-Tests.

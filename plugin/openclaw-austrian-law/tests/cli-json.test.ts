@@ -30,7 +30,7 @@ async function runCliJsonTests(): Promise<void> {
       };
       const { result, isOk } = await processJsonPayload(payload, undefined, tempDir);
       assert.equal(isOk, true);
-      assert.equal(result.ok, true);
+      assert.equal(result.success, true);
       assert.equal(result.data.artifact.frontmatter.source_id, "NOR12032493");
     });
 
@@ -57,9 +57,9 @@ async function runCliJsonTests(): Promise<void> {
       assert.equal(result.succeeded, 2);
       assert.equal(result.failed, 0);
       assert.equal(result.results[0].id, "call-1");
-      assert.equal(result.results[0].ok, true);
+      assert.equal(result.results[0].success, true);
       assert.equal(result.results[1].id, "call-2");
-      assert.equal(result.results[1].ok, true);
+      assert.equal(result.results[1].success, true);
     });
 
     // Test 3: Raw argument object with cliToolName
@@ -67,7 +67,7 @@ async function runCliJsonTests(): Promise<void> {
       const payload = { sourceId: "NOR12032493" };
       const { result, isOk } = await processJsonPayload(payload, "ris_fetch_segment", tempDir);
       assert.equal(isOk, true);
-      assert.equal(result.ok, true);
+      assert.equal(result.success, true);
       assert.equal(result.data.artifact.frontmatter.source_id, "NOR12032493");
     });
 
@@ -109,7 +109,7 @@ async function runCliJsonTests(): Promise<void> {
       assert.equal(result.succeeded, 1);
       assert.equal(result.failed, 1);
       assert.equal(result.results[0].ok, false);
-      assert.equal(result.results[1].ok, true);
+      assert.equal(result.results[1].success, true);
     });
 
     console.log("cli-json tests passed");

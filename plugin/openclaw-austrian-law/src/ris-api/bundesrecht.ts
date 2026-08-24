@@ -122,7 +122,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
       notices.push(`api_attempt_used: ${attempt.label}`);
       notices.push(`api_exact_paragraph_match_count: ${exactAfterAttempt.length}`);
       return {
-        ok: true,
+        success: true,
         hits: exactAfterAttempt.slice(0, request.limit),
         notices,
         warnings,
@@ -143,7 +143,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
       warnings.push(`api_exact_paragraph_missing: ${requestedParagraph}`);
     }
     return {
-      ok: true,
+      success: true,
       hits: dedupedHits.slice(0, request.limit),
       notices,
       warnings,
@@ -152,7 +152,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
 
   if (lastError) {
     return {
-      ok: false,
+      success: false,
       errorCode: "UPSTREAM_UNAVAILABLE",
       message: lastError.message,
       retryable: typeof lastError.status === "number" ? lastError.status >= 500 : true,
@@ -163,7 +163,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
   }
 
   return {
-    ok: false,
+    success: false,
     errorCode: "NOT_FOUND",
     message: "RIS API returned no usable Bundesrecht hits",
     notices,

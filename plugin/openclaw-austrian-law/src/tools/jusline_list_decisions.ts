@@ -21,7 +21,7 @@ export async function juslineListDecisionsStub(
 ): Promise<JuslineListDecisionsOutput> {
   if (typeof input.query !== "string" || input.query.trim().length < 3) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: "query must be a JUSLINE URL or path with at least 3 characters",
@@ -35,7 +35,7 @@ export async function juslineListDecisionsStub(
     url = buildJuslineDiscussionsUrl(input.query);
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: error instanceof Error ? error.message : "Invalid jusline_list_decisions input",
@@ -52,7 +52,7 @@ export async function juslineListDecisionsStub(
     });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
@@ -64,7 +64,7 @@ export async function juslineListDecisionsStub(
 
   if (response.status === 404) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "JUSLINE page not found" },
       meta: { tool: "jusline_list_decisions", source: "jusline" },
     };
@@ -72,7 +72,7 @@ export async function juslineListDecisionsStub(
 
   if (!response.ok) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE request returned HTTP ${response.status}`,
@@ -88,7 +88,7 @@ export async function juslineListDecisionsStub(
     html = await response.text();
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE response body could not be read: ${error instanceof Error ? error.message : "Unknown body read error"}`,
@@ -102,7 +102,7 @@ export async function juslineListDecisionsStub(
 
     if (hits.length === 0 && looksLikeJuslineNoDecisions(html)) {
       return {
-        ok: false,
+        success: false,
         error: { code: "NOT_FOUND", message: "No JUSLINE decisions found for this page" },
         meta: { tool: "jusline_list_decisions", source: "jusline" },
       };
@@ -110,7 +110,7 @@ export async function juslineListDecisionsStub(
 
     if (hits.length === 0) {
       return {
-        ok: false,
+        success: false,
         error: { code: "NOT_FOUND", message: "No JUSLINE decision entries detected" },
         meta: { tool: "jusline_list_decisions", source: "jusline" },
       };
@@ -128,7 +128,7 @@ export async function juslineListDecisionsStub(
       }
       if (cachedCount === queryIndex.stable_ids.length) {
         return {
-          ok: true,
+          success: true,
           data: { hits },
           meta: {
             ...buildCacheHitMeta("jusline_list_decisions", "jusline"),
@@ -178,7 +178,7 @@ export async function juslineListDecisionsStub(
     });
 
     return {
-      ok: true,
+      success: true,
       data: { hits },
       meta: {
         ...(refresh ? buildRefreshMeta("jusline_list_decisions", "jusline") : {
@@ -197,7 +197,7 @@ export async function juslineListDecisionsStub(
     };
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,

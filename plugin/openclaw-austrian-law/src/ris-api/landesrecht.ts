@@ -146,7 +146,7 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
       : [];
     if (exactParagraphHits.length > 0) {
       return {
-        ok: true,
+        success: true,
         hits: exactParagraphHits.slice(0, request.limit),
         notices: [
           ...aggregateNotices,
@@ -158,7 +158,7 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
     }
     if (dedupedHits.length > 0) {
       return {
-        ok: true,
+        success: true,
         hits: dedupedHits.slice(0, request.limit),
         notices: [
           ...aggregateNotices,
@@ -173,7 +173,7 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
 
   if (lastError) {
     return {
-      ok: false,
+      success: false,
       errorCode: "UPSTREAM_UNAVAILABLE",
       message: lastError.message,
       retryable: typeof lastError.status === "number" ? lastError.status >= 500 : true,
@@ -184,7 +184,7 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
   }
 
   return {
-    ok: false,
+    success: false,
     errorCode: "NOT_FOUND",
     message: "RIS API returned no usable Landesrecht hits after state filtering and title variants",
     notices: aggregateNotices,

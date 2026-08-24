@@ -35,14 +35,14 @@ export interface RisApiSearchCandidate {
 }
 
 export interface RisApiSearchSuccess {
-  ok: true;
+  success: true;
   hits: RisApiSearchCandidate[];
   notices?: string[];
   warnings?: string[];
 }
 
 export interface RisApiSearchFailure {
-  ok: false;
+  success: false;
   errorCode: "NOT_FOUND" | "UPSTREAM_UNAVAILABLE";
   message: string;
   retryable?: boolean;

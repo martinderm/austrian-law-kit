@@ -66,8 +66,8 @@ await test("ris_search returns hits from a live-derived fixture-backed fetch", a
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await risSearchStub({ query: "ABGB", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.ok(result.data.hits.length >= 5);
     assert.ok(result.data.hits[0]?.title.trim().length);
     assert.equal(result.data.normalized_query, "ABGB");
@@ -84,8 +84,8 @@ await test("ris_search resolves direct sourceId without upstream fetch", async (
   }, async () => {
     const result = await risSearchStub({ query: "NOR40214078" });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(fetchCalled, false);
     assert.equal(result.data.resolver_kind, "sourceId");
     assert.equal(result.data.hits[0]?.source_id, "NOR40214078");
@@ -102,8 +102,8 @@ await test("ris_search resolves Landesrecht sourceId without upstream fetch", as
   }, async () => {
     const result = await risSearchStub({ query: "LOO12009295", scope: "land", state: "Oberösterreich" });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(fetchCalled, false);
     assert.equal(result.data.resolver_kind, "sourceId");
     assert.equal(result.data.hits[0]?.source_id, "LOO12009295");
@@ -142,8 +142,8 @@ await test("ris_search uses the official RIS API first for Bundesrecht norm refe
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(htmlFetchCount, 0);
     assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
     assert.equal(result.data.best_candidate?.application, "BrKons");
@@ -197,8 +197,8 @@ await test("ris_search filters Landesrecht API hits by explicit state and tries 
   }, async () => {
     const result = await risSearchStub({ query: "Bauordnung", scope: "land", state: "Oberösterreich", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(htmlFetchCount, 0);
     assert.ok(apiCalls >= 2);
     assert.equal(result.data.best_candidate?.source_id, "LOO40000077");
@@ -275,8 +275,8 @@ await test("ris_search ranks Stammnormen above authentische Interpretationen for
   }, async () => {
     const result = await risSearchStub({ query: 'Bauordnung', scope: 'land', state: 'Niederösterreich', limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.best_candidate?.source_id, 'LNO11001489');
     assert.equal(result.data.best_candidate?.title, 'NÖ Bauordnung 2014');
     assert.equal(result.data.best_candidate?.legal_type, 'Stammfassung');
@@ -371,8 +371,8 @@ await test("ris_search prefers exact paragraph API hits for StGB § 74 and ignor
   }, async () => {
     const result = await risSearchStub({ query: "StGB § 74", limit: 10, docType: "norm", scope: "bund", authentic: true });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.best_candidate?.source_id, "NOR40254282");
     assert.equal(result.data.best_candidate?.section_ref, "§ 74");
     assert.ok(result.data.hits.every((hit) => hit.paragraph_number === "74"));
@@ -454,8 +454,8 @@ await test("ris_search uses API pagination for Bundesrecht when more pages are n
   }, async () => {
     const result = await risSearchStub({ query: '§ 1293 ABGB', limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(apiCalls, 2);
     assert.equal(result.data.best_candidate?.source_id, 'NOR12019035');
     assert.ok(result.meta.notices?.includes('api_pagination_used: Bundesrecht page 2'));
@@ -529,8 +529,8 @@ await test("ris_search supports municipal API discovery", async () => {
   }, async () => {
     const result = await risSearchStub({ query: 'Abfallgebührenordnung', scope: 'municipal', state: 'Oberösterreich', municipality: 'Haigermoos', authentic: true, limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.best_candidate?.application, 'GrA');
     assert.equal(result.data.best_candidate?.scope, 'municipal');
     assert.equal(result.data.best_candidate?.municipality, 'Haigermoos');
@@ -575,8 +575,8 @@ await test("ris_search falls back to HTML when the RIS API is unavailable", asyn
   }, async () => {
     const result = await risSearchStub({ query: "ABGB", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.ok(result.meta.notices?.includes("html_fallback_used"));
     assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("api_variant_failed:")));
     assert.ok(result.meta.warnings?.includes("api_error_type: API_ERROR"));
@@ -603,8 +603,8 @@ await test("ris_search normalizes common norm references for the HTML fallback p
   }, async () => {
     const result = await risSearchStub({ query: "§ 2 abgb", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.normalized_query, "§ 2 abgb");
     assert.equal(result.data.resolver_kind, "normRef");
     assert.ok(result.data.best_candidate);
@@ -618,16 +618,16 @@ await test("ris_search normalizes common norm references for the HTML fallback p
 await test("ris_search returns VALIDATION_ERROR for too-short query", async () => {
   const result = await risSearchStub({ query: "a" });
 
-  assert.equal(result.ok, false);
-  if (result.ok) return;
+  assert.equal(result.success, false);
+  if (result.success) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
 await test("ris_search validates state for Landesnormen scope", async () => {
   const result = await risSearchStub({ query: "Bauordnung", scope: "land" });
 
-  assert.equal(result.ok, false);
-  if (result.ok) return;
+  assert.equal(result.success, false);
+  if (result.success) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
   assert.ok(result.error.message.includes("Burgenland"));
 });
@@ -650,8 +650,8 @@ await test("ris_search builds Landesnormen HTML fallback queries with explicit s
   }, async () => {
     const result = await risSearchStub({ query: "Bauordnung", scope: "land", state: "Oberösterreich", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.resolver_kind, "freeText");
     assert.ok(result.meta.notices?.includes("html_fallback_used"));
   });
@@ -675,8 +675,8 @@ await test("ris_search retries HTML fallback on upstream 500 and succeeds on ret
   }, async () => {
     const result = await risSearchStub({ query: "ABGB", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(htmlAttempts, 2);
   });
 });
@@ -697,8 +697,8 @@ await test("ris_search falls back across normalized variants before returning NO
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 abgb", limit: 5 });
 
-    assert.equal(result.ok, false);
-    if (result.ok) return;
+    assert.equal(result.success, false);
+    if (result.success) return;
     assert.equal(result.error.code, "NOT_FOUND");
     assert.ok(htmlCalls >= 2);
     assert.ok(result.meta?.warnings?.some((entry) => entry.startsWith("html_variant_no_results:")));
@@ -721,8 +721,8 @@ await test("ris_search returns a direct document hit when HTML fallback resolves
   }, async () => {
     const result = await risSearchStub({ query: "§ 1293 ABGB", limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.best_candidate?.source_id, "NOR12019035");
     assert.equal(result.data.best_candidate?.confidence, "high");
     assert.ok(result.meta?.notices?.some((entry) => entry.startsWith("html_fallback_direct_document:")));
@@ -738,8 +738,8 @@ await test("ris_search extracts Landesrecht direct-document ids from the URL con
   }, async () => {
     const result = await risSearchStub({ query: 'LOO12009295', scope: 'land', state: 'Oberösterreich', limit: 5 });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) return;
+    assert.equal(result.success, true);
+    if (!result.success) return;
     assert.equal(result.data.best_candidate?.source_id, 'LOO12009295');
     assert.equal(result.data.best_candidate?.confidence, 'high');
   });
@@ -752,8 +752,8 @@ await test("ris_fetch_segment returns a usable artifact from a live-derived fixt
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await risFetchSegmentStub({ sourceId: "NOR40214078" });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_segment");
       assert.ok(result.data.artifact.content.trim().length > 30);
       assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
@@ -793,8 +793,8 @@ await test("ris_fetch_segment prefers API-resolved content_url when sourceId is 
     }, async () => {
       const result = await risFetchSegmentStub({ sourceId: "NOR12019035", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.ok(seenUrls.some((url) => url.includes("Suchworte=NOR12019035")));
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
       const apiMeta = (result.data.artifact.metadata?.ris_api ?? {}) as Record<string, unknown>;
@@ -816,8 +816,8 @@ await test("ris_fetch_segment accepts contentUrl directly and skips API lookup",
     }, async () => {
       const result = await risFetchSegmentStub({ sourceId: "NOR12019035", contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(seenUrls.length, 1);
       assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12019035/NOR12019035.html");
@@ -828,8 +828,8 @@ await test("ris_fetch_segment accepts contentUrl directly and skips API lookup",
 await test("ris_fetch_segment returns VALIDATION_ERROR without source identifier", async () => {
   const result = await risFetchSegmentStub({});
 
-  assert.equal(result.ok, false);
-  if (result.ok) return;
+  assert.equal(result.success, false);
+  if (result.success) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
@@ -860,8 +860,8 @@ await test("ris_fetch_segment bypasses stale cache when refresh=true", async () 
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await risFetchSegmentStub({ sourceId: "NOR40214078", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.content.includes("Startseite Bund Länder Bezirke Gemeinden"), false);
       assert.ok(result.meta.notices?.includes("cache_refresh: bypassed cached artifact and fetched fresh content"));
     });
@@ -875,8 +875,8 @@ await test("ris_fetch_whole_law returns a usable artifact from a live-derived fi
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await risFetchWholeLawStub({ sourceId: "NOR12082462" });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.frontmatter.doc_type, "norm_document");
       assert.equal(result.data.artifact.frontmatter.title, "Allgemeines bürgerliches Gesetzbuch für die gesammten deutschen Erbländer der Oesterreichischen Monarchie\nStF: JGS Nr. 946/1811");
       assert.equal(result.data.artifact.frontmatter.law_title, "Allgemeines bürgerliches Gesetzbuch für die gesammten deutschen Erbländer der Oesterreichischen Monarchie\nStF: JGS Nr. 946/1811");
@@ -905,8 +905,8 @@ await test("ris_fetch_whole_law prefers API-resolved whole_law_url when sourceId
     }, async () => {
       const result = await risFetchWholeLawStub({ sourceId: "LOO11000699", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.ok(seenUrls.some((url) => url.includes("Suchworte=LOO11000699")));
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
       assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
@@ -931,8 +931,8 @@ await test("ris_fetch_whole_law accepts wholeLawUrl directly and skips API looku
     }, async () => {
       const result = await risFetchWholeLawStub({ sourceId: "LOO11000699", wholeLawUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(seenUrls.length, 1);
       assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
       assert.equal(result.data.artifact.frontmatter.source_url, "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrOO&Gesetzesnummer=10000411");
@@ -953,8 +953,8 @@ await test("ris_fetch_whole_law accepts Bundesnormen wholeLawUrl with Gesetzesnu
     }, async () => {
       const result = await risFetchWholeLawStub({ wholeLawUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(seenUrls.length, 1);
       assert.equal(seenUrls[0], "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296");
       assert.equal(result.data.artifact.frontmatter.source_id, "LAW:Bundesnormen:10002296");
@@ -971,8 +971,8 @@ await test("ris_fetch_segment extracts full text for StGB § 111 live case html"
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await risFetchSegmentStub({ sourceId: "NOR40173633", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.frontmatter.law_title, "Strafgesetzbuch");
       assert.equal(result.data.artifact.frontmatter.law_abbreviation, "StGB");
       assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 111");
@@ -994,8 +994,8 @@ await test("ris_fetch_segment extracts paragraph content from RIS xml layout (NO
         refresh: true,
       });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.frontmatter.law_title, "Strafgesetzbuch");
       assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 111");
       assert.ok(result.data.artifact.content.includes("Wer einen anderen in einer für einen Dritten wahrnehmbaren Weise"));
@@ -1016,8 +1016,8 @@ await test("ris_fetch_segment keeps nested list content from RIS xml layout (NOR
         refresh: true,
       });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.equal(result.data.artifact.frontmatter.law_title, "Strafgesetzbuch");
       assert.equal(result.data.artifact.frontmatter.segment_ref, "§ 74");
       assert.ok(result.data.artifact.content.includes("1. unmündig: wer das vierzehnte Lebensjahr noch nicht vollendet hat;"));
@@ -1050,8 +1050,8 @@ await test("ris_fetch_whole_law returns NOT_FOUND on HTTP 404", async () => {
     await withMockedFetch(async () => new Response("not found", { status: 404 }), async () => {
       const result = await risFetchWholeLawStub({ sourceId: "NOR404" });
 
-      assert.equal(result.ok, false);
-      if (result.ok) return;
+      assert.equal(result.success, false);
+      if (result.success) return;
       assert.equal(result.error.code, "NOT_FOUND");
     });
   });
@@ -1064,8 +1064,8 @@ await test("jusline_fetch_discussions returns hits from fixture-backed fetch", a
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", limit: 5 });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.ok(result.data.hits.length >= 1);
       assert.ok(result.data.hits[0]?.source_url.includes("/gesetzeskommentare/"));
       assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
@@ -1080,8 +1080,8 @@ await test("jusline_fetch_discussions returns NOT_FOUND for the negative comment
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await juslineFetchDiscussionsStub({ query: "stvo/paragraf/4" });
 
-    assert.equal(result.ok, false);
-    if (result.ok) return;
+    assert.equal(result.success, false);
+    if (result.success) return;
     assert.equal(result.error.code, "NOT_FOUND");
   });
 });
@@ -1093,8 +1093,8 @@ await test("jusline_fetch_discussions exposes refresh notice when refresh=true",
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await juslineFetchDiscussionsStub({ query: "stgb/paragraf/111", refresh: true });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.ok(result.meta.notices?.includes("cache_refresh: bypassed cached artifact and fetched fresh content"));
     });
   });
@@ -1107,8 +1107,8 @@ await test("jusline_list_decisions returns hits from fixture-backed fetch", asyn
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const result = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
 
-      assert.equal(result.ok, true);
-      if (!result.ok) return;
+      assert.equal(result.success, true);
+      if (!result.success) return;
       assert.ok(result.data.hits.length >= 1);
       assert.ok(result.data.hits[0]?.source_url.includes("/entscheidungen/"));
       assert.ok(result.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
@@ -1120,8 +1120,8 @@ await test("jusline_list_decisions returns hits from fixture-backed fetch", asyn
 await test("jusline_list_decisions returns VALIDATION_ERROR for too-short query", async () => {
   const result = await juslineListDecisionsStub({ query: "x" });
 
-  assert.equal(result.ok, false);
-  if (result.ok) return;
+  assert.equal(result.success, false);
+  if (result.success) return;
   assert.equal(result.error.code, "VALIDATION_ERROR");
 });
 
@@ -1131,8 +1131,8 @@ await test("jusline_list_decisions returns NOT_FOUND for the no-decisions fixtur
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await juslineListDecisionsStub({ query: "stgb/paragraf/111" });
 
-    assert.equal(result.ok, false);
-    if (result.ok) return;
+    assert.equal(result.success, false);
+    if (result.success) return;
     assert.equal(result.error.code, "NOT_FOUND");
   });
 });
@@ -1143,16 +1143,16 @@ await test("jusline_list_decisions writes preview cache artifacts for repeated c
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const first = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
-      assert.equal(first.ok, true);
-      if (!first.ok) return;
+      assert.equal(first.success, true);
+      if (!first.success) return;
       assert.ok(first.meta.warnings?.some((entry) => entry.startsWith("preview_cache_written:")));
       assert.ok(first.meta.warnings?.some((entry) => entry.startsWith("query_index_written:")));
     });
 
     await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
       const second = await juslineListDecisionsStub({ query: "stgb/paragraf/111", limit: 5 });
-      assert.equal(second.ok, true);
-      if (!second.ok) return;
+      assert.equal(second.success, true);
+      if (!second.success) return;
       assert.ok(
         second.meta.notices?.includes("full_cache_hit")
         || second.meta.notices?.includes("partial_cache_hit")
@@ -1179,7 +1179,7 @@ await test("cache runtime resolves RIS cache under the calling agent workspace b
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await runWithCacheRoot(cacheRoot, () => risFetchSegmentStub({ sourceId: "NOR12082462" }));
 
-    assert.equal(result.ok, true);
+    assert.equal(result.success, true);
     assert.equal(existsSync(expectedCachePath), true);
   });
 
@@ -1201,7 +1201,7 @@ await test("cache runtime prefers configured cacheRoot over the calling agent wo
   await withMockedFetch(async () => new Response(html, { status: 200 }), async () => {
     const result = await runWithCacheRoot(cacheRoot, () => risFetchSegmentStub({ sourceId: "NOR12082462" }));
 
-    assert.equal(result.ok, true);
+    assert.equal(result.success, true);
     assert.equal(existsSync(expectedCachePath), true);
   });
 

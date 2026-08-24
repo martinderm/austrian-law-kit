@@ -4,7 +4,7 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 
 ## Gemeinsamer Rahmen
 
-- Alle Tools liefern ein gemeinsames Result-Format mit `ok`, optional `data`, optional `error`, optional `meta`.
+- Alle Tools liefern ein gemeinsames Result-Format mit `success` (boolean), optional `data`, optional `error`, optional `meta`.
 - Fehler folgen einer gemeinsamen Fehlerstruktur mit `code`, `message`, optional `details`, optional `retryable`.
 - **Primärquelle:** RIS
 - **Sekundärquelle:** JUSLINE (nur bei fachlich explizitem Bedarf)

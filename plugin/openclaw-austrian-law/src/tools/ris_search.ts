@@ -107,7 +107,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   const validationMessage = validateInput(input);
   if (validationMessage) {
     return {
-      ok: false,
+      success: false,
       error: { code: "VALIDATION_ERROR", message: validationMessage },
       meta: { tool: "ris_search", source: "ris" },
     };
@@ -115,7 +115,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
   if (input.docType && input.docType !== "norm") {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "NOT_IMPLEMENTED",
         message: `docType=${input.docType} is outside current ris_search MVP scope (supported: norm)`,
@@ -133,7 +133,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   if (resolved.kind === "sourceId") {
     const hit = buildResolverShortcutHit(resolved.sourceId, scope);
     return {
-      ok: true,
+      success: true,
       data: {
         hits: [hit],
         best_candidate: hit,
@@ -188,13 +188,13 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     notices.push(...(apiResult.notices ?? []));
     warnings.push(...(apiResult.warnings ?? []));
 
-    if (apiResult.ok) {
+    if (apiResult.success) {
       const apiHits = apiResult.hits.map((entry) => entry.hit);
       const exactSectionHits = resolved.kind === "normRef" ? filterExactSectionHits(apiHits, resolved) : apiHits;
       if (resolved.kind !== "normRef" || exactSectionHits.length > 0) {
         const rankedHits = rankRisSearchHits(exactSectionHits, resolved).slice(0, limit);
         return {
-          ok: true,
+          success: true,
           data: {
             hits: rankedHits,
             best_candidate: rankedHits[0],
@@ -213,7 +213,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       warnings.push(`api_variant_exact_section_missing: ${searchQuery}`);
     }
 
-    if (!apiResult.ok && apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
+    if (!apiResult.success && apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
       lastApiFailure = {
         message: apiResult.message,
         retryable: apiResult.retryable,
@@ -229,7 +229,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   if (scope === "municipal") {
     if (lastApiFailure) {
       return {
-        ok: false,
+        success: false,
         error: {
           code: "UPSTREAM_UNAVAILABLE",
           message: lastApiFailure.message,
@@ -241,7 +241,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     }
 
     return {
-      ok: false,
+      success: false,
       error: {
         code: "NOT_FOUND",
         message: "RIS municipal API returned no usable hits for any tried search variant",
@@ -285,7 +285,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         continue;
       }
       return {
-        ok: false,
+        success: false,
         error: {
           code: "UPSTREAM_UNAVAILABLE",
           message: `RIS HTML search returned HTTP ${response.status}`,
@@ -303,7 +303,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         const directHit = parseRisDirectDocumentHit(html, url);
         if (directHit) {
           return {
-            ok: true,
+            success: true,
             data: {
               hits: [directHit],
               best_candidate: directHit,
@@ -333,7 +333,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       const rankedHits = rankRisSearchHits(filteredHtmlHits, resolved);
 
       return {
-        ok: true,
+        success: true,
         data: {
           hits: rankedHits,
           best_candidate: rankedHits[0],
@@ -351,7 +351,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown parse error";
       return {
-        ok: false,
+        success: false,
         error: {
           code: "UPSTREAM_UNAVAILABLE",
           message: `RIS HTML search response could not be parsed: ${message}`,
@@ -364,7 +364,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
   if (lastUpstreamError) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: lastUpstreamError.status
@@ -379,7 +379,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
 
   if (lastApiFailure) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: lastApiFailure.message,
@@ -391,7 +391,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   }
 
   return {
-    ok: false,
+    success: false,
     error: {
       code: "NOT_FOUND",
       message: "RIS API and HTML fallback returned no usable hits for any tried search variant",

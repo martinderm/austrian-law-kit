@@ -24,7 +24,7 @@ export async function juslineFetchDiscussionsStub(
 ): Promise<JuslineFetchDiscussionsOutput> {
   if (typeof input.query !== "string" || input.query.trim().length < 3) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: "query must be a JUSLINE URL or path with at least 3 characters",
@@ -38,7 +38,7 @@ export async function juslineFetchDiscussionsStub(
     url = buildJuslineDiscussionsUrl(input.query);
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: error instanceof Error ? error.message : "Invalid jusline_fetch_discussions input",
@@ -49,7 +49,7 @@ export async function juslineFetchDiscussionsStub(
 
   if (/\/entscheidungen\//i.test(url)) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "NOT_IMPLEMENTED",
         message: "Decision pages are outside current jusline_fetch_discussions MVP scope",
@@ -66,7 +66,7 @@ export async function juslineFetchDiscussionsStub(
     });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
@@ -78,7 +78,7 @@ export async function juslineFetchDiscussionsStub(
 
   if (response.status === 404) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "JUSLINE page not found" },
       meta: { tool: "jusline_fetch_discussions", source: "jusline" },
     };
@@ -86,7 +86,7 @@ export async function juslineFetchDiscussionsStub(
 
   if (!response.ok) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE request returned HTTP ${response.status}`,
@@ -102,7 +102,7 @@ export async function juslineFetchDiscussionsStub(
     html = await response.text();
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE response body could not be read: ${error instanceof Error ? error.message : "Unknown body read error"}`,
@@ -116,7 +116,7 @@ export async function juslineFetchDiscussionsStub(
 
     if (hits.length === 0 && looksLikeJuslineNoDiscussions(html)) {
       return {
-        ok: false,
+        success: false,
         error: { code: "NOT_FOUND", message: "No JUSLINE discussions/comments found for this page" },
         meta: { tool: "jusline_fetch_discussions", source: "jusline" },
       };
@@ -124,7 +124,7 @@ export async function juslineFetchDiscussionsStub(
 
     if (hits.length === 0) {
       return {
-        ok: false,
+        success: false,
         error: { code: "NOT_FOUND", message: "No JUSLINE discussion/comment entries detected" },
         meta: { tool: "jusline_fetch_discussions", source: "jusline" },
       };
@@ -142,7 +142,7 @@ export async function juslineFetchDiscussionsStub(
       }
       if (cachedCount === queryIndex.stable_ids.length) {
         return {
-          ok: true,
+          success: true,
           data: { hits },
           meta: {
             ...buildCacheHitMeta("jusline_fetch_discussions", "jusline"),
@@ -192,7 +192,7 @@ export async function juslineFetchDiscussionsStub(
     });
 
     return {
-      ok: true,
+      success: true,
       data: { hits },
       meta: {
         ...(refresh ? buildRefreshMeta("jusline_fetch_discussions", "jusline") : {
@@ -211,7 +211,7 @@ export async function juslineFetchDiscussionsStub(
     };
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `JUSLINE response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,

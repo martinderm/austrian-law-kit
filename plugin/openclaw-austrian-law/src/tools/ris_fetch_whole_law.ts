@@ -24,9 +24,9 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       state: input.state,
       limit: 5,
     });
-    if (!searchResult.ok) {
+    if (!searchResult.success) {
       return {
-        ok: false,
+        success: false,
         error: searchResult.error,
         meta: { tool: "ris_fetch_whole_law", source: "ris" },
       };
@@ -36,7 +36,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       : searchResult.data.hits.find((h) => !!h.whole_law_url);
     if (!candidate || !candidate.whole_law_url) {
       return {
-        ok: false,
+        success: false,
         error: {
           code: "NOT_FOUND",
           message: `Could not resolve whole law URL for query '${input.query}'`,
@@ -56,7 +56,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     sourceUrl = input.wholeLawUrl?.trim() || buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: error instanceof Error ? error.message : "Invalid ris_fetch_whole_law input",
@@ -72,7 +72,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   });
   if (!sourceId) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
@@ -88,7 +88,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
   if (cacheRead.hit && cacheRead.artifact) {
     return {
-      ok: true,
+      success: true,
       data: { artifact: cacheRead.artifact },
       meta: buildCacheHitMeta("ris_fetch_whole_law"),
     };
@@ -113,7 +113,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     });
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
@@ -125,7 +125,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   if (response.status === 404) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "RIS whole-law document not found" },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
     };
@@ -133,7 +133,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   if (!response.ok) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law request returned HTTP ${response.status}`,
@@ -149,7 +149,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     html = await response.text();
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law response body could not be read: ${error instanceof Error ? error.message : "Unknown body read error"}`,
@@ -160,7 +160,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   if (looksLikeRisWholeLawNotFound(html)) {
     return {
-      ok: false,
+      success: false,
       error: { code: "NOT_FOUND", message: "RIS did not return a matching whole-law document" },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
     };
@@ -215,7 +215,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     ];
 
     return {
-      ok: true,
+      success: true,
       data: {
         artifact,
       },
@@ -231,7 +231,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     };
   } catch (error) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,

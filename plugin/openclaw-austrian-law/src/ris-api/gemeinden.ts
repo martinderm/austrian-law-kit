@@ -184,7 +184,7 @@ export async function searchGemeindenApi(request: RisApiSearchRequest): Promise<
     if (request.district) notices.push(`api_district_filter: ${request.district}`);
     if (request.authentic) notices.push("api_municipal_authentic: true");
     return {
-      ok: true,
+      success: true,
       hits: deduped.slice(0, request.limit),
       notices,
       warnings,
@@ -193,7 +193,7 @@ export async function searchGemeindenApi(request: RisApiSearchRequest): Promise<
 
   if (lastError) {
     return {
-      ok: false,
+      success: false,
       errorCode: "UPSTREAM_UNAVAILABLE",
       message: lastError.message,
       retryable: typeof lastError.status === "number" ? lastError.status >= 500 : true,
@@ -204,7 +204,7 @@ export async function searchGemeindenApi(request: RisApiSearchRequest): Promise<
   }
 
   return {
-    ok: false,
+    success: false,
     errorCode: "NOT_FOUND",
     message: "RIS API returned no usable Gemeinden hits",
     notices,

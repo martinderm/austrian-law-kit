@@ -35,12 +35,12 @@ export interface ToolMeta {
 }
 
 export type ToolResult<TData> = {
-  ok: true;
+  success: true;
   data: TData;
   error?: never;
   meta?: ToolMeta;
 } | {
-  ok: false;
+  success: false;
   data?: never;
   error: ToolError;
   meta?: ToolMeta;

@@ -8,7 +8,7 @@ import type {
 export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncLawsOutput> {
   if (!input || !Array.isArray(input.laws) || input.laws.length === 0) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "VALIDATION_ERROR",
         message: "Invalid ris_sync_laws input: 'laws' must be a non-empty array",
@@ -25,7 +25,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
   for (const item of input.laws) {
     try {
       const fetchResult = await risFetchWholeLawStub(item);
-      if (fetchResult.ok && fetchResult.data?.artifact) {
+      if (fetchResult.success && fetchResult.data?.artifact) {
         const artifact = fetchResult.data.artifact;
         const isCacheHit = fetchResult.meta?.notices?.some((n) => n.includes("cache_hit")) ?? false;
         if (isCacheHit) {
@@ -64,7 +64,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
 
   if (failed === input.laws.length) {
     return {
-      ok: false,
+      success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `Failed to sync all ${input.laws.length} requested laws`,
@@ -80,7 +80,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
   }
 
   return {
-    ok: true,
+    success: true,
     data: {
       total: input.laws.length,
       synced,
