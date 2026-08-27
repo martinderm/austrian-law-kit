@@ -200,6 +200,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
             best_candidate: rankedHits[0],
             normalized_query: resolved.normalizedQuery,
             resolver_kind: resolved.kind,
+            stichtag: input.stichtag,
           },
           meta: {
             tool: "ris_search",
@@ -339,6 +340,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           best_candidate: rankedHits[0],
           normalized_query: resolved.normalizedQuery,
           resolver_kind: resolved.kind,
+          stichtag: input.stichtag,
         },
         meta: {
           tool: "ris_search",

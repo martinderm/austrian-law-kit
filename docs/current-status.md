@@ -2,7 +2,15 @@
 
 Stand: 2026-08-27 (laufend aktualisiert)
 
-## Kurzstand 2026-08-27
+## Kurzstand 2026-08-27 (v0.15.0 — Robuste RIS-Primärrechtsprüfung)
+- **Capability-Check**: Verbindlicher Integritätscheck für die 4 RIS-Primärtools (`ris_fetch_segment`, `ris_fetch_whole_law`, `ris_sync_laws`, `ris_search`) im SKILL.md dokumentiert.
+- **Gestufter RIS-Fallback**: 3-Stufen-Modell (1: Direkte Source-ID, 2: ELI-/Dokument-URL mit Domain-Safety, 3: RIS-Websuche als Notbehelf).
+- **Verification Receipt & Stichtag-Validierung**: Jede Rechtsprüfung erzeugt maschinenlesbaren Receipt (`source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`, `consolidated_as_of`, `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`, `content_sha256`, `retrieval_method`, `verification_status`, `fallback_reason`).
+- **Batch-Synchronisation & Deduplizierung**: `ris_sync_laws` unterstützt einzelne Paragrafen mehrerer Gesetze und Gesamtnormen im Batch und dedupliziert identische Dokumentnummern.
+- **5-Schichten-Antwortformat**: Saubere Trennung von A) Normwortlaut, B) Metadaten & Receipt, C) Zusammenfassung, D) Judikatur, E) Schlussfolgerung & Unsicherheit.
+- **Umfassende Regressionstests**: 8 neue Testsuiten für RIS-503, URL-Safety, Stichtage, MRG § 29 ab 01.01.2026, MieWeG §§ 1/2/4, KSchG §§ 1/6, ABGB §§ 1096/1111/1117/1118 und HeizKG-Gesamtfassung.
+
+## Kurzstand 2026-08-27 (v0.14.0 — Kurzzitate-Auflösung)
 - **Kurzzitate-Auflösung**: `ris_search` löst gebräuchliche Kurzzitate („MRG § 29“, „§ 29 MRG“, „MRG 29“, „EStG § 33“, „WEG § 16“, „Art 140 B-VG“ etc.) nun zuverlässig über API und HTML-Fallback auf.
 - **Typografische Quotes**: `query-resolver.ts` bereinigt typografische Anführungszeichen (`„...“`, `”...“`, `«...»`, `"..."`, `'...'`) vor der Erkennung.
 - **RIS API Bundesrecht Pagination**: Paginierung für gezielte Paragrafen-Suchen von 3 auf bis zu 15 Seiten angehoben und exakte Paragrafen-Zuordnung stabilisiert.

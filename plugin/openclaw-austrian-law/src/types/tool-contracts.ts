@@ -28,11 +28,69 @@ export interface SearchHit {
   changed_at?: string;
 }
 
+export type RetrievalMethod =
+  | "direct_source_id"
+  | "eli_url"
+  | "norm_document_url"
+  | "web_search_fallback"
+  | "cache_hit";
+
+export type VerificationStatus =
+  | "verified_current"
+  | "historical_valid_for_stichtag"
+  | "stichtag_mismatch"
+  | "unverified_fallback";
+
+export interface VerificationReceipt {
+  source_id?: string;
+  gesetzesnummer?: string;
+  dokumentnummer?: string;
+  eli?: string;
+  paragraf?: string;
+  consolidated_as_of?: string;
+  retrieved_at: string;
+  effective_from?: string;
+  effective_to?: string;
+  kundmachungsorgan?: string;
+  content_sha256: string;
+  retrieval_method: RetrievalMethod;
+  verification_status: VerificationStatus;
+  fallback_reason?: string;
+  stichtag?: string;
+  warning?: string;
+}
+
+export interface LegalReviewJudicatureItem {
+  source_id?: string;
+  title: string;
+  url?: string;
+  court?: string;
+  decision_date?: string;
+  case_number?: string;
+  summary?: string;
+}
+
+export interface LegalReviewResponse {
+  norm_text: string;
+  metadata: {
+    title: string;
+    stable_id: string;
+    source_id?: string;
+    verification_receipt: VerificationReceipt;
+    [key: string]: unknown;
+  };
+  paraphrase?: string;
+  judicature?: LegalReviewJudicatureItem[];
+  conclusion?: string;
+}
+
 export interface CachedArtifact {
   stable_id: string;
   frontmatter: FrontmatterBase;
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> & {
+    verification_receipt?: VerificationReceipt;
+  };
 }
 
 export type RisScope = "bund" | "land" | "municipal";
@@ -56,12 +114,14 @@ export interface RisSearchInput {
   municipality?: string;
   district?: string;
   authentic?: boolean;
+  stichtag?: string;
 }
 export type RisSearchOutput = ToolResult<{
   hits: SearchHit[];
   best_candidate?: SearchHit;
   normalized_query?: string;
   resolver_kind?: "sourceId" | "normRef" | "freeText";
+  stichtag?: string;
 }>;
 
 export interface RisFetchSegmentInput {
@@ -70,8 +130,12 @@ export interface RisFetchSegmentInput {
   contentUrl?: string;
   segmentRef?: string;
   refresh?: boolean;
+  stichtag?: string;
 }
-export type RisFetchSegmentOutput = ToolResult<{ artifact: CachedArtifact }>;
+export type RisFetchSegmentOutput = ToolResult<{
+  artifact: CachedArtifact;
+  receipt?: VerificationReceipt;
+}>;
 
 export interface RisFetchWholeLawInput {
   query?: string;
@@ -81,31 +145,43 @@ export interface RisFetchWholeLawInput {
   scope?: RisScope;
   state?: AustrianState;
   refresh?: boolean;
+  stichtag?: string;
 }
-export type RisFetchWholeLawOutput = ToolResult<{ artifact: CachedArtifact }>;
+export type RisFetchWholeLawOutput = ToolResult<{
+  artifact: CachedArtifact;
+  receipt?: VerificationReceipt;
+}>;
 
 export interface RisSyncLawsItem {
   query?: string;
   sourceId?: string;
   wholeLawUrl?: string;
+  segmentUrl?: string;
+  paragraph?: string;
+  sectionRef?: string;
   scope?: RisScope;
   state?: AustrianState;
   refresh?: boolean;
+  stichtag?: string;
 }
 
 export interface RisSyncLawsInput {
   laws: RisSyncLawsItem[];
+  stichtag?: string;
 }
 
 export interface SyncedLawResult {
   query?: string;
+  paragraph?: string;
   stable_id?: string;
+  source_id?: string;
   title?: string;
   law_id?: string;
   source_url?: string;
   cached: boolean;
   ok: boolean;
   error?: string;
+  receipt?: VerificationReceipt;
 }
 
 export type RisSyncLawsOutput = ToolResult<{
@@ -113,6 +189,7 @@ export type RisSyncLawsOutput = ToolResult<{
   synced: number;
   cached: number;
   failed: number;
+  deduplicated?: number;
   laws: SyncedLawResult[];
 }>;
 

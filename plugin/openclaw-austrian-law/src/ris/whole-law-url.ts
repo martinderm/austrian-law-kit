@@ -1,4 +1,5 @@
 import { resolveRisBaseUrl } from "./runtime.js";
+import { validateSafeRisUrl } from "./segment-url.js";
 
 function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Landesnormen" {
   return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
@@ -23,10 +24,13 @@ export function extractSourceIdFromWholeLawUrl(sourceUrl: string): string | null
   const docNo = url.searchParams.get("Dokumentnummer")?.trim();
   if (docNo && docNo.length > 0) return docNo;
 
+  const pathMatch = url.pathname.match(/\b(NOR[0-9A-Z]+|LOO[0-9A-Z]+|GEMREA_[0-9A-Z]+|GEMRE_[0-9A-Z]+)\b/i);
+  if (pathMatch?.[1]) return pathMatch[1].toUpperCase();
+
   const lawId = url.searchParams.get("Gesetzesnummer")?.trim();
   if (lawId && lawId.length > 0) {
-    const collection = inferCollectionFromWholeLawUrl(url);
-    if (collection) return `LAW:${collection}:${lawId}`;
+    const collection = inferCollectionFromWholeLawUrl(url) ?? "Bundesnormen";
+    return `LAW:${collection}:${lawId}`;
   }
 
   return null;
@@ -34,6 +38,7 @@ export function extractSourceIdFromWholeLawUrl(sourceUrl: string): string | null
 
 export function buildRisWholeLawUrl(params: { sourceId?: string; sourceUrl?: string }): string {
   if (params.sourceUrl && params.sourceUrl.trim().length > 0) {
+    validateSafeRisUrl(params.sourceUrl);
     const parsed = new URL(params.sourceUrl);
     return parsed.toString();
   }

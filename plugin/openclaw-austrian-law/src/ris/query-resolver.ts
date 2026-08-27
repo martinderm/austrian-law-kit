@@ -44,6 +44,8 @@ const LAW_ALIASES: Record<string, string> = {
   urlg: "UrlG",
   dhg: "DHG",
   eheg: "EheG",
+  mieweg: "MieWeG",
+  heizkg: "HeizKG",
 };
 
 export type RisResolvedQuery =

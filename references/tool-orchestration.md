@@ -1,73 +1,75 @@
-# Tool-Orchestrierung (MVP)
+# Tool-Orchestrierung & RIS-Primärrechtsprüfung
 
-Detaillierte Anweisungen fuer die Tool-Nutzung im austrian-law-kit.
-Wird vom SKILL.md referenziert und nur bei Bedarf geladen.
+Detaillierte Anweisungen für die Tool-Nutzung und Qualitätssicherung im `austrian-law-kit`.
 
-## RIS (Primaerquelle)
+## Capability-Check zu Sitzungsbeginn
 
-Primaer diese MVP-Tools nutzen:
-- `ris_sync_laws` (Synchronisation/Download mehrerer Gesetze in einem einzigen Schritt)
-- `ris_fetch_whole_law` (Gesetzesvolltext; unterstuetzt direkte `wholeLawUrl` oder `query` fuer Auto-Resolve)
+Vor der Durchführung von Recherche-Aufgaben ist die Einsatzbereitschaft der 4 RIS-Kern-Tools sicherzustellen:
 - `ris_fetch_segment` (Einzelner Paragraf)
-- `ris_search` (Discovery-Hilfe fuer Gesetze, Paragrafen & Judikatur)
+- `ris_fetch_whole_law` (Gesetzesvolltext)
+- `ris_sync_laws` (Batch-Synchronisation mit Deduplizierung)
+- `ris_search` (Discovery-Hilfe / Notbehelf)
 
-### Typischer Ablauf
+```bash
+node dist/bin/cli.js ris_sync_laws '{"laws": [{"sourceId": "NOR40273695", "paragraph": "§ 29"}]}'
+```
 
-1. Wenn eine belastbare `sourceId` oder direkte RIS-URL bereits bekannt ist, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` verwenden.
-2. `ris_search` nur dann einsetzen, wenn die RIS-Referenz **noch nicht bekannt** ist und erst aus einer Suchanfrage aufgeloest werden muss.
-3. `ris_search` nutzt inzwischen einen Resolver fuer direkte `NOR...`-/`LOO...`-/Gemeinderecht-IDs, typische Normreferenzen sowie API-first-Pfade ueber die offizielle OGD-RIS-API; diese Discovery-Hilfe ist nuetzlich, ersetzt aber keinen belastbaren Fallback-Pfad.
-4. `ris_search` unterstuetzt derzeit drei Discovery-Scope-Pfade: Bundesrecht (`bund`), Landesrecht (`land`) und Gemeinderecht (`municipal`). Gemeinderecht laeuft ueber `/Gemeinden` mit `Gr` oder `GrA` und kann zusaetzlich nach Bundesland, Gemeinde und Bezirk eingegrenzt werden.
-5. `ris_search` nicht als alleinigen Einstiegspunkt oder zwingende Vorstufe modellieren; bekannte operative Grenzen sind 0 Treffer trotz plausibler Query, gelegentliche Upstream-Fehler und derzeit unzuverlaessige Landesrecht-State-Filter in der offiziellen API.
-6. Fuer `ris_fetch_segment` und `ris_fetch_whole_law` bevorzugt eine saubere `sourceId` bzw. eine RIS-URL mit aufloesbarer `Dokumentnummer` verwenden. `ris_fetch_whole_law` unterstuetzt zusaetzlich direkte `GeltendeFassung.wxe?...&Gesetzesnummer=...`-URLs als Whole-Law-Einstieg.
-7. Wenn `ris_search` bereits `content_url`, `xml_content_url` oder `whole_law_url` liefert, diese URLs bevorzugt direkt in die Fetch-Tools weiterreichen.
-8. RIS-Fetch-Tools nicht mit frei geratenen ELI-/Paragraf-URLs fuettern, wenn daraus keine belastbare RIS-ID oder Whole-Law-URL ableitbar ist.
-9. Wenn alte Cache-Artefakte einen Re-Test verfaelschen koennten, `refresh: true` verwenden, um den Inhalt frisch zu laden.
-10. `ris_fetch_segment` bevorzugt fuer RIS-Segmente jetzt XML (`ContentUrl` mit `DataType=Xml`), wenn verfuegbar; HTML bleibt Fallback fuer einfachere oder aeltere Faelle.
-11. Fuer History/Aenderungsstaende derzeit keinen oeffentlichen Suchfluss modellieren; der aktuelle History-Client ist bewusst ein interner, typed Baustein fuer spaetere Sync-/Update-Logik.
-12. Erst danach zusammenfassen oder vorsichtig einordnen.
+## Gestufter RIS-Fallback
 
-## JUSLINE (Sekundaerquelle)
+Die Rechtsprüfung folgt strikt dem 3-Stufen-Prinzip:
 
-JUSLINE nur ergaenzend nutzen und intern sauber trennen:
-- `jusline_fetch_discussions` -> Diskussionen/Kommentare
-- `jusline_list_decisions` -> Entscheidungslisten
+1. **Stufe 1 — Direkte Quell-Identifikatoren (bevorzugt)**:
+   - Liegt eine Dokumentnummer (z. B. `NOR40273695`, `LOO11000699`) vor, **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` mit `sourceId` aufrufen.
+   - Retrieval-Method: `direct_source_id`.
 
-### Regeln
+2. **Stufe 2 — Offizielle ELI- oder NormDokument-URLs**:
+   - Liegt eine ELI-URL (`https://www.ris.bka.gv.at/eli/bgbl/...`) oder direkte RIS-Dokument-URL vor, diese als `sourceUrl` / `contentUrl` / `wholeLawUrl` übergeben.
+   - Alle URLs werden gegen vertrauenswürdige RIS-Domains validiert (`www.ris.bka.gv.at`, `ogd.ris.bka.gv.at`, `data.bka.gv.at`). Fremde/unsichere URLs werden abgewiesen (`VALIDATION_ERROR`).
+   - Retrieval-Method: `eli_url` bzw. `norm_document_url`.
 
-- Diskussionen/Kommentare und Entscheidungen niemals vermischen.
-- JUSLINE-Inhalte nicht als Primaerbeleg fuer Normwortlaut darstellen.
-- Wenn JUSLINE verwendet wird, das in der Quellenlage klar kenntlich machen.
-- `refresh: true` als gezielten Force-Reload verwenden, wenn ein Re-Test nicht durch aeltere Artefakte oder Query-Index-Reuse verfaelscht werden soll.
-- Bei JUSLINE beruecksichtigt der Cache zusaetzlich einen Query-Index ueber `query + kind + limit` mit 24h TTL; ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
-- JUSLINE-Treffer liefern je nach Tool und Seitentyp ueber die Basistreffer hinaus nur optional angereicherte Metadaten; fehlende Felder nicht erraten.
+3. **Stufe 3 — RIS-Websuche als gekennzeichneter Notbehelf**:
+   - `ris_search` wird ausschließlich eingesetzt, wenn weder Dokumentnummer noch ELI-URL bekannt sind.
+   - Resultate aus Such-Fallback tragen `retrieval_method: "web_search_fallback"` und `verification_status: "unverified_fallback"` mit Angabe von `fallback_reason`.
 
-### Typische JUSLINE-Nutzung
+## Maschinenlesbarer Verification Receipt & Stichtag-Prüfung
 
-1. Zuerst RIS-Wortlaut bzw. RIS-Fundstelle klaeren.
-2. Nur bei ausdruecklichem Bedarf oder erkennbarem Zusatznutzen ergaenzend JUSLINE laden.
-3. Fuer Kommentare `jusline_fetch_discussions`, fuer Entscheidungslisten `jusline_list_decisions` verwenden.
-4. Bei Re-Checks oder Parser-Tests `refresh: true` setzen.
-5. In der Antwort klar trennen: RIS fuer Normwortlaut, JUSLINE nur fuer Zusatzkontext.
+Jeder erfolgreiche Abruf erzeugt im Metadaten-Objekt und in der Antwort einen `VerificationReceipt`:
+- `source_id`: Kanonische ID
+- `gesetzesnummer`: RIS-Gesetzesnummer
+- `dokumentnummer`: RIS-Dokumentnummer
+- `eli`: Offizielle ELI-URI (falls vorhanden)
+- `paragraf`: Paragrafen- oder Abschnittsbezeichnung
+- `consolidated_as_of`: Fassungsstand (`FassungVom`)
+- `retrieved_at`: ISO-8601 Zeitstempel des Abrufs
+- `effective_from`: Inkrafttretedatum (YYYY-MM-DD)
+- `effective_to`: Außerkrafttretedatum (YYYY-MM-DD)
+- `kundmachungsorgan`: z. B. `BGBl. Nr. 520/1981 zuletzt geändert durch BGBl. I Nr. 114/2025`
+- `content_sha256`: SHA-256 Hash des extrahierten Normtextes
+- `retrieval_method`: `direct_source_id` | `eli_url` | `norm_document_url` | `web_search_fallback` | `cache_hit`
+- `verification_status`: `verified_current` | `historical_valid_for_stichtag` | `stichtag_mismatch` | `unverified_fallback`
+- `fallback_reason`: Begründung bei Stufe-3-Nutzung
 
-Fuer konkrete JUSLINE-Felder, Detail-Previews, Grenzen und Antwortdisziplin siehe `jusline.md`.
+> [!WARNING]
+> **Stichtagsprüfung**: Wird kein expliziter `stichtag` übergeben, gilt das heutige Tagesdatum. Liegt das `effective_from` in der Zukunft oder das `effective_to` in der Vergangenheit, wird `verification_status: "stichtag_mismatch"` gesetzt. Historische Fassungen dürfen niemals stillschweigend als tagesaktuell ausgegeben werden.
 
-## Bei unklarer Lage
+## Batch-Synchronisation & Deduplizierung (`ris_sync_laws`)
 
-- Zuerst Quellenstatus klaeren, dann interpretieren.
-- Bei `VALIDATION_ERROR` der RIS-Fetch-Tools zuerst pruefen, ob eine belastbare `sourceId` oder RIS-URL ermittelbar ist; `ris_search` ist dafuer nur eine optionale Hilfe, nicht die einzige zulaessige Aufloesungsstufe.
-- Nicht vorschnell auf `web_fetch` oder allgemeine Websuche ausweichen, wenn das Ziel eigentlich eine RIS-Primaerquelle ist.
-- `web_fetch` fuer RIS-Normtexte nur als Notbehelf verwenden und dann die geringere Verlaesslichkeit ausdruecklich markieren.
-- Lieber enger und sauberer antworten als zu weit extrapolieren.
+`ris_sync_laws` synchronisiert Listen von Rechtsvorschriften in einem Durchlauf:
+- Einzelne Paragrafen mehrerer Gesetze (`laws: [{ query: "MieWeG § 1" }, { query: "ABGB § 1096" }]`)
+- Ganze Gesetze (`laws: [{ query: "HeizKG" }]`)
+- Identische Dokumentnummern / `sourceId`s innerhalb eines Batches werden automatisch dedupliziert (`deduplicated` Zähler).
 
-## Caching & Konfiguration
+## JUSLINE (Sekundärquelle)
 
-Zielstruktur fuer Instanzen:
-- `memory/references/austrian-law/ris/...`
-- `memory/references/austrian-law/jusline/...`
+JUSLINE liefert ausschließlich Zusatzkontext (Entscheidungslisten via `jusline_list_decisions`, Diskussionen via `jusline_fetch_discussions`).
+- **Niemals als Ersatz für fehlende RIS-Belege verwenden.**
+- Immer getrennt unter *Judikatur / Sekundärkontext* ausweisen.
 
-Einstellungen koennen ueber eine `settings.json` im Workspace-Root unter dem Namensraum `"austrian-law-kit"` geladen werden. Pfade koennen relativ oder absolut sein; CLI-Optionen ueberschreiben `settings.json`.
+## 5-Schichten-Antwortformat
 
-Dateien mit stabilen Identifikatoren benennen und YAML-Frontmatter verwenden.
-Fuer RIS-Gesamtdokumente `doc_type=norm_document` beibehalten und die Darstellungsform zusaetzlich ueber `representation=whole_law` kennzeichnen; der kanonische `title` soll dabei der eigentliche Langtitel der Norm sein, nicht die ausschweifende RIS-Seitenueberschrift.
+A) **Normwortlaut**: Fundstelle und unveränderter Originaltext.
+B) **Metadaten & Verification Receipt**: Nachweise, SHA-256, Fassungsstand und Status.
+C) **Verständliche Zusammenfassung**: Klartext-Erläuterung.
+D) **Judikatur & Leitsätze**: Relevante Entscheidungen (separat).
+E) **Schlussfolgerung & Rechtsunsicherheit**: Auslegungsspielraum und Grenzen.
 
-Fuer CLI-Nutzung, JSON-Input-Formate und CLI-Optionen siehe `README.md`.

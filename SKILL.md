@@ -11,66 +11,76 @@ language: typescript
 
 ## Zweck
 
-Dieser Skill steuert die fachliche Orchestrierung für österreichische Rechtstexte mit klarer Quellenhierarchie, transparenter Unsicherheitskommunikation und sauberer Trennung von Wortlaut vs. Einordnung.
+Dieser Skill steuert die fachliche Orchestrierung für österreichische Rechtstexte mit robuster, reproduzierbarer RIS-Primärrechtsprüfung, maschinenlesbarem Verification Receipt, gestuftem Fallback und klarer 5-Schichten-Ausgabe.
 
 ## Verbindliche Quellenpolitik
 
-1. **RIS ist Primärquelle** für Normtext, Struktur und Metadaten.
-2. **JUSLINE ist Sekundärquelle** für optionalen Zusatzkontext.
-3. JUSLINE nur ergänzend nutzen, nicht als Ersatz für RIS.
-4. Inhalte aus JUSLINE standardmäßig nur bei **ausdrücklicher Nachfrage** oder klar erkennbarem Zusatznutzen laden.
-5. Standardmäßig mit der **konsolidierten RIS-Fassung** arbeiten.
-6. **Arbeitsfassung** und **verbindliche Fassung** immer explizit unterscheiden.
-7. Bei Konflikten zwischen RIS und JUSLINE gilt **RIS**.
+1. **Ausschließlich RIS ist Primärquelle** für Normtext, Struktur, Fassungsstand und Metadaten.
+2. **JUSLINE ist Sekundärquelle** ausschließlich für optionalen Zusatzkontext (Entscheidungslisten, Diskussionshinweise).
+3. **Kein Belegersatz**: Sekundärquellen (JUSLINE, Web) dürfen einen fehlenden RIS-Beleg unter keinen Umständen ersetzen.
+4. Standardmäßig mit der **konsolidierten RIS-Fassung** arbeiten.
+5. **Arbeitsfassung** und **verbindliche Fassung** immer explizit unterscheiden.
+6. Bei Konflikten zwischen RIS und Sekundärquellen gilt ausnahmslos **RIS**.
 
-## Antwortstruktur (standardmäßig 4 Schichten)
+## Capability-Check vor der Recherche
 
-A) **Fundstelle / Wortlaut**
-- Nenne die konkrete Fundstelle und gib den relevanten Wortlaut bzw. einen präzisen Auszug wieder.
+Vor der Durchführung von Rechtsrecherchen in einer Sitzung muss sichergestellt sein, dass die 4 primären RIS-Tools einsatzbereit sind:
+- `ris_fetch_segment` (Einzelner Paragraf mit `sourceId`/URL)
+- `ris_fetch_whole_law` (Gesamte Rechtsvorschrift)
+- `ris_sync_laws` (Batch-Synchronisation mehrerer Paragrafen/Gesetze mit Deduplizierung)
+- `ris_search` (Discovery-Hilfe bei unbekannter Fundstelle)
 
-B) **Verständliche Zusammenfassung**
-- Erkläre den Inhalt in klarer, nicht-juristischer Sprache.
+*Integritätsprüfung im Terminal / Harness:*
+```bash
+node dist/bin/cli.js ris_sync_laws '{"laws": [{"sourceId": "NOR40273695", "paragraph": "§ 29"}]}'
+```
 
-C) **Auslegungsfragen / Grenzen**
-- Markiere, wo Interpretationsspielraum, Anwendungsgrenzen oder fehlender Kontext bestehen.
+## Gestufter RIS-Fallback
 
-D) **Quellenlage / Unsicherheit**
-- Weise aus, welche Quelle(n) genutzt wurden und wie sicher die Aussage ist.
+1. **Stufe 1 (Direkte Dokumentnummer / Source ID)**: Wenn `sourceId` bekannt ist (z. B. `NOR40273695`), **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` aufrufen (`retrieval_method: "direct_source_id"`).
+2. **Stufe 2 (Offizielle ELI- oder NormDokument-URL)**: Wenn eine ELI-URL (`/eli/bgbl/...`) oder Dokument-URL vorliegt, direkt über URL laden (`retrieval_method: "eli_url"` bzw. `"norm_document_url"`).
+3. **Stufe 3 (RIS-Websuche / Auto-Resolve)**: `ris_search` ausschließlich als **gekennzeichneter Notbehelf** einsetzen (`retrieval_method: "web_search_fallback"`, Status: `unverified_fallback`), wenn keine Referenz bekannt ist.
 
-Bei sehr kleinen, rein mechanischen Nachfragen darf die Antwort knapper sein, die Trennung von Quelle, Einordnung und Unsicherheit bleibt aber bestehen.
+## Stichtags-Validierung & Verification Receipt
 
-## Rechtsberatungsgrenze
+Jede Rechtsprüfung erzeugt einen maschinenlesbaren **Verification Receipt**:
+- `source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`
+- `consolidated_as_of` (Fassung vom), `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`
+- `content_sha256` (SHA-256 Hash des Originalwortlauts)
+- `retrieval_method` (`direct_source_id`, `eli_url`, `norm_document_url`, `web_search_fallback`, `cache_hit`)
+- `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `unverified_fallback`)
+- `fallback_reason` (Begründung, falls Stufe 3 Notbehelf)
 
-- Keine Behauptung verbindlicher Rechtsberatung.
-- Der Skill liefert Wortlaut, Quellenlage und vorsichtige Einordnung.
-- Keine künstliche Sicherheit bei unklarer Quellenlage oder fehlendem Sachverhaltskontext.
+> [!IMPORTANT]
+> **Stichtags-Disziplin**: Treffer mit historischem `FassungVom` oder abgelaufenem `Außerkrafttretensdatum` werden bei aktuellem Stichtag als `stichtag_mismatch` ausgewiesen und dürfen niemals stillschweigend als tagesaktuell ausgegeben werden.
 
-## Datenintegrität
+## Antwortstruktur (5 Schichten)
 
-- Fehlende Informationen dürfen nicht erfunden oder glatt ergänzt werden.
-- Lücken müssen ausdrücklich benannt werden.
-- Wortlaut, Paraphrase und ergänzende Interpretation sauber auseinanderhalten.
+A) **Normwortlaut**
+- Konkrete Fundstelle und unveränderter, authentischer Gesetzestext (bzw. präziser Auszug).
 
-## Verfügbare Tools
+B) **Metadaten & Verification Receipt**
+- Maschinenlesbare Nachweise: Dokumentnummer, ELI, Fassungsstand/Stichtag, Kundmachungsorgan, Content SHA-256, Abrufmethode und Verifikationsstatus.
 
-### RIS (Primärquelle)
-- `ris_sync_laws` — Batch-Synchronisation mehrerer Gesetze
-- `ris_fetch_whole_law` — Gesetzesvolltext
-- `ris_fetch_segment` — Einzelner Paragraf
-- `ris_search` — Discovery-Hilfe (nicht als alleiniger Einstieg modellieren)
+C) **Verständliche Zusammenfassung (Paraphrase)**
+- Erläuterung des Inhalts in klarer, verständlicher Sprache.
 
-### JUSLINE (Sekundärquelle)
-- `jusline_fetch_discussions` — Diskussionen/Kommentare
-- `jusline_list_decisions` — Entscheidungslisten
+D) **Judikatur & Leitsätze (Sekundärkontext)**
+- Relevante Leitentscheidungen (OGH, VwGH, VfGH) sauber getrennt vom Normtext.
 
-Bekannte `sourceId` oder RIS-URL → direkt Fetch-Tools nutzen.
-`ris_search` nur wenn Referenz unbekannt. Bei unklarer Lage: Quellenstatus klären vor Interpretation.
+E) **Schlussfolgerung & Rechtsunsicherheit**
+- Anwendungsgrenzen, Auslegungsfragen und transparente Unsicherheitskommunikation.
+
+## Rechtsberatungsgrenze & Datenintegrität
+
+- Keine verbindliche Rechtsberatung; Bereitstellung von authentischem Normtext und strukturierter Einordnung.
+- Fehlende Informationen oder unvollständige Belege werden nicht erraten, sondern als Lücke deklariert.
 
 ## Referenzen (bei Bedarf laden)
 
 - **Tool-Orchestrierung & Ablaufdetails**: `references/tool-orchestration.md`
 - **JUSLINE-Felder, Grenzen, Antwortdisziplin**: `references/jusline.md`
-- **Tool-Verträge (Input/Output/Fehler)**: `docs/tool-contracts.md`
+- **Tool-Verträge (Input/Output/Receipts)**: `docs/tool-contracts.md`
 - **CLI-Nutzung & JSON-Formate**: `README.md`
 - **Frontmatter-Schema**: `docs/frontmatter-schema.md`
 - **Stable-ID-Strategie**: `docs/stable-id-strategy.md`

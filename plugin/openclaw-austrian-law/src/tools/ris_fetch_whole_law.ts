@@ -7,6 +7,8 @@ import {
   extractSourceIdFromWholeLawUrl,
   normalizeWholeLawStableIdFromSourceId,
 } from "../ris/whole-law-url.js";
+import { validateSafeRisUrl } from "../ris/segment-url.js";
+import { buildVerificationReceipt } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
@@ -14,15 +16,25 @@ import {
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
 import { risSearchStub } from "./ris_search.js";
-import type { CachedArtifact, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
+import type { CachedArtifact, RetrievalMethod, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
 
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
+  let fallbackReason: string | undefined;
+  let initialRetrievalMethod: RetrievalMethod = input.sourceId
+    ? "direct_source_id"
+    : input.sourceUrl || input.wholeLawUrl
+    ? ((input.sourceUrl?.includes("/eli/") || input.wholeLawUrl?.includes("/eli/")) ? "eli_url" : "norm_document_url")
+    : "web_search_fallback";
+
   if (!input.wholeLawUrl && !input.sourceId && !input.sourceUrl && input.query?.trim()) {
+    fallbackReason = `Auto-resolve via query '${input.query.trim()}'`;
+    initialRetrievalMethod = "web_search_fallback";
     const searchResult = await risSearchStub({
       query: input.query.trim(),
       scope: input.scope,
       state: input.state,
       limit: 5,
+      stichtag: input.stichtag,
     });
     if (!searchResult.success) {
       return {
@@ -53,7 +65,12 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   let sourceUrl: string;
   try {
-    sourceUrl = input.wholeLawUrl?.trim() || buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    if (input.wholeLawUrl?.trim()) {
+      validateSafeRisUrl(input.wholeLawUrl.trim());
+      sourceUrl = input.wholeLawUrl.trim();
+    } else {
+      sourceUrl = buildRisWholeLawUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    }
   } catch (error) {
     return {
       success: false,
@@ -87,9 +104,29 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     ? { hit: false, artifact: undefined, warning: undefined }
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
   if (cacheRead.hit && cacheRead.artifact) {
+    const receipt = buildVerificationReceipt({
+      sourceId,
+      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined,
+      dokumentnummer: sourceId,
+      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : undefined,
+      paragraf: "Gesamte Rechtsvorschrift",
+      consolidatedAsOf: cacheRead.artifact.frontmatter.effective_date,
+      effectiveFrom: cacheRead.artifact.frontmatter.effective_date,
+      effectiveTo: cacheRead.artifact.frontmatter.repealed_date,
+      kundmachungsorgan: cacheRead.artifact.frontmatter.promulgation,
+      content: cacheRead.artifact.content,
+      retrievalMethod: "cache_hit",
+      stichtag: input.stichtag,
+      normStatus: cacheRead.artifact.frontmatter.norm_status,
+      fallbackReason,
+    });
+    cacheRead.artifact.metadata = {
+      ...(cacheRead.artifact.metadata ?? {}),
+      verification_receipt: receipt,
+    };
     return {
       success: true,
-      data: { artifact: cacheRead.artifact },
+      data: { artifact: cacheRead.artifact, receipt },
       meta: buildCacheHitMeta("ris_fetch_whole_law"),
     };
   }
@@ -132,11 +169,14 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   }
 
   if (!response.ok) {
+    const is503 = response.status === 503;
     return {
       success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
-        message: `RIS whole-law request returned HTTP ${response.status}`,
+        message: is503
+          ? "RIS upstream temporarily unavailable (HTTP 503)"
+          : `RIS whole-law request returned HTTP ${response.status}`,
         details: { status: response.status, source_url: effectiveSourceUrl },
         retryable: response.status >= 500,
       },
@@ -169,6 +209,22 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   try {
     const parsed = parseRisWholeLawHtml(html);
 
+    const receipt = buildVerificationReceipt({
+      sourceId,
+      gesetzesnummer: apiLookup?.lawId,
+      dokumentnummer: sourceId,
+      eli: apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined),
+      paragraf: "Gesamte Rechtsvorschrift",
+      consolidatedAsOf: parsed.title,
+      effectiveFrom: undefined,
+      effectiveTo: undefined,
+      kundmachungsorgan: undefined,
+      content: parsed.content,
+      retrievalMethod: initialRetrievalMethod,
+      stichtag: input.stichtag,
+      fallbackReason,
+    });
+
     const artifact: CachedArtifact = {
       stable_id: stableId,
       frontmatter: {
@@ -186,6 +242,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       },
       content: parsed.content,
       metadata: {
+        verification_receipt: receipt,
         ris_extracted: {
           representation: "whole_law",
           law_title: parsed.lawTitle,
@@ -209,23 +266,31 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     const warnings = [
       ...buildCacheWarnings({ cacheRead, cacheWrite }),
       ...(apiLookupWarning ? [apiLookupWarning] : []),
+      ...(receipt.warning ? [receipt.warning] : []),
     ];
     const notices = [
       ...(apiLookup?.wholeLawUrl ? ["api_lookup_used: preferred whole_law_url for whole-law fetch"] : []),
+      `retrieval_method: ${receipt.retrieval_method}`,
+      `verification_status: ${receipt.verification_status}`,
+    ];
+
+    const refreshMeta = refresh ? buildRefreshMeta("ris_fetch_whole_law") : undefined;
+    const combinedNotices = [
+      ...(refreshMeta?.notices ?? []),
+      ...notices,
     ];
 
     return {
       success: true,
       data: {
         artifact,
+        receipt,
       },
       meta: {
-        ...(refresh ? buildRefreshMeta("ris_fetch_whole_law") : {
-          tool: "ris_fetch_whole_law",
-          source: "ris" as const,
-          timestamp: new Date().toISOString(),
-        }),
-        ...(notices.length > 0 ? { notices } : {}),
+        tool: "ris_fetch_whole_law",
+        source: "ris" as const,
+        timestamp: new Date().toISOString(),
+        ...(combinedNotices.length > 0 ? { notices: combinedNotices } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

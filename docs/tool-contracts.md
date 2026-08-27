@@ -53,174 +53,93 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 
 ## Tool: `ris_fetch_segment` (Primärquelle)
 
-**Zweck:** Abruf eines einzelnen RIS-Eintrags als `norm_segment` (MVP).
+**Zweck:** Abruf eines einzelnen RIS-Eintrags als `norm_segment` inklusive maschinenlesbarem `VerificationReceipt` und Stichtagsprüfung.
 
-**Input (MVP):**
-- `sourceId?: string` (z. B. RIS-Dokumentnummer)
-- `sourceUrl?: string` (direkte RIS-Dokument-URL)
-- `contentUrl?: string` (bereits aufgelöste Inhalts-URL, z. B. aus `ris_search`)
+**Input:**
+- `sourceId?: string` (z. B. RIS-Dokumentnummer wie `NOR40273695`)
+- `sourceUrl?: string` (direkte RIS-Dokument-URL oder ELI-URL)
+- `contentUrl?: string` (bereits aufgelöste Inhalts-URL)
 - `segmentRef?: string` (derzeit außerhalb MVP, führt zu `NOT_IMPLEMENTED`)
 - `refresh?: boolean` (optional; ignoriert vorhandenen Cache und holt den Inhalt frisch)
+- `stichtag?: string` (optional; ISO-Datum YYYY-MM-DD zur Gültigkeitsprüfung, Default: Tagesdatum)
 
-Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
+Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein. Alle URLs werden auf vertrauenswürdige RIS-Domains geprüft.
 
-**Output (MVP):**
-- segmentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
-- Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
-- optional zusätzliche API-Metadaten unter `metadata.ris_api`, wenn ein offizieller Lookup für die `sourceId` erfolgreich war
+**Output:**
+- `artifact`: segmentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`, `metadata`)
+- `receipt`: maschinenlesbarer `VerificationReceipt` mit:
+  - `source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`
+  - `consolidated_as_of`, `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`
+  - `content_sha256`, `retrieval_method`, `verification_status`, `fallback_reason`, `warning`
 
-**Aktueller Abrufpfad (MVP):**
-- explizite `sourceUrl` wird direkt verwendet
-- bei bloßer `sourceId` versucht das Tool zuerst einen offiziellen RIS-API-Lookup
-- wenn verfügbar, wird eine konkretere `content_url` bevorzugt
-- wenn der Lookup fehlschlägt, bleibt der bisherige direkte RIS-Abruf als Fallback bestehen
-
-**Fehlerklassen (MVP):**
-- `VALIDATION_ERROR`
+**Fehlerklassen:**
+- `VALIDATION_ERROR` (inkl. unsichere/fremde Domains)
 - `NOT_FOUND`
-- `UPSTREAM_UNAVAILABLE`
+- `UPSTREAM_UNAVAILABLE` (inkl. HTTP 503 retryable)
 - `NOT_IMPLEMENTED`
 
 ## Tool: `ris_fetch_whole_law` (Primärquelle)
 
-**Zweck:** Abruf eines einzelnen RIS-Gesamtdokuments als `norm_document` (MVP).
+**Zweck:** Abruf eines einzelnen RIS-Gesamtdokuments als `norm_document` mit `representation: "whole_law"` und `VerificationReceipt`.
 
-**Input (MVP):**
-- `sourceId?: string` (z. B. RIS-Dokumentnummer)
-- `sourceUrl?: string` (direkte RIS-Dokument-URL)
-- `wholeLawUrl?: string` (bereits aufgelöste Gesamtfassungs-URL, z. B. aus `ris_search`)
-- `refresh?: boolean` (optional; ignoriert vorhandenen Cache und holt den Inhalt frisch)
+**Input:**
+- `query?: string` (Gesetzesname zur automatischen Notbehelf-Auflösung)
+- `sourceId?: string` (z. B. RIS-Dokumentnummer oder `LAW:Bundesnormen:10002894`)
+- `sourceUrl?: string` (direkte RIS-Dokument-URL oder ELI-URL)
+- `wholeLawUrl?: string` (bereits aufgelöste Gesamtfassungs-URL)
+- `scope?: "bund" | "land" | "municipal"`
+- `state?: AustrianState`
+- `refresh?: boolean`
+- `stichtag?: string`
 
-Regel: mindestens `sourceId`, `sourceUrl` oder `wholeLawUrl` muss vorhanden sein.
+**Output:**
+- `artifact`: dokumentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`, `metadata`)
+- `receipt`: maschinenlesbarer `VerificationReceipt`
 
-**Output (MVP):**
-- dokumentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`)
-- Frontmatter enthält mindestens Pflichtfelder plus `source_id`, wenn belastbar ableitbar
-- optional zusätzliche API-Metadaten unter `metadata.ris_api`, wenn ein offizieller Lookup für die `sourceId` erfolgreich war
-
-**Aktueller Abrufpfad (MVP):**
-- explizite `sourceUrl` wird direkt verwendet
-- bei bloßer `sourceId` versucht das Tool zuerst einen offiziellen RIS-API-Lookup
-- wenn verfügbar, wird eine passende `whole_law_url` bevorzugt
-- wenn der Lookup fehlschlägt, bleibt der bisherige direkte RIS-Abruf als Fallback bestehen
-
-**Fehlerklassen (MVP):**
-- `VALIDATION_ERROR`
+**Fehlerklassen:**
+- `VALIDATION_ERROR` (inkl. unsichere Domains)
 - `NOT_FOUND`
-- `UPSTREAM_UNAVAILABLE`
-
-## Tool: `jusline_fetch_discussions` (Sekundärquelle)
-
-**Zweck:** Optionale Abrufe von Diskussionen/Kommentaren aus JUSLINE (MVP).
-
-**Input (MVP):**
-- `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
-- `limit?: number`
-- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Query-Index- oder Artefakt-Reuse)
-
-**Output (MVP):**
-- Diskussions-/Kommentartreffer (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
-- je nach Query zusätzlich Kontexthinweise in `meta`, z. B. `source_path`, `law_slug`, `segment_ref`
-- bei Cache-/Refresh-Verhalten optionale `notices`, z. B. `cache_refresh`
-- aus Treffern können intern Preview-Artefakte für Kommentar-Detailseiten erzeugt werden
-
-**Optionale angereicherte Kommentar-Detailfelder (kontextabhängig):**
-- `author_name`
-- `author_profile_url`
-- `citation`
-- `published_date`
-- `published_date_raw`
-- `rating_value`
-- `rating_count`
-- `views_count`
-- `comment_version`
-- `body_markdown`
-- `fetch_error`
-
-**Hinweise (MVP):**
-- JUSLINE nutzt einen Query-Index über `query + kind + limit` mit 24h TTL.
-- Ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
-- Fehlende Detailfelder dürfen nicht als garantiert angenommen werden.
-
-**Fehlerklassen (MVP):**
-- `VALIDATION_ERROR`
-- `NOT_FOUND`
-- `UPSTREAM_UNAVAILABLE`
-- `NOT_IMPLEMENTED` (nur außerhalb MVP)
-
-## Tool: `jusline_list_decisions` (Sekundärquelle)
-
-**Zweck:** Optionale Auflistung von Entscheidungen aus JUSLINE (MVP).
-
-**Input (MVP):**
-- `query: string` (JUSLINE-URL oder Pfadform wie `stgb/paragraf/111`)
-- `limit?: number`
-- `refresh?: boolean` (optional; erzwingt frischen Abruf ohne Query-Index- oder Artefakt-Reuse)
-
-**Output (MVP):**
-- Entscheidungsreferenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
-- je nach Query zusätzlich Kontexthinweise in `meta`, z. B. `source_path`, `law_slug`, `segment_ref`
-- bei Cache-/Refresh-Verhalten optionale `notices`, z. B. `cache_refresh`
-- aus Listentreffern können intern Preview-Artefakte für Entscheidungsdetailseiten erzeugt werden
-
-**Optionale angereicherte Entscheidungs-Detailfelder (kontextabhängig):**
-- `document_type`
-- `court`
-- `published_date_raw`
-- `teaser`
-- `norms`
-- `rechtssatz`
-- `entscheidungstexte`
-- `ecli`
-- `updated_at`
-- `body_markdown`
-- `fetch_error`
-
-**Hinweise (MVP):**
-- JUSLINE nutzt einen Query-Index über `query + kind + limit` mit 24h TTL.
-- Ohne `refresh` kann daher bewusst Wiederverwendung auftreten.
-- Detailseiten werden nur ergänzend verwertet; RIS bleibt Primärquelle für Normwortlaut und Primärmetadaten.
-
-**Fehlerklassen (MVP):**
-- `VALIDATION_ERROR`
-- `NOT_FOUND`
-- `UPSTREAM_UNAVAILABLE`
+- `UPSTREAM_UNAVAILABLE` (inkl. HTTP 503 retryable)
 
 ## Tool: `ris_sync_laws` (Primärquelle)
 
-**Zweck:** Batch-Synchronisation mehrerer Gesetze in einem einzigen Schritt. Iteriert intern über `ris_fetch_whole_law` und aggregiert die Ergebnisse mit Cache-Statistiken.
+**Zweck:** Batch-Synchronisation einzelner Paragrafen mehrerer Gesetze oder ganzer Gesetze in einem einzigen Schritt mit automatischer Deduplizierung.
 
-**Input (MVP):**
+**Input:**
+- `stichtag?: string` (optionaler globaler Stichtag für alle Items)
 - `laws: RisSyncLawsItem[]` (Array, mindestens 1 Element)
   - Je Item:
-    - `query?: string`
-    - `sourceId?: string`
+    - `query?: string` (z. B. `"MieWeG § 1"`, `"ABGB § 1096"`, `"HeizKG"`)
+    - `sourceId?: string` (z. B. `"NOR40273695"`)
+    - `paragraph?: string` (z. B. `"§ 29"`, `"1"`)
     - `wholeLawUrl?: string`
+    - `segmentUrl?: string`
     - `scope?: "bund" | "land" | "municipal"`
     - `state?: AustrianState`
     - `refresh?: boolean`
+    - `stichtag?: string`
 
-**Output (MVP):**
-- `total: number` — Gesamtanzahl angeforderter Gesetze
-- `synced: number` — frisch abgerufene Gesetze
-- `cached: number` — aus Cache bediente Gesetze
+**Output:**
+- `total: number` — Gesamtanzahl angeforderter Items
+- `synced: number` — frisch abgerufene Gesetze/Paragrafen
+- `cached: number` — aus Cache oder Deduplizierung bediente Items
 - `failed: number` — fehlgeschlagene Abrufe
-- `laws: SyncedLawResult[]` — pro Gesetz:
+- `deduplicated?: number` — Anzahl deduplizierter Anfragen im Batch
+- `laws: SyncedLawResult[]` — pro Item:
   - `query?: string`
+  - `paragraph?: string`
   - `stable_id?: string`
+  - `source_id?: string`
   - `title?: string`
   - `law_id?: string`
   - `source_url?: string`
   - `cached: boolean`
   - `ok: boolean`
+  - `receipt?: VerificationReceipt`
   - `error?: string`
 
 **Verhalten:**
-- Wenn alle Gesetze fehlschlagen, liefert das Tool `ok: false` mit `UPSTREAM_UNAVAILABLE`.
-- Teilfehler werden pro Item in `laws[].error` gemeldet; das Gesamtergebnis bleibt `ok: true`.
-- Cache-Hits werden über `meta.notices` signalisiert (`synced:N`, `cached:N`, `failed:N`).
-
-**Fehlerklassen (MVP):**
-- `VALIDATION_ERROR`
-- `UPSTREAM_UNAVAILABLE`
+- Unterstützt gemischte Batches aus Paragrafen und Gesamtnormen.
+- Dedupliziert identische Dokumentnummern / Source IDs innerhalb eines Batches.
+- Liefert den `VerificationReceipt` pro synchronisiertem Item.
 

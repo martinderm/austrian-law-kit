@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.15.0 - Robuste RIS-Primärrechtsprüfung, Verification Receipt, Stichtag-Validierung & Batch-Deduplizierung
+- **Capability-Check**: Dokumentierter Integritätscheck vor Rechtsrecherchen zur Sicherstellung der Verfügbarkeit von `ris_fetch_segment`, `ris_fetch_whole_law`, `ris_sync_laws`, `ris_search`.
+- **Gestufter RIS-Fallback**:
+  - Stufe 1: Direkte `sourceId` / `Dokumentnummer`
+  - Stufe 2: Offizielle ELI- oder NormDokument-URL mit URL-Safety-Domainprüfung (`www.ris.bka.gv.at`, `ogd.ris.bka.gv.at`, `data.bka.gv.at`)
+  - Stufe 3: RIS-Websuche ausschließlich als gekennzeichneter Notbehelf (`web_search_fallback` / `unverified_fallback`)
+- **Maschinenlesbarer Verification Receipt**:
+  - Jede Rechtsprüfung erzeugt einen Receipt mit `source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`, `consolidated_as_of`, `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`, `content_sha256`, `retrieval_method`, `verification_status`, `fallback_reason`.
+- **Automatische Stichtagsprüfung**:
+  - Validiert Fassungen gegen den gewünschten Stichtag (`stichtag` / `as_of_date`); verhindert stillschweigendes Ausgeben historischer Fassungen (`stichtag_mismatch`).
+- **Batch-Synchronisation & Deduplizierung (`ris_sync_laws`)**:
+  - Unterstützt das gleichzeitige Synchronisieren einzelner Paragrafen mehrerer Gesetze (`laws: [...]`) und ganzer Normen.
+  - Identische Dokumentnummern / `sourceId`s innerhalb eines Batches werden dedupliziert (`deduplicated` Metrik).
+- **5-Schichten-Antwortformat**:
+  - Saubere Trennung von A) Normwortlaut, B) Metadaten & Verification Receipt, C) Verständliche Zusammenfassung, D) Judikatur & Leitsätze (Sekundärkontext), E) Schlussfolgerung & Rechtsunsicherheit.
+- **Ausschließliche Primärrechtsquelle**:
+  - RIS ist alleinige Primärquelle; Sekundärquellen (JUSLINE etc.) dürfen einen fehlenden RIS-Beleg niemals ersetzen.
+- **Umfassende Regressionstests**:
+  - RIS-503 und unsichere/fremde URLs
+  - Tagesaktuelle vs. historische Fassungen (Stichtagsvalidierung)
+  - MRG § 29 ab 01.01.2026 mit Receipt und 5-Schichten-Schema
+  - MieWeG §§ 1, 2 und 4 (Batch Sync)
+  - KSchG §§ 1 und 6 (Batch Sync mit SHA-256)
+  - ABGB §§ 1096, 1111, 1117 und 1118 (Batch Sync)
+  - HeizKG-Gesamtfassung (`representation: "whole_law"`)
+  - Batch-Deduplizierung identischer Dokumentnummern
+
 ## 0.14.0 - Kurzzitate-Auflösung & Offline-/Sandbox-CLI
 - **Zuverlässige Kurzzitate-Auflösung**: `ris_search` löst nun gängige Kurzzitate wie „MRG § 29“, „§ 29 MRG“, „MRG 29“, „EStG § 33“, „WEG § 16“, „Art 140 B-VG“ etc. in allen Schreibweisen zuverlässig auf.
 - **Anführungszeichen-Bereinigung**: Typografische Anführungszeichen (`„...“`, `”...“`, `«...»`, `"..."`, `'...'`) werden im Query-Resolver vor der Mustererkennung bereinigt.

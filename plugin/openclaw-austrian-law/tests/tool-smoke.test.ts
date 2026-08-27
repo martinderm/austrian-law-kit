@@ -15,6 +15,8 @@ import { juslineListDecisionsStub } from "../src/tools/jusline_list_decisions.ts
 import { risFetchSegmentStub } from "../src/tools/ris_fetch_segment.ts";
 import { risFetchWholeLawStub } from "../src/tools/ris_fetch_whole_law.ts";
 import { risSearchStub } from "../src/tools/ris_search.ts";
+import { risSyncLawsStub } from "../src/tools/ris_sync_laws.ts";
+import { formatLegalReviewMarkdown } from "../src/tools/format-result.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1386,6 +1388,317 @@ await test("cache runtime prefers configured cacheRoot over the calling agent wo
 
   rmSync(workspaceDir, { recursive: true, force: true });
   rmSync(configuredCacheRoot, { recursive: true, force: true });
+});
+
+await test("ris_fetch_segment and ris_fetch_whole_law handle RIS-503 and reject unsafe URLs", async () => {
+  // Test 503 handling
+  await withMockedFetch(async () => new Response("Service Unavailable", { status: 503 }), async () => {
+    const res503 = await risFetchSegmentStub({ sourceId: "NOR12082462", refresh: true });
+    assert.equal(res503.success, false);
+    if (res503.success) return;
+    assert.equal(res503.error.code, "UPSTREAM_UNAVAILABLE");
+    assert.equal(res503.error.retryable, true);
+    assert.ok(res503.error.message.includes("503"));
+  });
+
+  // Test unsafe URL on segment
+  const resUnsafeSegment = await risFetchSegmentStub({ contentUrl: "http://malicious-site.com/fake-norm" });
+  assert.equal(resUnsafeSegment.success, false);
+  if (!resUnsafeSegment.success) {
+    assert.equal(resUnsafeSegment.error.code, "VALIDATION_ERROR");
+    assert.ok(resUnsafeSegment.error.message.includes("unsafe URL"));
+  }
+
+  // Test unsafe URL on whole law
+  const resUnsafeWhole = await risFetchWholeLawStub({ wholeLawUrl: "https://phishing-ris.at/NOR123" });
+  assert.equal(resUnsafeWhole.success, false);
+  if (!resUnsafeWhole.success) {
+    assert.equal(resUnsafeWhole.error.code, "VALIDATION_ERROR");
+    assert.ok(resUnsafeWhole.error.message.includes("unsafe URL"));
+  }
+});
+
+await test("Stichtag validation differentiates current, historical, and mismatched versions", async () => {
+  const historicalHtml = `<!doctype html><html><head><title>Test Norm</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2020</div>
+    <div class="contentBlock"><h1 class="Titel">Außerkrafttretensdatum</h1>31.12.2024</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>BGBl. I Nr. 10/2020</div>
+    <div class="documentContent"><p>Dies ist ein historischer Paragrafentext.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    // Valid for historical Stichtag 2022-06-01
+    await withMockedFetch(async () => new Response(historicalHtml, { status: 200 }), async () => {
+      const res = await risFetchSegmentStub({ sourceId: "NOR99999001", stichtag: "2022-06-01", refresh: true });
+      assert.equal(res.success, true);
+      if (!res.success) return;
+      assert.equal(res.data.receipt?.verification_status, "historical_valid_for_stichtag");
+      assert.equal(res.data.receipt?.effective_from, "2020-01-01");
+      assert.equal(res.data.receipt?.effective_to, "2024-12-31");
+    });
+
+    // Mismatched for Stichtag 2026-08-27 (repealed before Stichtag)
+    await withMockedFetch(async () => new Response(historicalHtml, { status: 200 }), async () => {
+      const res = await risFetchSegmentStub({ sourceId: "NOR99999001", stichtag: "2026-08-27", refresh: true });
+      assert.equal(res.success, true);
+      if (!res.success) return;
+      assert.equal(res.data.receipt?.verification_status, "stichtag_mismatch");
+      assert.ok(res.data.receipt?.warning?.includes("stichtag_mismatch"));
+    });
+
+    // Mismatched for Stichtag 2015-01-01 (not yet in force)
+    await withMockedFetch(async () => new Response(historicalHtml, { status: 200 }), async () => {
+      const res = await risFetchSegmentStub({ sourceId: "NOR99999001", stichtag: "2015-01-01", refresh: true });
+      assert.equal(res.success, true);
+      if (!res.success) return;
+      assert.equal(res.data.receipt?.verification_status, "stichtag_mismatch");
+      assert.ok(res.data.receipt?.warning?.includes("not yet in force"));
+    });
+  });
+});
+
+await test("ris_fetch_segment resolves MRG § 29 ab 1.1.2026 with Verification Receipt and 5-layer response", async () => {
+  const mrgP29Html = `<!doctype html><html><head><title>MRG § 29 - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>MRG</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 29</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>BGBl. Nr. 520/1981 zuletzt geändert durch BGBl. I Nr. 114/2025</div>
+    <div class="documentContent">
+      <h4>Auflösung und Erneuerung des Mietvertrages</h4>
+      <p>(1) Der Mietvertrag wird aufgelöst durch:</p>
+      <p>1. den Untergang des Mietgegenstandes;</p>
+      <p>2. den Ablauf der Zeit, für die er eingegangen wurde;</p>
+      <p>3. die Kündigung;</p>
+    </div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(mrgP29Html, { status: 200 }), async () => {
+      // Current date fetch (default Stichtag)
+      const result = await risFetchSegmentStub({ sourceId: "NOR40273695", refresh: true });
+      assert.equal(result.success, true);
+      if (!result.success) return;
+
+      const artifact = result.data.artifact;
+      const receipt = result.data.receipt;
+      assert.ok(receipt);
+      assert.equal(receipt.dokumentnummer, "NOR40273695");
+      assert.equal(receipt.effective_from, "2026-01-01");
+      assert.equal(receipt.paragraf, "§ 29");
+      assert.equal(receipt.verification_status, "verified_current");
+      assert.equal(receipt.retrieval_method, "direct_source_id");
+      assert.equal(receipt.content_sha256.length, 64);
+      assert.ok(receipt.kundmachungsorgan?.includes("BGBl. I Nr. 114/2025"));
+
+      // Explicit past stichtag
+      const resultPast = await risFetchSegmentStub({ sourceId: "NOR40273695", stichtag: "2026-01-01", refresh: true });
+      assert.equal(resultPast.success, true);
+      if (resultPast.success) {
+        assert.equal(resultPast.data.receipt?.verification_status, "historical_valid_for_stichtag");
+      }
+
+      // Validate 5-layer format helper
+      const reviewMarkdown = formatLegalReviewMarkdown({
+        norm_text: artifact.content,
+        metadata: {
+          title: artifact.frontmatter.title,
+          stable_id: artifact.stable_id,
+          source_id: artifact.frontmatter.source_id,
+          verification_receipt: receipt,
+        },
+        paraphrase: "§ 29 MRG regelt die Beendigung von Mietverträgen (Zeitablauf, Kündigung, Untergang).",
+        judicature: [
+          {
+            court: "OGH",
+            case_number: "5 Ob 123/24a",
+            title: "Befristungserfordernis im Teilanwendungsbereich des MRG",
+            decision_date: "2024-11-12",
+            summary: "Schriftformgebot bei Wohnungsmietverträgen ist zwingend.",
+          },
+        ],
+        conclusion: "Die Befristung bedarf der unbedingten Schriftform; mündliche Verlängerungen begründen ein unbefristetes Mietverhältnis.",
+      });
+
+      assert.ok(reviewMarkdown.includes("### A) Normwortlaut"));
+      assert.ok(reviewMarkdown.includes("### B) Metadaten & Verification Receipt"));
+      assert.ok(reviewMarkdown.includes("### C) Verständliche Zusammenfassung"));
+      assert.ok(reviewMarkdown.includes("### D) Judikatur & Leitsätze"));
+      assert.ok(reviewMarkdown.includes("### E) Schlussfolgerung"));
+      assert.ok(reviewMarkdown.includes(receipt.content_sha256));
+    });
+  });
+});
+
+await test("ris_sync_laws batch syncs MieWeG §§ 1, 2 und 4", async () => {
+  const makeSegmentHtml = (pNum: number) => `<!doctype html><html><head><title>MieWeG § ${pNum} - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Mieten-Wertsicherungs-Begrenzungsgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>MieWeG</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ ${pNum}</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2024</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>BGBl. I Nr. 155/2023</div>
+    <div class="documentContent"><p>Text zu MieWeG Paragraph ${pNum}.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const urlStr = String(input);
+      if (urlStr.includes("NOR_MIEWEG_P1")) return new Response(makeSegmentHtml(1), { status: 200 });
+      if (urlStr.includes("NOR_MIEWEG_P2")) return new Response(makeSegmentHtml(2), { status: 200 });
+      if (urlStr.includes("NOR_MIEWEG_P4")) return new Response(makeSegmentHtml(4), { status: 200 });
+      return new Response(makeSegmentHtml(1), { status: 200 });
+    }, async () => {
+      const result = await risSyncLawsStub({
+        laws: [
+          { sourceId: "NOR_MIEWEG_P1", paragraph: "§ 1" },
+          { sourceId: "NOR_MIEWEG_P2", paragraph: "§ 2" },
+          { sourceId: "NOR_MIEWEG_P4", paragraph: "§ 4" },
+        ],
+      });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.total, 3);
+      assert.equal(result.data.synced, 3);
+      assert.equal(result.data.failed, 0);
+      assert.equal(result.data.laws.length, 3);
+      assert.ok(result.data.laws[0]?.receipt?.content_sha256);
+      assert.ok(result.data.laws[1]?.receipt?.content_sha256);
+      assert.ok(result.data.laws[2]?.receipt?.content_sha256);
+    });
+  });
+});
+
+await test("ris_sync_laws batch syncs KSchG § 1 und § 6", async () => {
+  const makeKschgHtml = (pNum: number) => `<!doctype html><html><head><title>KSchG § ${pNum} - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Konsumentenschutzgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>KSchG</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ ${pNum}</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.10.1979</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>BGBl. Nr. 140/1979</div>
+    <div class="documentContent"><p>KSchG Paragraph ${pNum} Inhalt.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const urlStr = String(input);
+      if (urlStr.includes("NOR_KSCHG_P1")) return new Response(makeKschgHtml(1), { status: 200 });
+      if (urlStr.includes("NOR_KSCHG_P6")) return new Response(makeKschgHtml(6), { status: 200 });
+      return new Response(makeKschgHtml(1), { status: 200 });
+    }, async () => {
+      const result = await risSyncLawsStub({
+        laws: [
+          { sourceId: "NOR_KSCHG_P1", paragraph: "§ 1" },
+          { sourceId: "NOR_KSCHG_P6", paragraph: "§ 6" },
+        ],
+      });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.total, 2);
+      assert.equal(result.data.synced, 2);
+      assert.equal(result.data.failed, 0);
+      assert.equal(result.data.laws.length, 2);
+      assert.equal(result.data.laws[0]?.receipt?.dokumentnummer, "NOR_KSCHG_P1");
+      assert.equal(result.data.laws[1]?.receipt?.dokumentnummer, "NOR_KSCHG_P6");
+    });
+  });
+});
+
+await test("ris_sync_laws batch syncs ABGB §§ 1096, 1111, 1117 und 1118", async () => {
+  const makeAbgbHtml = (pNum: number) => `<!doctype html><html><head><title>ABGB § ${pNum} - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Allgemeines bürgerliches Gesetzbuch</div>
+    <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>ABGB</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ ${pNum}</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.1812</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>JGS Nr. 946/1811</div>
+    <div class="documentContent"><p>ABGB Bestandrecht Paragraph ${pNum}.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const urlStr = String(input);
+      const match = urlStr.match(/NOR_ABGB_P(\d+)/);
+      const pNum = match ? Number(match[1]) : 1096;
+      return new Response(makeAbgbHtml(pNum), { status: 200 });
+    }, async () => {
+      const result = await risSyncLawsStub({
+        laws: [
+          { sourceId: "NOR_ABGB_P1096", paragraph: "§ 1096" },
+          { sourceId: "NOR_ABGB_P1111", paragraph: "§ 1111" },
+          { sourceId: "NOR_ABGB_P1117", paragraph: "§ 1117" },
+          { sourceId: "NOR_ABGB_P1118", paragraph: "§ 1118" },
+        ],
+      });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.total, 4);
+      assert.equal(result.data.synced, 4);
+      assert.equal(result.data.failed, 0);
+      assert.equal(result.data.laws.length, 4);
+      assert.equal(result.data.laws[0]?.receipt?.paragraf, "§ 1096");
+      assert.equal(result.data.laws[3]?.receipt?.paragraf, "§ 1118");
+    });
+  });
+});
+
+await test("ris_fetch_whole_law fetches HeizKG-Gesamtfassung with whole_law representation", async () => {
+  const heizKgHtml = `<!doctype html><html><head><title>HeizKG - Gesamte Rechtsvorschrift - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Heizkostenabrechnungsgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Gesamte Rechtsvorschrift für</h1>Heizkostenabrechnungsgesetz, Fassung vom 27.08.2026</div>
+    <div class="documentContent">
+      <h2>Heizkostenabrechnungsgesetz (HeizKG)</h2>
+      <p>§ 1. Dieses Bundesgesetz regelt die Aufteilung und Abrechnung der Kosten der Wärme- und Warmwasserversorgung.</p>
+    </div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(heizKgHtml, { status: 200 }), async () => {
+      const result = await risFetchWholeLawStub({
+        wholeLawUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002894",
+        refresh: true,
+      });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.artifact.frontmatter.doc_type, "norm_document");
+      assert.equal(result.data.artifact.frontmatter.representation, "whole_law");
+      assert.equal(result.data.receipt?.paragraf, "Gesamte Rechtsvorschrift");
+      assert.equal(result.data.receipt?.content_sha256.length, 64);
+    });
+  });
+});
+
+await test("ris_sync_laws deduplicates duplicate document numbers in batch", async () => {
+  const sampleHtml = fixture("fixtures/ris/segment-detail-sample.html");
+
+  await withTempCacheRoot(async () => {
+    let fetchCount = 0;
+    await withMockedFetch(async () => {
+      fetchCount++;
+      return new Response(sampleHtml, { status: 200 });
+    }, async () => {
+      const result = await risSyncLawsStub({
+        laws: [
+          { segmentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR12082462", paragraph: "§ 1" },
+          { segmentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR12082462", paragraph: "§ 1" },
+        ],
+      });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.total, 2);
+      assert.equal(result.data.deduplicated, 1);
+      assert.equal(result.data.laws.length, 2);
+      assert.equal(result.data.laws[0]?.ok, true);
+      assert.equal(result.data.laws[1]?.ok, true);
+      assert.equal(result.data.laws[1]?.cached, true);
+      assert.equal(fetchCount, 1);
+    });
+  });
 });
 
 console.log("tool smoke tests passed");

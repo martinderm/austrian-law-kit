@@ -7,14 +7,16 @@ import {
   buildRisSegmentUrl,
   extractSourceIdFromRisUrl,
   normalizeStableIdFromSourceId,
+  validateSafeRisUrl,
 } from "../ris/segment-url.js";
+import { buildVerificationReceipt } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
   buildRefreshMeta,
   resolveSourceIdFromInputOrUrl,
 } from "./ris-fetch-common.js";
-import type { CachedArtifact, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
+import type { CachedArtifact, RetrievalMethod, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
 
 function buildDisplayTitle(params: {
   segmentRef?: string;
@@ -52,9 +54,18 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
+  const initialRetrievalMethod: RetrievalMethod = input.sourceUrl || input.contentUrl
+    ? ((input.sourceUrl?.includes("/eli/") || input.contentUrl?.includes("/eli/")) ? "eli_url" : "norm_document_url")
+    : "direct_source_id";
+
   let sourceUrl: string;
   try {
-    sourceUrl = input.contentUrl?.trim() || buildRisSegmentUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    if (input.contentUrl?.trim()) {
+      validateSafeRisUrl(input.contentUrl.trim());
+      sourceUrl = input.contentUrl.trim();
+    } else {
+      sourceUrl = buildRisSegmentUrl({ sourceId: input.sourceId, sourceUrl: input.sourceUrl });
+    }
   } catch (error) {
     return {
       success: false,
@@ -88,9 +99,28 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     ? { hit: false, artifact: undefined, warning: undefined }
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
   if (cacheRead.hit && cacheRead.artifact) {
+    const receipt = buildVerificationReceipt({
+      sourceId,
+      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined,
+      dokumentnummer: sourceId,
+      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : undefined,
+      paragraf: cacheRead.artifact.frontmatter.segment_ref,
+      consolidatedAsOf: cacheRead.artifact.frontmatter.effective_date,
+      effectiveFrom: cacheRead.artifact.frontmatter.effective_date,
+      effectiveTo: cacheRead.artifact.frontmatter.repealed_date,
+      kundmachungsorgan: cacheRead.artifact.frontmatter.promulgation,
+      content: cacheRead.artifact.content,
+      retrievalMethod: "cache_hit",
+      stichtag: input.stichtag,
+      normStatus: cacheRead.artifact.frontmatter.norm_status,
+    });
+    cacheRead.artifact.metadata = {
+      ...(cacheRead.artifact.metadata ?? {}),
+      verification_receipt: receipt,
+    };
     return {
       success: true,
-      data: { artifact: cacheRead.artifact },
+      data: { artifact: cacheRead.artifact, receipt },
       meta: buildCacheHitMeta("ris_fetch_segment"),
     };
   }
@@ -138,11 +168,14 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   }
 
   if (!response.ok) {
+    const is503 = response.status === 503;
     return {
       success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
-        message: `RIS segment request returned HTTP ${response.status}`,
+        message: is503
+          ? "RIS upstream temporarily unavailable (HTTP 503)"
+          : `RIS segment request returned HTTP ${response.status}`,
         details: { status: response.status, source_url: effectiveSourceUrl },
         retryable: response.status >= 500,
       },
@@ -190,6 +223,22 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       fallbackTitle: parsed.title,
     });
 
+    const receipt = buildVerificationReceipt({
+      sourceId,
+      gesetzesnummer: apiLookup?.lawId,
+      dokumentnummer: sourceId,
+      eli: apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined),
+      paragraf: parsed.segmentRef,
+      consolidatedAsOf: parsed.effectiveDate,
+      effectiveFrom: parsed.effectiveDate,
+      effectiveTo: parsed.repealedDate,
+      kundmachungsorgan: parsed.promulgation,
+      content: parsed.content,
+      retrievalMethod: initialRetrievalMethod,
+      stichtag: input.stichtag,
+      normStatus: parsed.normStatus,
+    });
+
     const artifact: CachedArtifact = {
       stable_id: stableId,
       frontmatter: {
@@ -218,6 +267,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       },
       content: parsed.content,
       metadata: {
+        verification_receipt: receipt,
         ris_extracted: {
           display_title: displayTitle,
           law_slug: parsed.lawSlug ?? apiLookup?.lawAbbreviation?.toLowerCase(),
@@ -244,25 +294,33 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     const warnings = [
       ...buildCacheWarnings({ cacheRead, cacheWrite }),
       ...(apiLookupWarning ? [apiLookupWarning] : []),
+      ...(receipt.warning ? [receipt.warning] : []),
     ];
     const notices = [
       ...(apiLookup?.xmlContentUrl ? ["api_lookup_used: preferred xml_content_url for segment fetch"]
         : apiLookup?.contentUrl ? ["api_lookup_used: preferred content_url for segment fetch"]
         : []),
+      `retrieval_method: ${receipt.retrieval_method}`,
+      `verification_status: ${receipt.verification_status}`,
+    ];
+
+    const refreshMeta = refresh ? buildRefreshMeta("ris_fetch_segment") : undefined;
+    const combinedNotices = [
+      ...(refreshMeta?.notices ?? []),
+      ...notices,
     ];
 
     return {
       success: true,
       data: {
         artifact,
+        receipt,
       },
       meta: {
-        ...(refresh ? buildRefreshMeta("ris_fetch_segment") : {
-          tool: "ris_fetch_segment",
-          source: "ris" as const,
-          timestamp: new Date().toISOString(),
-        }),
-        ...(notices.length > 0 ? { notices } : {}),
+        tool: "ris_fetch_segment",
+        source: "ris" as const,
+        timestamp: new Date().toISOString(),
+        ...(combinedNotices.length > 0 ? { notices: combinedNotices } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
       },
     };

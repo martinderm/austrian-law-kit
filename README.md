@@ -31,27 +31,21 @@ Wichtig zur Quellnutzung:
 
 ## Scope (aktueller Stand)
 
-Enhalten sind:
+Enthalten sind:
 - Dokumentations- und Vertragsbasis
-- Skill-Richtlinien (`SKILL.md`) im Root-Verzeichnis
-- produktive RIS-MVP-Tools:
-  - `ris_search`
-  - `ris_fetch_segment`
-  - `ris_fetch_whole_law`
-- produktive JUSLINE-MVP-Funktionen:
-  - `jusline_fetch_discussions` (Sekundärquelle)
-  - `jusline_list_decisions` (Sekundärquelle)
-- lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
+- Skill-Richtlinien (`SKILL.md`) im Root-Verzeichnis mit verbindlichem Capability-Check und 5-Schichten-Antwortformat
+- Produktive RIS-Tools für reproduzierbare Primärrechtsprüfung:
+  - `ris_fetch_segment` (Einzelner Paragraf mit `VerificationReceipt`, Stichtagsprüfung, ELI-/URL-Safety)
+  - `ris_fetch_whole_law` (Gesamtfassung mit `representation: "whole_law"` und Receipt)
+  - `ris_sync_laws` (Batch-Synchronisation einzelner Paragrafen mehrerer Gesetze & Gesamtnormen mit Deduplizierung)
+  - `ris_search` (Discovery-Hilfe / Notbehelf)
+- Maschinenlesbarer `VerificationReceipt` (Dokumentnummer, ELI, SHA-256, Inkrafttreten, Stichtagsabgleich, Abrufpfad)
+- Produktive JUSLINE-MVP-Funktionen (ausschließlich als opt-in Sekundärquelle):
+  - `jusline_fetch_discussions`
+  - `jusline_list_decisions`
+- Lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
 - JUSLINE-Query-Index für Cache-Reuse über `query + kind + limit` (TTL 24h, `refresh=true` als Force-Reload)
-- optionale JUSLINE-Detail-Previews für Kommentare und Entscheidungen mit angereicherten Metadaten/Artefakten, wenn die Quelle sie hergibt
-- agentbezogene Cache-Ableitung über den Workspace des aufrufenden Agenten (mit optionalem `cacheRoot`-Override)
-- Tests, Fixtures und Beispiel-Config
-- kleine ausführbare Parser-Smoke-Tests für die MVP-Parser
-- kleine ausführbare Tool-Smoke-Tests für die MVP-Tool-Layer
-- zusätzliche RIS-Live-Fixtures für reale Normdokument- und Suchstrukturen
-- reichere RIS-Segment-Artefakte mit Gesetzes-/Normmetadaten im Frontmatter und JSON
-- optionales `refresh`-Flag für Fetch-Tools, um Cache-Wiederverwendung gezielt zu überspringen
-- optionale Templates für spätere Memory-Initialisierung
+- Umfassende Regressionstests für RIS-503, unsafe URLs, Stichtage, MRG § 29 ab 1.1.2026, MieWeG §§ 1, 2, 4, KSchG §§ 1, 6, ABGB §§ 1096, 1111, 1117, 1118 und HeizKG-Gesamtfassung.
 
 Bewusst noch eingeschränkt:
 - JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle

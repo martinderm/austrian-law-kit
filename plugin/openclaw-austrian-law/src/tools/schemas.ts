@@ -20,6 +20,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
       municipality: { type: "string" },
       district: { type: "string" },
       authentic: { type: "boolean" },
+      stichtag: { type: "string" },
     },
     required: ["query"],
   },
@@ -32,6 +33,7 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
       contentUrl: { type: "string" },
       segmentRef: { type: "string" },
       refresh: { type: "boolean" },
+      stichtag: { type: "string" },
     },
   },
   ris_fetch_whole_law: {
@@ -45,12 +47,14 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
       scope: { type: "string", enum: ["bund", "land", "municipal"] },
       state: { type: "string", enum: ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"] },
       refresh: { type: "boolean" },
+      stichtag: { type: "string" },
     },
   },
   ris_sync_laws: {
     type: "object",
     additionalProperties: false,
     properties: {
+      stichtag: { type: "string" },
       laws: {
         type: "array",
         items: {
@@ -59,9 +63,13 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, ToolInputSchema> = {
             query: { type: "string" },
             sourceId: { type: "string" },
             wholeLawUrl: { type: "string" },
+            segmentUrl: { type: "string" },
+            paragraph: { type: "string" },
+            sectionRef: { type: "string" },
             scope: { type: "string", enum: ["bund", "land", "municipal"] },
             state: { type: "string", enum: ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"] },
             refresh: { type: "boolean" },
+            stichtag: { type: "string" },
           },
         },
       },
