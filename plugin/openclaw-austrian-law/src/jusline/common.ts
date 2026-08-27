@@ -103,14 +103,30 @@ export function deriveContextFromQuery(query: string): DerivedContext {
   };
 }
 
-export function takeTextAfterStrongLabel(html: string, label: string): string | undefined {
-  const regex = new RegExp(`<p><strong>${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/strong><\\/p>\\s*([\\s\\S]*?)(?=<div>\\s*<p><strong>|<\\/div>\\s*<div>\\s*<p><strong>|<\\/div>\\s*<\\/div>)`, "i");
-  const match = html.match(regex);
-  const text = match?.[1] ? stripTags(match[1]) : undefined;
-  return text || undefined;
+export function takeHtmlAfterStrongLabel(html: string, label: string): string | undefined {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  
+  // 1. Original strict JUSLINE pattern
+  const originalRegex = new RegExp(`<p><strong>${escaped}<\\/strong><\\/p>\\s*([\\s\\S]*?)(?=<div>\\s*<p><strong>|<\\/div>\\s*<div>\\s*<p><strong>|<\\/div>\\s*<\\/div>)`, "i");
+  const origMatch = html.match(originalRegex);
+  if (origMatch?.[1]?.trim()) return origMatch[1].trim();
+
+  // 2. Heading or paragraph strong label with colon or whitespace
+  const headingRegex = new RegExp(`<(?:p|h[2-6]|dt|div)\\b[^>]*>\\s*(?:<strong[^>]*>)?\\s*${escaped}:?\\s*(?:<\\/strong>)?\\s*<\\/(?:p|h[2-6]|dt|div)>\\s*([\\s\\S]*?)(?=<p\\b[^>]*>\\s*<strong|<h[2-6]\\b|<dt\\b|<div\\s+class=["'][^"']*(?:card|panel|list-group|container)|$)`, "i");
+  const headingMatch = html.match(headingRegex);
+  if (headingMatch?.[1]?.trim()) return headingMatch[1].trim();
+
+  // 3. Inline strong label
+  const inlineRegex = new RegExp(`<strong[^>]*>\\s*${escaped}:?\\s*<\\/strong>\\s*:?\\s*([\\s\\S]*?)(?=<strong\\b|<\\/p>|<\\/div>|$)`, "i");
+  const inlineMatch = html.match(inlineRegex);
+  if (inlineMatch?.[1]?.trim()) return inlineMatch[1].trim();
+
+  return undefined;
 }
 
-export function takeHtmlAfterStrongLabel(html: string, label: string): string | undefined {
-  const regex = new RegExp(`<p><strong>${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/strong><\\/p>\\s*([\\s\\S]*?)(?=<div>\\s*<p><strong>|<\\/div>\\s*<div>\\s*<p><strong>|<\\/div>\\s*<\\/div>)`, "i");
-  return html.match(regex)?.[1]?.trim() || undefined;
+export function takeTextAfterStrongLabel(html: string, label: string): string | undefined {
+  const rawHtml = takeHtmlAfterStrongLabel(html, label);
+  if (!rawHtml) return undefined;
+  const text = stripTags(rawHtml);
+  return text || undefined;
 }

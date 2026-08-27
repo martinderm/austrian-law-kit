@@ -2,6 +2,12 @@
 
 Stand: 2026-08-27 (laufend aktualisiert)
 
+## Kurzstand 2026-08-27 (v0.17.0 — JUSLINE Detail-Extraktion für Gerichtsentscheidungen)
+- **Strukturierte Metadaten-Extraktion**: Automatische Erkennung von gerichtlichen Geschäftszahlen (`case_number` / `geschaeftszahl`) für OGH, VwGH, VfGH, BVwG, LVwG und Instanzgerichte sowie OGH-Rechtssatznummern (`RS...`), ECLI und Fundstellen-Zitaten (`SZ`, `EvBl`, `wobl`, `immolex`, `ecolex`, `RdW`, `Zak`, `JBl`, `ÖJZ`, `ZVR`, `MietSlg`).
+- **Flexible HTML-Label-Extraktion**: `takeHtmlAfterStrongLabel` und `takeTextAfterStrongLabel` in `src/jusline/common.ts` unterstützen Überschriften, Definitionslisten und Inline-Labels.
+- **Gliederungsabschnitte & Frontmatter**: Decision-Artefakte trennen `### Normen`, `### Rechtssatz`, `### Leitsatz`, `### Spruch`, `### Fundstellen`, `### Entscheidungstexte`, `### Verfahrensgang` und `### Metadaten`.
+- **Test-Abdeckung**: 6 Testsuiten mit insgesamt 72 Tests zu 100% grün (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
+
 ## Kurzstand 2026-08-27 (v0.16.0 — Kanonische RIS-Gesetzesnummern-Tabelle & Fail-Closed RIS-Verifikation)
 - **Kanonische Gesetzesnummern-Tabelle**: Vorindizierte $O(1)$-Registry (`src/ris/canonical-laws.ts`) mit über 50 verifizierten Kern-Bundesgesetzen (ABGB, MRG, WEG, WGG, HeizKG, MieWeG, KSchG, FAGG, VRUG, VKrG, HIKrG, UGB, GmbHG, AktG, GewO, EStG, UStG, BAO, GebG, GrEStG, B-VG, AVG, VStG, VVG, VwGVG, VwGG, VfGG, SPG, DSG, StGB, StPO, StVO, KFG, ZPO, JN, EO, IO, ASVG, AngG, ArbVG, AZG, ARG, UrlG, DHG, UWG, KartG, UrhG, PatG, MSchG, BVergG).
 - **API-Suchbeschleunigung**: Zitate und Freitextsuchen werden automatisch mit der `Gesetzesnummer` angereichert und in `searchBundesrechtApi` prioritär abgefragt (`law_id+paragraph_field`), wodurch Treffer unmittelbar auf Seite 1 gefunden werden.

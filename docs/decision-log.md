@@ -69,3 +69,7 @@
 ## 2026-08-27 — Kanonische RIS-Gesetzesnummern-Tabelle für Bundesnormen
 **Entscheidung:** Einführung einer vorindizierten $O(1)$-Registry (`src/ris/canonical-laws.ts`) für über 50 Kern-Bundesgesetze der österreichischen Rechtsordnung.
 **Warum:** Ermöglicht deterministische Kurzzitat- und Gesamtfassungs-Auflösung ohne vorgelagerte Suchschleifen sowie priorisierte API-Suchen via `Gesetzesnummer` (`law_id+paragraph_field`), wodurch Treffer unmittelbar auf Seite 1 gefunden werden.
+
+## 2026-08-27 — Strukturierte Metadaten-Extraktion für JUSLINE-Gerichtsentscheidungen
+**Entscheidung:** Erweiterung des JUSLINE-Parsers und der Decision-Preview-Artefakte um strukturierte Extraktoren für gerichtliche Geschäftszahlen (OGH, VwGH, VfGH, BVwG, LVwG), OGH-Rechtssatznummern (`RS...`), ECLI, Fundstellenzitate und differenzierte Textabschnitte (`rechtssatz`, `leitsatz`, `spruch`, `vorinstanzen`).
+**Warum:** Erleichtert Agenten die Verknüpfung von Sekundärjudikatur mit dem RIS-Justiz-Datenbestand und ermöglicht strukturierte Zitierweisen in Rechtsgutachten und Schriftsätzen.

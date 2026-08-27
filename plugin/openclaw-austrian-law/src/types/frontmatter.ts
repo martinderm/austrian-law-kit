@@ -32,6 +32,11 @@ export interface FrontmatterBase {
   segment_ref?: string;
   norm_ref?: string;
   decision_ref?: string;
+  case_number?: string;
+  rechtssatznummer?: string;
+  ecli?: string;
+  fundstellen?: string[];
+  norms?: string[];
   court?: string;
   law_title?: string;
   law_abbreviation?: string;

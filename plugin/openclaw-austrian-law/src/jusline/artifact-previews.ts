@@ -127,6 +127,11 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
       continue;
     }
 
+    const effectiveCourt = detail.court ?? entry.court;
+    const effectiveGz = detail.geschaeftszahl ?? entry.geschaeftszahl;
+    const effectiveDate = detail.decision_date ?? parsedDate.iso;
+    const effectiveDateRaw = detail.decision_date_raw ?? parsedDate.raw ?? entry.published_date_raw;
+
     const contentLines: string[] = [
       `# ${entry.title}`,
       "",
@@ -137,9 +142,11 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
     if (context.law_slug) contentLines.push(`- Norm: ${context.law_slug}`);
     if (context.segment_ref) contentLines.push(`- Segment: ${context.segment_ref}`);
     contentLines.push(`- JUSLINE-ID: ${entry.source_id}`);
+    if (effectiveGz) contentLines.push(`- Geschäftszahl: ${effectiveGz}`);
+    if (detail.rechtssatznummer) contentLines.push(`- Rechtssatznummer: ${detail.rechtssatznummer}`);
+    if (effectiveCourt) contentLines.push(`- Gericht: ${effectiveCourt}`);
     if (entry.document_type) contentLines.push(`- Dokumenttyp: ${entry.document_type}`);
-    if (entry.court) contentLines.push(`- Gericht: ${entry.court}`);
-    if (entry.published_date_raw) contentLines.push(`- Datum: ${entry.published_date_raw}`);
+    if (effectiveDateRaw) contentLines.push(`- Datum: ${effectiveDateRaw}`);
 
     if (detail.norms && detail.norms.length > 0) {
       contentLines.push("", "### Normen", "");
@@ -147,12 +154,28 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
     }
     if (detail.rechtssatz) {
       contentLines.push("", "### Rechtssatz", "", detail.rechtssatz);
+    } else if (detail.leitsatz) {
+      contentLines.push("", "### Leitsatz", "", detail.leitsatz);
     } else if (entry.teaser) {
       contentLines.push("", "### Leitsatz / Vorschau", "", `> ${entry.teaser}`);
+    }
+    if (detail.spruch) {
+      contentLines.push("", "### Spruch", "", detail.spruch);
+    }
+    if (detail.fundstellen && detail.fundstellen.length > 0) {
+      contentLines.push("", "### Fundstellen", "");
+      for (const f of detail.fundstellen) contentLines.push(`- ${f}`);
     }
     if (detail.entscheidungstexte && detail.entscheidungstexte.length > 0) {
       contentLines.push("", "### Entscheidungstexte", "");
       for (const text of detail.entscheidungstexte) contentLines.push(`- ${text}`);
+    }
+    if (detail.vorinstanzen) {
+      contentLines.push("", "### Verfahrensgang", "", detail.vorinstanzen);
+    }
+    if (detail.schlagworte && detail.schlagworte.length > 0) {
+      contentLines.push("", "### Schlagworte", "");
+      for (const s of detail.schlagworte) contentLines.push(`- ${s}`);
     }
     if (detail.ecli || detail.updated_at) {
       contentLines.push("", "### Metadaten", "");
@@ -162,8 +185,13 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
 
     const hasSubstantiveDetail = Boolean(
       detail.rechtssatz
+      || detail.leitsatz
+      || detail.spruch
+      || detail.geschaeftszahl
+      || detail.rechtssatznummer
       || (detail.entscheidungstexte && detail.entscheidungstexte.length > 0)
       || (detail.norms && detail.norms.length > 0)
+      || (detail.fundstellen && detail.fundstellen.length > 0)
       || detail.ecli,
     );
 
@@ -187,11 +215,15 @@ async function buildDecisionArtifactsFromListHit(hit: SearchHit, input: LiveCase
         law_slug: context.law_slug ?? undefined,
         norm_ref: context.source_path ?? undefined,
         notes: "Sekundärquelle; RIS bleibt für Wortlaut und Metadaten maßgeblich.",
-        ...(parsedDate.iso ? { published_date: parsedDate.iso } : {}),
-        ...(parsedDate.raw ? { published_date_raw: parsedDate.raw } : {}),
-        ...(detail.ecli ? { decision_ref: detail.ecli } : {}),
-        ...(entry.court ? { court: entry.court } : {}),
+        ...(effectiveDate ? { published_date: effectiveDate } : {}),
+        ...(effectiveDateRaw ? { published_date_raw: effectiveDateRaw } : {}),
+        ...(detail.ecli ? { decision_ref: detail.ecli, ecli: detail.ecli } : {}),
+        ...(effectiveGz ? { case_number: effectiveGz } : {}),
+        ...(detail.rechtssatznummer ? { rechtssatznummer: detail.rechtssatznummer } : {}),
+        ...(effectiveCourt ? { court: effectiveCourt } : {}),
         ...(entry.document_type ? { index_label: entry.document_type } : {}),
+        ...(detail.fundstellen && detail.fundstellen.length > 0 ? { fundstellen: detail.fundstellen } : {}),
+        ...(detail.norms && detail.norms.length > 0 ? { norms: detail.norms } : {}),
       },
       content: contentLines.join("\n"),
       metadata: {

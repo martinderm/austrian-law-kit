@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.17.0 - JUSLINE Detail-Extraktion für Gerichtsentscheidungen
+- **Strukturierte Metadaten-Extraktion aus JUSLINE-Entscheidungen (`src/jusline/decision-detail.ts`)**:
+  - **Gerichtliche Geschäftszahl (`case_number` / `geschaeftszahl`)**: Automatische Erkennung und Normalisierung von Geschäftszahlen für alle österreichischen Höchst- und Instanzgerichte (OGH wie `5Ob121/08t`, `1Ob23/15k`, `9Os12/21p`; VwGH wie `Ra 2021/05/0123`; VfGH wie `G 12/2023`, `V 45/2022`, `B 123/2012`; BVwG wie `W123 2123456-1`; LVwG wie `LVwG-AV-123/001-2022`).
+  - **OGH-Rechtssatznummer (`rechtssatznummer`)**: Automatische Extraktion kanonischer RS-Nummern (`RS0012345`) für nahtlose Querbezüge zum RIS-Justiz-Datenbestand.
+  - **Erkennendes Gericht (`court`)**: Strukturierte Erkennung von OGH, VwGH, VfGH, BVwG, LVwG, OLG, LG für ZRS/Strafsachen, BG.
+  - **Entscheidungs- und Spruchdatum**: Robustes Parsing von österreichischen Datumsformaten (`DD.MM.YYYY` und `YYYY/M/D`) mit Konvertierung in ISO `YYYY-MM-DD`.
+  - **ECLI-Extraktion (`ecli`)**: Flexible Erkennung von `ECLI:AT:...` sowohl über JUSLINE-Link-Präfixe als auch über globale ECLI-Muster.
+  - **Fundstellen & Publikationen (`fundstellen`)**: Automatische Erfassung von Zitaten in führenden österreichischen Fachzeitschriften (SZ, EvBl, wobl, immolex, ecolex, RdW, Zak, JBl, ÖJZ, ZVR, MietSlg).
+  - **Gliederungsabschnitte**: Saubere Trennung von `rechtssatz`, `leitsatz`, `spruch`, `vorinstanzen` (Verfahrensgang), `schlagworte` und `entscheidungstexte`.
+- **Flexible HTML-Label-Extraktion (`src/jusline/common.ts`)**:
+  - `takeHtmlAfterStrongLabel` und `takeTextAfterStrongLabel` unterstützen jetzt neben dem Standard-JUSLINE-Muster auch Überschriften (`<h3>`, `<h4>`), Definitionslisten (`<dt>/<dd>`) und Inline-Labels.
+- **Erweitertes Markdown- und Frontmatter-Schema (`src/jusline/artifact-previews.ts` & `src/types/frontmatter.ts`)**:
+  - Decision-Artefakte enthalten im Frontmatter und Markdown-Kopf strukturierte Metadatenfelder (`case_number`, `rechtssatznummer`, `court`, `fundstellen`, `ecli`, `norms`).
+- **Neue Test-Suite (`tests/jusline-decision-detail.test.ts`)**:
+  - 9 spezialisierte Komponententests für Geschäftszahlen-, ECLI-, RS-Nummern-, Datums-, Fundstellen- und Listenparsing (6 Testsuiten mit insgesamt 72 Tests zu 100% grün).
+
 ## 0.16.0 - Kanonische RIS-Gesetzesnummern-Tabelle & Fail-Closed RIS-Verifikation
 - **Kanonische Gesetzesnummern-Tabelle (`src/ris/canonical-laws.ts`)**:
   - Vorindizierte $O(1)$-Registry für über 50 österreichische Kern-Bundesgesetze (ABGB, MRG, WEG, WGG, HeizKG, MieWeG, KSchG, FAGG, VRUG, VKrG, HIKrG, UGB, GmbHG, AktG, GewO, EStG, UStG, BAO, GebG, GrEStG, B-VG, AVG, VStG, VVG, VwGVG, VwGG, VfGG, SPG, DSG, StGB, StPO, StVO, KFG, ZPO, JN, EO, IO, ASVG, AngG, ArbVG, AZG, ARG, UrlG, DHG, UWG, KartG, UrhG, PatG, MSchG, BVergG).

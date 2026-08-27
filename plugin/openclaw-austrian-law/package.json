@@ -15,7 +15,8 @@
     "test:cli-json": "tsx tests/cli-json.test.ts",
     "test:legal-regression": "tsx tests/legal-regression.test.ts",
     "test:canonical-laws": "tsx tests/canonical-laws.test.ts",
-    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke && npm run test:canonical-laws && npm run test:legal-regression && npm run test:cli-json",
+    "test:jusline-detail": "tsx tests/jusline-decision-detail.test.ts",
+    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke && npm run test:canonical-laws && npm run test:jusline-detail && npm run test:legal-regression && npm run test:cli-json",
     "test": "npm run test:smoke"
   },
   "devDependencies": {

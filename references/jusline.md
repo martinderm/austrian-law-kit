@@ -60,16 +60,22 @@ Wichtig:
 
 ## Entscheidungen: mögliche Detailfelder
 
-Bei Entscheidungsdetails können ergänzende Felder auftauchen, wenn die Seite sie tatsächlich hergibt:
-- `document_type`
-- `court`
-- `published_date_raw`
-- `norms`
-- `rechtssatz`
-- `entscheidungstexte`
-- `ecli`
-- `updated_at`
-- `body_markdown`
+Bei Entscheidungsdetails werden folgende Felder aus Listen und Detailseiten strukturiert extrahiert:
+- `case_number` / `geschaeftszahl` (z. B. `5Ob121/08t`, `Ra 2021/05/0123`, `G 12/2023`, `W123 2123456-1`)
+- `rechtssatznummer` (z. B. `RS0012345`)
+- `document_type` (z. B. `Entscheidung`, `Rechtssatz`, `Erkenntnis`)
+- `court` (z. B. `OGH`, `VwGH`, `VfGH`, `BVwG`, `LG für ZRS Wien`)
+- `published_date` (ISO `YYYY-MM-DD`) & `published_date_raw` (`DD.MM.YYYY`)
+- `fundstellen` (z. B. `SZ 2008/123`, `EvBl 2009/45`, `wobl 2009/12`)
+- `norms` (Liste angewandter Rechtsnormen, z. B. `["MRG § 2", "ABGB § 1096"]`)
+- `rechtssatz` & `leitsatz`
+- `spruch` (Tenor/Spruch bei Volltexten)
+- `vorinstanzen` (Verfahrensgang)
+- `schlagworte` (Stichworte/Keywords)
+- `entscheidungstexte` (assoziierte Leitentscheidungen)
+- `ecli` (European Case Law Identifier)
+- `updated_at` (Zuletzt aktualisiert am)
+- `body_markdown` (strukturierte Markdown-Aufbereitung mit Metadaten-Block)
 - im Fehlerfall `fetch_error`
 
 Wichtig:

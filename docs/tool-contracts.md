@@ -150,3 +150,40 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 - Dedupliziert über einen mehrdimensionalen Schlüssel (`${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}`), sodass Anfragen nach demselben Paragrafen mit unterschiedlichen Stichtagen eigenständig geprüft werden.
 - Liefert den `VerificationReceipt` pro synchronisiertem Item.
 
+## Tool: `jusline_list_decisions` (Sekundärquelle)
+
+**Zweck:** Abruf von Entscheidungslisten zu einem Paragrafen von JUSLINE mit strukturierter Metadaten-Extraktion und Preview-Caching.
+
+**Input:**
+- `query: string` (JUSLINE-URL oder Pfad wie `"stgb/paragraf/111"`, `"mrg/paragraf/2"`)
+- `limit?: number` (Standard: 10, max: 30)
+- `refresh?: boolean` (Force-Reload unter Umgehung des 24h-Query-Index)
+
+**Output:**
+- `hits: SearchHit[]` — Liste gefundener Gerichtsentscheidungen (`stable_id`, `source_id`, `title`, `source_url`, `snippet`)
+- Im Hintergrund generierte Preview-Artefakte mit tiefen Metadaten:
+  - `case_number` / `geschaeftszahl` (z. B. `5Ob121/08t`, `Ra 2021/05/0123`, `G 12/2023`)
+  - `rechtssatznummer` (z. B. `RS0012345`)
+  - `court` (z. B. `OGH`, `VwGH`, `VfGH`, `BVwG`, `LG für ZRS Wien`)
+  - `published_date` & `published_date_raw`
+  - `fundstellen` (Fachzeitschriften-Zitate)
+  - `norms` (angewandte Normen)
+  - `rechtssatz`, `leitsatz`, `spruch`, `vorinstanzen`, `ecli`
+
+**Fehlerklassen:**
+- `VALIDATION_ERROR`
+- `NOT_FOUND`
+- `UPSTREAM_UNAVAILABLE`
+
+## Tool: `jusline_fetch_discussions` (Sekundärquelle)
+
+**Zweck:** Abruf von nicht-amtlichen Diskussionen und Gesetzeskommentaren von JUSLINE-Paragrafseiten.
+
+**Input:**
+- `query: string`
+- `limit?: number`
+- `refresh?: boolean`
+
+**Output:**
+- `hits: SearchHit[]` — Liste gefundener Kommentare und Diskussionen mit Autoren-, Bewertungs- und Zeitstempel-Metadaten.
+

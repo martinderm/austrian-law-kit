@@ -42,16 +42,16 @@ Enthalten sind:
 - **Kanonische RIS-Gesetzesnummern-Tabelle** (`src/ris/canonical-laws.ts`) mit 50+ vorindizierten österreichischen Kern-Bundesgesetzen
 - Maschinenlesbarer `VerificationReceipt` (Dokumentnummer, ELI, duale SHA-256 Hashes, Inkrafttreten, Stichtagsabgleich, Europe/Vienna Zeitzone, Abrufpfad, Cache-Provenienz)
 - Produktive JUSLINE-MVP-Funktionen (ausschließlich als opt-in Sekundärquelle):
-  - `jusline_fetch_discussions`
-  - `jusline_list_decisions`
-- Lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS-Artefakte
+  - `jusline_fetch_discussions` (Kommentare und Diskussionsbeiträge)
+  - `jusline_list_decisions` (Entscheidungslisten mit strukturierter Metadaten-Extraktion für Geschäftszahlen, RS-Nummern, ECLI, Gericht, Datum, Fundstellen und Spruch)
+- Lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS- und JUSLINE-Artefakte
 - JUSLINE-Query-Index für Cache-Reuse über `query + kind + limit` (TTL 24h, `refresh=true` als Force-Reload)
-- Umfassende Regressionstests für RIS-503, unsafe URLs, Stichtage, MRG § 29 ab 1.1.2026, MieWeG §§ 1, 2, 4, KSchG §§ 1, 6, ABGB §§ 1096, 1111, 1117, 1118 und HeizKG-Gesamtfassung.
+- Umfassende Regressionstests und 6 Testsuiten mit **72 Tests** (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
 
 Bewusst noch eingeschränkt:
-- JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle
+- JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle (RIS hat Vorrang)
 - Parser sind im MVP weiter regex-basiert (noch kein DOM-/Selektor-Parser)
-- keine inhaltliche juristische Interpretation/Normalisierung
+- keine inhaltliche juristische Rechtsberatung / Auslegung
 
 ## Strukturüberblick
 
