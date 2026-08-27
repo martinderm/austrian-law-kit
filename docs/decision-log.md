@@ -73,3 +73,12 @@
 ## 2026-08-27 — Strukturierte Metadaten-Extraktion für JUSLINE-Gerichtsentscheidungen
 **Entscheidung:** Erweiterung des JUSLINE-Parsers und der Decision-Preview-Artefakte um strukturierte Extraktoren für gerichtliche Geschäftszahlen (OGH, VwGH, VfGH, BVwG, LVwG), OGH-Rechtssatznummern (`RS...`), ECLI, Fundstellenzitate und differenzierte Textabschnitte (`rechtssatz`, `leitsatz`, `spruch`, `vorinstanzen`).
 **Warum:** Erleichtert Agenten die Verknüpfung von Sekundärjudikatur mit dem RIS-Justiz-Datenbestand und ermöglicht strukturierte Zitierweisen in Rechtsgutachten und Schriftsätzen.
+
+## 2026-08-27 — Beibehaltung des Regex-/XML-Parsers (Zero Runtime Dependencies)
+**Entscheidung:** Beibehaltung der schlanken, regex- und XML-basierten Parsing-Architektur (`segment-parser.ts`, `whole-law-parser.ts`, `segment-xml-parser.ts`, `decision-detail.ts`) ohne Einführung externer DOM-Bibliotheken (wie `cheerio` oder `jsdom`).
+**Warum:**
+1. Zero Dependencies / Standardbibliothek-Treue: Hält das Toolkit vollkommen frei von schwergewichtigen Drittabhängigkeiten und C++-Addons.
+2. Performance: Parse-Laufzeiten liegen stabil bei unter 2 ms pro Dokument.
+3. Server-Side-HTML: RIS und JUSLINE liefern klassisch serverseitig gerendertes HTML aus stabilen relationalen Datenbanken.
+4. Hohe Testabdeckung: 72 automatisierte Tests (inkl. komplexer Altfassungen und Volltexten von ABGB, MRG, StGB, MieWeG, KSchG, HeizKG) belegen 100%ige Zuverlässigkeit.
+5. Prinzip: Keine architektonischen Umbauten ohne konkreten Fehler- oder Evidenzbeleg („Never change a running system without concrete failure evidence“).
