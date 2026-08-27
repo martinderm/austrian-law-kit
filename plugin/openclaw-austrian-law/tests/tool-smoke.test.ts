@@ -124,6 +124,185 @@ await test("ris_search recognizes norm references with trailing heading text", a
   assert.ok(parsed.searchVariants.includes("§ 74 StGB Andere Begriffsbestimmungen"));
 });
 
+await test("ris_search reliably resolves common short citations and quote formats", async () => {
+  const { resolveRisQuery } = await import("../src/ris/query-resolver.ts");
+  
+  const testCases: Array<{ query: string; expectedLaw: string; expectedSection: string; expectedRemainder?: string }> = [
+    { query: "MRG § 29", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "„MRG § 29“", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "»MRG § 29«", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "\"MRG § 29\"", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "MRG 29", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "§ 29 MRG", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "„§ 29 MRG“", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "MRG, § 29", expectedLaw: "MRG", expectedSection: "§ 29" },
+    { query: "MRG § 29 Abs 1", expectedLaw: "MRG", expectedSection: "§ 29", expectedRemainder: "Abs 1" },
+    { query: "EStG § 33", expectedLaw: "EStG", expectedSection: "§ 33" },
+    { query: "§ 33 EStG", expectedLaw: "EStG", expectedSection: "§ 33" },
+    { query: "WEG § 16", expectedLaw: "WEG", expectedSection: "§ 16" },
+    { query: "§ 16 WEG", expectedLaw: "WEG", expectedSection: "§ 16" },
+    { query: "Art 140 B-VG", expectedLaw: "B-VG", expectedSection: "Art 140" },
+    { query: "B-VG Art. 140", expectedLaw: "B-VG", expectedSection: "Art 140" },
+    { query: "KSchG § 6", expectedLaw: "KSchG", expectedSection: "§ 6" },
+    { query: "ASVG § 4", expectedLaw: "ASVG", expectedSection: "§ 4" },
+    { query: "UGB § 1", expectedLaw: "UGB", expectedSection: "§ 1" },
+    { query: "GmbHG § 15", expectedLaw: "GmbHG", expectedSection: "§ 15" },
+    { query: "Mietrechtsgesetz § 29", expectedLaw: "Mietrechtsgesetz", expectedSection: "§ 29" },
+  ];
+
+  for (const tc of testCases) {
+    const parsed = resolveRisQuery(tc.query);
+    assert.equal(parsed.kind, "normRef", `Query "${tc.query}" should resolve as normRef`);
+    if (parsed.kind !== "normRef") continue;
+    assert.equal(parsed.lawAbbreviation, tc.expectedLaw, `Law abbreviation mismatch for "${tc.query}"`);
+    assert.equal(parsed.sectionRef, tc.expectedSection, `Section ref mismatch for "${tc.query}"`);
+    if (tc.expectedRemainder) {
+      assert.equal(parsed.headingRemainder, tc.expectedRemainder, `Remainder mismatch for "${tc.query}"`);
+    }
+  }
+});
+
+await test("ris_search resolves MRG § 29 via API pagination to exact paragraph", async () => {
+  const page1Json = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "@pageNumber": "1", "@pageSize": "2", "#text": "4" },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR11002554", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/eli/bgbl/1981/520/P0/NOR11002554" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Dokumenttyp: "Norm",
+                    ArtikelParagraphAnlage: "§ 0",
+                    Paragraphnummer: "0",
+                    Gesetzesnummer: "10002531",
+                    GesamteRechtsvorschriftUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002531",
+                  },
+                },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR12032492", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/eli/bgbl/1981/520/P1/NOR12032492" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Dokumenttyp: "Norm",
+                    ArtikelParagraphAnlage: "§ 1",
+                    Paragraphnummer: "1",
+                    Gesetzesnummer: "10002531",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  const page2Json = JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "@pageNumber": "2", "@pageSize": "2", "#text": "4" },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR40273695", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/eli/bgbl/1981/520/P29/NOR40273695" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Dokumenttyp: "Norm",
+                    ArtikelParagraphAnlage: "§ 29",
+                    Paragraphnummer: "29",
+                    Gesetzesnummer: "10002531",
+                    GesamteRechtsvorschriftUrl: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002531",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  let pageRequested = 0;
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/Bundesrecht")) {
+      pageRequested += 1;
+      if (url.includes("Seitennummer=1")) {
+        return new Response(page1Json, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("Seitennummer=2")) {
+        return new Response(page2Json, { status: 200, headers: { "content-type": "application/json" } });
+      }
+    }
+    return new Response("<html></html>", { status: 500 });
+  }, async () => {
+    const result = await risSearchStub({ query: "„MRG § 29“", limit: 5 });
+
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    assert.equal(result.data.best_candidate?.source_id, "NOR40273695");
+    assert.equal(result.data.best_candidate?.paragraph_number, "29");
+    assert.equal(result.data.resolver_kind, "normRef");
+    assert.ok(result.meta.notices?.includes("api_search: Bundesrecht"));
+    assert.ok(result.meta.notices?.includes("api_pagination_used: Bundesrecht page 2"));
+  });
+});
+
+await test("ris_search resolves MRG § 29 via HTML fallback when API is down", async () => {
+  const html = `
+    <html>
+      <body>
+        <table class="bocList">
+          <tr class="bocListDataRow" role="row">
+            <td class="bocListDataCell" role="cell">
+              <a href="/eli/bgbl/1981/520/P29/NOR40273695" title="Mietrechtsgesetz">&#167; 29</a>
+            </td>
+            <td class="bocListDataCell bocListTextContent" role="cell">
+              <span class="bocListContent">Mietrechtsgesetz</span>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  await withMockedFetch(async (input) => {
+    const url = String(input);
+    if (url.includes("data.bka.gv.at/ris/api/v2.6/")) {
+      return new Response("API down", { status: 503 });
+    }
+    if (url.includes("Ergebnis.wxe")) {
+      assert.ok(url.includes("Titel=MRG"));
+      assert.ok(url.includes("VonParagraf=29"));
+      return new Response(html, { status: 200, headers: { "content-type": "text/html" } });
+    }
+    return new Response("not found", { status: 404 });
+  }, async () => {
+    const result = await risSearchStub({ query: "MRG § 29", limit: 5 });
+
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    assert.equal(result.data.best_candidate?.source_id, "NOR40273695");
+    assert.equal(result.data.best_candidate?.paragraph_number, "29");
+    assert.ok(result.meta.notices?.includes("html_fallback_used"));
+  });
+});
+
 await test("ris_search uses the official RIS API first for Bundesrecht norm references", async () => {
   const apiJson = fixture("fixtures/ris-api/bundesrecht-abgb-1293.json");
   let htmlFetchCount = 0;

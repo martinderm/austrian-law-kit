@@ -6,6 +6,44 @@ const LAW_ALIASES: Record<string, string> = {
   avg: "AVG",
   gewo: "GewO",
   emrk: "EMRK",
+  mrg: "MRG",
+  weg: "WEG",
+  ustg: "UStG",
+  estg: "EStG",
+  kschg: "KSchG",
+  asvg: "ASVG",
+  zpo: "ZPO",
+  bvg: "B-VG",
+  "b-vg": "B-VG",
+  io: "IO",
+  ugb: "UGB",
+  gmbhg: "GmbHG",
+  aktg: "AktG",
+  bao: "BAO",
+  vstg: "VStG",
+  spg: "SPG",
+  dsg: "DSG",
+  wgg: "WGG",
+  stpo: "StPO",
+  geo: "Geo",
+  vwgg: "VwGG",
+  vfgg: "VfGG",
+  asgg: "ASGG",
+  eodg: "EODG",
+  urhg: "UrhG",
+  patg: "PatG",
+  mschg: "MSchG",
+  uwg: "UWG",
+  kartg: "KartG",
+  bvergg: "BVergG",
+  bverg: "BVergG",
+  angg: "AngG",
+  arbvg: "ArbVG",
+  azg: "AZG",
+  arg: "ARG",
+  urlg: "UrlG",
+  dhg: "DHG",
+  eheg: "EheG",
 };
 
 export type RisResolvedQuery =
@@ -35,9 +73,15 @@ function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function cleanQueryQuotes(query: string): string {
+  return query
+    .replace(/^[\s"„“”«»'‘‚’`´]+|[\s"„“”«»'‘‚’`´]+$/g, "")
+    .trim();
+}
+
 function normalizeLawToken(token: string): string {
   const compact = token.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  return LAW_ALIASES[compact] ?? token.toUpperCase();
+  return LAW_ALIASES[compact] ?? (token.includes("-") ? token.toUpperCase() : (LAW_ALIASES[token.toLowerCase()] ?? token));
 }
 
 function dedupe(values: string[]): string[] {
@@ -59,9 +103,9 @@ function escapeRegex(value: string): string {
 function extractNormRef(
   normalizedQuery: string,
 ): { lawAbbreviation: string; sectionRef: string; headingRemainder?: string } | null {
-  const paragraphFirst = normalizedQuery.match(/^(§|Art)\s*([0-9]+[a-zA-Z]?)\s+([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)\b(?:\s+(.*))?$/i);
+  const paragraphFirst = normalizedQuery.match(/^(§|Art\.?)\s*([0-9]+[a-zA-Z]?)\s+([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)\b(?:\s+(.*))?$/i);
   if (paragraphFirst) {
-    const marker = /^art$/i.test(paragraphFirst[1]) ? "Art" : "§";
+    const marker = /^art/i.test(paragraphFirst[1]) ? "Art" : "§";
     const sectionNumber = paragraphFirst[2];
     const lawAbbreviation = normalizeLawToken(paragraphFirst[3]);
     const sectionRef = `${marker} ${sectionNumber}`;
@@ -80,9 +124,9 @@ function extractNormRef(
 
   for (const alias of lawTokens) {
     const aliasPattern = escapeRegex(alias);
-    const lawFirst = normalizedQuery.match(new RegExp(`^(${aliasPattern})\\s+(§|Art)?\\s*([0-9]+[a-zA-Z]?)\\b(?:\\s+(.*))?$`, "i"));
+    const lawFirst = normalizedQuery.match(new RegExp(`^(${aliasPattern})\\s*(?:,\\s*)?(?:(§|Art\\.?)\\s*)?([0-9]+[a-zA-Z]?)\\b(?:\\s+(.*))?$`, "i"));
     if (!lawFirst) continue;
-    const marker = lawFirst[2] && /^art$/i.test(lawFirst[2]) ? "Art" : "§";
+    const marker = lawFirst[2] && /^art/i.test(lawFirst[2]) ? "Art" : "§";
     const sectionNumber = lawFirst[3];
     const sectionRef = `${marker} ${sectionNumber}`;
     const remainder = collapseWhitespace(lawFirst[4] ?? "");
@@ -93,19 +137,35 @@ function extractNormRef(
     };
   }
 
+  const genericLawFirstWithMarker = normalizedQuery.match(/^([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\-.]*)\s*(?:,\s*)?(§|Art\.?)\s*([0-9]+[a-zA-Z]?)\b(?:\s+(.*))?$/i);
+  if (genericLawFirstWithMarker) {
+    const marker = /^art/i.test(genericLawFirstWithMarker[2]) ? "Art" : "§";
+    const sectionNumber = genericLawFirstWithMarker[3];
+    const lawAbbreviation = normalizeLawToken(genericLawFirstWithMarker[1]);
+    const sectionRef = `${marker} ${sectionNumber}`;
+    const remainder = collapseWhitespace(genericLawFirstWithMarker[4] ?? "");
+    return {
+      lawAbbreviation,
+      sectionRef,
+      headingRemainder: remainder || undefined,
+    };
+  }
+
   return null;
 }
 
 export function resolveRisQuery(query: string): RisResolvedQuery {
   const rawQuery = query;
+  const cleaned = cleanQueryQuotes(query);
   const normalizedQuery = collapseWhitespace(
-    query
+    cleaned
       .replace(/\bparagraph\b/gi, "§")
       .replace(/\bpar\.?\b/gi, "§")
       .replace(/\bartikel\b/gi, "Art")
       .replace(/\barticle\b/gi, "Art")
       .replace(/\s*§\s*/g, " § ")
-      .replace(/\s*art\.?\s*/gi, " Art "),
+      .replace(/\s*art\.?\s*/gi, " Art ")
+      .replace(/,\s*(§|Art|[0-9])/gi, " $1"),
   );
 
   const sourceIdMatch = normalizedQuery.match(/\b(?:NOR|LOO)[0-9A-Z]+\b/i);

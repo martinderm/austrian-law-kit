@@ -263,7 +263,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
           lawTitle: resolved.lawAbbreviation,
           paragraphFrom: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
           paragraphTo: resolved.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, ""),
-          keywords: searchQuery,
+          keywords: resolved.headingRemainder ?? undefined,
         })
       : buildRisSearchUrl({ query: searchQuery, limit, scope, state });
     const fetchResult = await fetchWithRetry(url);

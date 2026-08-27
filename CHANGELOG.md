@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 - Kurzzitate-Auflösung & Offline-/Sandbox-CLI
+- **Zuverlässige Kurzzitate-Auflösung**: `ris_search` löst nun gängige Kurzzitate wie „MRG § 29“, „§ 29 MRG“, „MRG 29“, „EStG § 33“, „WEG § 16“, „Art 140 B-VG“ etc. in allen Schreibweisen zuverlässig auf.
+- **Anführungszeichen-Bereinigung**: Typografische Anführungszeichen (`„...“`, `”...“`, `«...»`, `"..."`, `'...'`) werden im Query-Resolver vor der Mustererkennung bereinigt.
+- **Erweiterte Gesetzes-Aliase & generische Erkennung**: `LAW_ALIASES` um alle gängigen österreichischen Gesetzeskürzel erweitert und generische Erkennung für Paragrafen- und Artikelbezüge integriert.
+- **RIS API Bundesrecht Pagination & Paragraf-Matching**: Bei gezielten Paragrafenabfragen paginiert `searchBundesrechtApi` bis zum Auffinden des exakten Paragrafen (bzw. bis zum Seitenende), statt starr nach Seite 3 abzubrechen.
+- **HTML Fallback Suchworte-Bereinigung**: Bei `normRef` wird `Suchworte` im HTML-Fallback nicht mehr mit dem Gesamtzitat übersteuert, wodurch Treffer bei Ausfall der RIS API zuverlässig gefunden werden.
+- **Offline / Sandbox CLI**: `tsx` als lokale DevDependency integriert; `build`-Script erzeugt ein lauffähiges `dist/`, wodurch die Standalone-CLI via `npm run cli`, `npm run cli:dist` oder direkt `node dist/bin/cli.js` ohne Netzwerk-Downloads und sandbox-tauglich läuft.
+- **Regressionstests**: Neue Tests für Kurzzitate, Anführungszeichen, API-Pagination und HTML-Fallback in `tool-smoke.test.ts` ergänzt.
+
 ## 0.13.0 - Harness-Agnostischer CLI-Support, Cache-Path-Splitting & Namespaced Settings
 - **Harness-Agnostisches CLI**: `bin/cli.ts` hinzugefügt, um die Tools standalone über `npx tsx bin/cli.ts` auszuführen.
 - **Zwei-Wege-Cache**: Physische Trennung von Referenz-Dokumenten (Markdown in `memory/references/`) und strukturierten Metadaten (JSON in `data/`).

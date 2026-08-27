@@ -1,6 +1,14 @@
 # Current Status
 
-Stand: 2026-04-08 (laufend aktualisiert)
+Stand: 2026-08-27 (laufend aktualisiert)
+
+## Kurzstand 2026-08-27
+- **Kurzzitate-Auflösung**: `ris_search` löst gebräuchliche Kurzzitate („MRG § 29“, „§ 29 MRG“, „MRG 29“, „EStG § 33“, „WEG § 16“, „Art 140 B-VG“ etc.) nun zuverlässig über API und HTML-Fallback auf.
+- **Typografische Quotes**: `query-resolver.ts` bereinigt typografische Anführungszeichen (`„...“`, `”...“`, `«...»`, `"..."`, `'...'`) vor der Erkennung.
+- **RIS API Bundesrecht Pagination**: Paginierung für gezielte Paragrafen-Suchen von 3 auf bis zu 15 Seiten angehoben und exakte Paragrafen-Zuordnung stabilisiert.
+- **HTML Fallback**: `Suchworte` wird bei `normRef` nicht mehr mit dem Gesamtzitat übersteuert, sodass der Fallback sofort greift.
+- **Offline / Sandbox CLI**: `tsx` als lokale DevDependency eingebunden und TypeScript-Build (`dist/`) konfiguriert; Standalone-CLI via `node dist/bin/cli.js` oder `npm run cli` vollkommen offline-/sandbox-tauglich ohne Netzwerk-Downloads.
+- **Tests**: Regressionstests für Kurzzitate, Quotes und Fallbacks ergänzt. Alle Tests (`npm run test:smoke`) grün.
 
 ## Kurzstand 2026-04-08
 

@@ -38,6 +38,16 @@ function scoreSourceMetadata(hit: SearchHit): number {
   if (title.startsWith("authentische interpretation")) score -= 40;
   if (hasAny(title, [" authentische interpretation", " richtlinie, anpassung", " novell", " änderung", " kundmachung", " durchführungsverordnung"])) score -= 18;
 
+  const promulgation = normalize(hit.promulgation);
+  if (promulgation.includes("aufgehoben")) score -= 35;
+  if (promulgation.includes("zuletzt geändert durch") || promulgation.includes("kundgemacht am")) score += 10;
+  if (hit.changed_at) {
+    const year = parseInt(hit.changed_at.slice(0, 4), 10);
+    if (!isNaN(year) && year >= 1990) {
+      score += Math.min(25, Math.floor((year - 1990) / 2));
+    }
+  }
+
   return score;
 }
 

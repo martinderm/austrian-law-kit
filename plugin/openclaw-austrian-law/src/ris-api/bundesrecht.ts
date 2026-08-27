@@ -25,6 +25,7 @@ function dedupeCandidates(candidates: RisApiSearchCandidate[]): RisApiSearchCand
 }
 
 const MAX_API_PAGES = 3;
+const MAX_TARGETED_API_PAGES = 15;
 
 function buildBundesrechtAttempts(request: RisApiSearchRequest): Array<{ title?: string; keywords?: string; paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string; label: string }> {
   const attempts: Array<{ title?: string; keywords?: string; paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string; label: string }> = [];
@@ -71,10 +72,14 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
   let lastError: RisApiError | undefined;
   const aggregateHits: RisApiSearchCandidate[] = [];
   const attempts = buildBundesrechtAttempts(request);
+  const requestedParagraph = extractRequestedParagraph(request.normalizedQuery);
+  const maxPages = (request.paragraphNumber || request.articleNumber || requestedParagraph)
+    ? MAX_TARGETED_API_PAGES
+    : MAX_API_PAGES;
 
   for (const attempt of attempts) {
     let foundInAttempt = false;
-    for (let page = 1; page <= MAX_API_PAGES; page += 1) {
+    for (let page = 1; page <= maxPages; page += 1) {
       const url = buildRisApiUrl("/Bundesrecht", {
         Applikation: "BrKons",
         Titel: attempt.title,
@@ -98,7 +103,17 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
         if (mapped.hits.length > 0) {
           foundInAttempt = true;
         }
-        if (!hasMoreRisApiPages(meta) || dedupeCandidates(aggregateHits).length >= request.limit) {
+
+        const dedupedCurrent = dedupeCandidates(aggregateHits);
+        const exactMatches = requestedParagraph
+          ? dedupedCurrent.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
+          : [];
+
+        if (requestedParagraph && exactMatches.length >= request.limit) {
+          break;
+        }
+
+        if (!hasMoreRisApiPages(meta) || (!requestedParagraph && dedupedCurrent.length >= request.limit)) {
           break;
         }
       } catch (error) {
@@ -113,7 +128,6 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
     }
 
     const dedupedAfterAttempt = dedupeCandidates(aggregateHits);
-    const requestedParagraph = extractRequestedParagraph(request.normalizedQuery);
     const exactAfterAttempt = requestedParagraph
       ? dedupedAfterAttempt.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
       : [];
@@ -129,25 +143,25 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
       };
     }
 
-    if (foundInAttempt) {
+    if (foundInAttempt && !requestedParagraph) {
       notices.push(`api_attempt_used: ${attempt.label}`);
       break;
     }
   }
 
   const dedupedHits = dedupeCandidates(aggregateHits);
-  const requestedParagraph = extractRequestedParagraph(request.normalizedQuery);
 
-  if (dedupedHits.length > 0) {
-    if (requestedParagraph) {
-      warnings.push(`api_exact_paragraph_missing: ${requestedParagraph}`);
-    }
+  if (dedupedHits.length > 0 && !requestedParagraph) {
     return {
       success: true,
       hits: dedupedHits.slice(0, request.limit),
       notices,
       warnings,
     };
+  }
+
+  if (requestedParagraph && dedupedHits.length > 0) {
+    warnings.push(`api_exact_paragraph_missing: ${requestedParagraph}`);
   }
 
   if (lastError) {
