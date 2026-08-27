@@ -177,6 +177,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       limit,
       scope,
       state,
+      lawId: (resolved.kind === "normRef" || resolved.kind === "freeText") ? resolved.lawId : undefined,
       lawTitle: resolved.kind === "normRef" ? resolved.lawAbbreviation : searchQuery,
       keywords: resolved.kind === "normRef"
         ? (resolved.headingRemainder ?? searchQuery)

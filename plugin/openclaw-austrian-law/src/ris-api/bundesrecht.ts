@@ -27,18 +27,44 @@ function dedupeCandidates(candidates: RisApiSearchCandidate[]): RisApiSearchCand
 const MAX_API_PAGES = 3;
 const MAX_TARGETED_API_PAGES = 15;
 
-function buildBundesrechtAttempts(request: RisApiSearchRequest): Array<{ title?: string; keywords?: string; paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string; label: string }> {
-  const attempts: Array<{ title?: string; keywords?: string; paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string; label: string }> = [];
+interface BundesrechtAttempt {
+  title?: string;
+  keywords?: string;
+  lawId?: string;
+  paragraphFrom?: string;
+  paragraphTo?: string;
+  articleFrom?: string;
+  articleTo?: string;
+  label: string;
+}
+
+function buildBundesrechtAttempts(request: RisApiSearchRequest): BundesrechtAttempt[] {
+  const attempts: BundesrechtAttempt[] = [];
   const push = (
     title: string | undefined,
     keywords: string | undefined,
     label: string,
-    extra?: { paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string },
+    extra?: { paragraphFrom?: string; paragraphTo?: string; articleFrom?: string; articleTo?: string; lawId?: string },
   ) => {
-    if (!title && !keywords) return;
-    if (attempts.some((entry) => entry.title === title && entry.keywords === keywords && entry.paragraphFrom === extra?.paragraphFrom && entry.articleFrom === extra?.articleFrom)) return;
+    if (!title && !keywords && !extra?.lawId) return;
+    if (attempts.some((entry) => entry.title === title && entry.keywords === keywords && entry.lawId === extra?.lawId && entry.paragraphFrom === extra?.paragraphFrom && entry.articleFrom === extra?.articleFrom)) return;
     attempts.push({ title, keywords, label, ...extra });
   };
+
+  // 1. High-priority attempts with exact canonical Gesetzesnummer (lawId) if available
+  if (request.lawId && request.paragraphNumber) {
+    push(undefined, undefined, "law_id+paragraph_field", { paragraphFrom: request.paragraphNumber, lawId: request.lawId });
+    if (request.headingRemainder) {
+      push(undefined, request.headingRemainder, "law_id+paragraph_field+heading", { paragraphFrom: request.paragraphNumber, lawId: request.lawId });
+    }
+    if (request.lawTitle) {
+      push(request.lawTitle, undefined, "law_id+title+paragraph_field", { paragraphFrom: request.paragraphNumber, lawId: request.lawId });
+    }
+  }
+
+  if (request.lawId && request.articleNumber) {
+    push(undefined, undefined, "law_id+article_field", { articleFrom: request.articleNumber, lawId: request.lawId });
+  }
 
   if (request.headingRemainder && request.lawTitle && request.paragraphNumber) {
     push(request.lawTitle, request.headingRemainder, "title+paragraph_field+heading", { paragraphFrom: request.paragraphNumber });
@@ -59,6 +85,10 @@ function buildBundesrechtAttempts(request: RisApiSearchRequest): Array<{ title?:
 
   if (request.lawTitle && request.articleNumber) {
     push(request.lawTitle, undefined, "title+article_field", { articleFrom: request.articleNumber });
+  }
+
+  if (request.lawId && !request.paragraphNumber && !request.articleNumber) {
+    push(undefined, undefined, "law_id_only", { lawId: request.lawId });
   }
 
   push(request.lawTitle, request.keywords, "default");
@@ -82,6 +112,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
     for (let page = 1; page <= maxPages; page += 1) {
       const url = buildRisApiUrl("/Bundesrecht", {
         Applikation: "BrKons",
+        Gesetzesnummer: attempt.lawId,
         Titel: attempt.title,
         Suchworte: attempt.keywords,
         VonParagraf: attempt.paragraphFrom,

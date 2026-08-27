@@ -17,6 +17,7 @@ export interface RisApiSearchRequest {
   paragraphNumber?: string;
   articleNumber?: string;
   headingRemainder?: string;
+  lawId?: string;
 }
 
 export interface RisApiSearchCandidate {

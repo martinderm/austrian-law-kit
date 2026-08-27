@@ -60,3 +60,12 @@
 **Entscheidung:** Das ToolResult-Envelope-Feld `ok` wird auf `success` umbenannt, gemäß dem Shared-Skills CLI-Envelope-Standard.
 **Warum:** Der Standard definiert `success`/`action`/`state`/`message`/`data`/`error`. Das alte `ok`-Feld war funktional identisch, aber nicht standard-konform. Da die primären Konsumenten LLMs sind, die die aktuelle Doku lesen, gibt es keinen praktischen Breaking-Change-Impact.
 **Scope:** `ToolResult<T>` in `shared.ts`, `RisApiSearchResult` in `ris-api/types.ts`, alle Tool- und API-Implementierungen, Smoke-Tests.
+
+## 2026-08-27 — Fail-Closed Verification Receipts, Metadaten-Integrität & Zeitzonen
+**Entscheidung:** Der Verification Receipt arbeitet strikt fail-closed: ungültige Datumsangaben werden mit `VALIDATION_ERROR` abgewiesen, Metadaten wie `consolidated_as_of` werden nie aus dem Stichtag oder Titel erraten, sondern bleiben `null`, wenn sie in den Upstream-Metadaten fehlen.
+**Warum:** Rechts-Agenten dürfen keine fingierten Normstände oder Gültigkeiten annehmen. Stichtagsberechnungen müssen exakt auf `Europe/Vienna` basieren.
+**Erweiterung:** Duale SHA-256 Hashes (`raw_content_sha256` für Original-Antwort, `normalized_content_sha256` für bereinigten Text) und `cached: true`-Kennzeichnung für Cache-Treffer bei Erhalt der ursprünglichen `retrieval_method`.
+
+## 2026-08-27 — Kanonische RIS-Gesetzesnummern-Tabelle für Bundesnormen
+**Entscheidung:** Einführung einer vorindizierten $O(1)$-Registry (`src/ris/canonical-laws.ts`) für über 50 Kern-Bundesgesetze der österreichischen Rechtsordnung.
+**Warum:** Ermöglicht deterministische Kurzzitat- und Gesamtfassungs-Auflösung ohne vorgelagerte Suchschleifen sowie priorisierte API-Suchen via `Gesetzesnummer` (`law_id+paragraph_field`), wodurch Treffer unmittelbar auf Seite 1 gefunden werden.

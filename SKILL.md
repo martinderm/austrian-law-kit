@@ -35,6 +35,12 @@ Vor der Durchführung von Rechtsrecherchen in einer Sitzung muss sichergestellt 
 node dist/bin/cli.js ris_sync_laws '{"laws": [{"sourceId": "NOR40273695", "paragraph": "§ 29"}]}'
 ```
 
+## Kanonische RIS-Gesetzesnummern-Tabelle (Bundesnormen)
+
+Für über 50 Kern-Bundesgesetze (ABGB, MRG, WEG, WGG, HeizKG, MieWeG, KSchG, FAGG, VRUG, VKrG, HIKrG, UGB, GmbHG, AktG, GewO, EStG, UStG, BAO, GebG, GrEStG, B-VG, AVG, VStG, VVG, VwGVG, VwGG, VfGG, SPG, DSG, StGB, StPO, StVO, KFG, ZPO, JN, EO, IO, ASVG, AngG, ArbVG, AZG, ARG, UrlG, DHG, UWG, KartG, UrhG, PatG, MSchG, BVergG etc.) existiert ein vorindizierter $O(1)$-Katalog (`src/ris/canonical-laws.ts`).
+- **Suchbeschleunigung**: Zitate und Freitexte werden automatisch mit der verifizierten `Gesetzesnummer` angereichert und in der RIS-API priorisiert abgefragt.
+- **Fast-Path**: Abrufe ganzer Gesetze über `ris_fetch_whole_law` mit bekannten Gesetzeskürzeln lösen direkt auf die offizielle RIS-Gesamtfassung auf.
+
 ## Gestufter RIS-Fallback
 
 1. **Stufe 1 (Direkte Dokumentnummer / Source ID)**: Wenn `sourceId` bekannt ist (z. B. `NOR40273695`), **direkt** `ris_fetch_segment` oder `ris_fetch_whole_law` aufrufen (`retrieval_method: "direct_source_id"`).
@@ -43,12 +49,14 @@ node dist/bin/cli.js ris_sync_laws '{"laws": [{"sourceId": "NOR40273695", "parag
 
 ## Stichtags-Validierung & Verification Receipt
 
-Jede Rechtsprüfung erzeugt einen maschinenlesbaren **Verification Receipt**:
+Jede Rechtsprüfung erzeugt einen maschinenlesbaren **Verification Receipt** nach Zeitzone `Europe/Vienna`:
 - `source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`
-- `consolidated_as_of` (Fassung vom), `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`
-- `content_sha256` (SHA-256 Hash des Originalwortlauts)
-- `retrieval_method` (`direct_source_id`, `eli_url`, `norm_document_url`, `web_search_fallback`, `cache_hit`)
-- `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `unverified_fallback`)
+- `consolidated_as_of` (Fassung vom — ausschließlich aus Metadaten, sonst `null`), `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`
+- `raw_content_sha256` (SHA-256 der unveränderten Upstream-Antwort)
+- `normalized_content_sha256` (SHA-256 des bereinigten Normtexts)
+- `cached` (`true`, wenn aus dem lokalen Cache bedient; ursprüngliche `retrieval_method` bleibt erhalten)
+- `retrieval_method` (`direct_source_id`, `eli_url`, `norm_document_url`, `ris_api_discovery`, `ris_html_search`, `web_search_fallback`)
+- `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`, `unverified_fallback`)
 - `fallback_reason` (Begründung, falls Stufe 3 Notbehelf)
 
 > [!IMPORTANT]

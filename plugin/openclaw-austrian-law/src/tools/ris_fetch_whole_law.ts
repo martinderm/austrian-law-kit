@@ -1,3 +1,4 @@
+import { lookupCanonicalLaw } from "../ris/canonical-laws.js";
 import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
@@ -28,6 +29,19 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         message: stichtagCheck.error!,
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
+    };
+  }
+
+  // Canonical Law Fast-Path: Resolve known law aliases (e.g. "MRG", "WEG", "HeizKG", "EStG") directly
+  const canonicalLaw = (!input.wholeLawUrl && !input.sourceUrl)
+    ? (lookupCanonicalLaw(input.sourceId) ?? (input.query ? lookupCanonicalLaw(input.query) : undefined))
+    : undefined;
+
+  if (canonicalLaw) {
+    input = {
+      ...input,
+      wholeLawUrl: `https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=${canonicalLaw.gesetzesnummer}`,
+      sourceId: `LAW:Bundesnormen:${canonicalLaw.gesetzesnummer}`,
     };
   }
 

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.16.0 - Kanonische RIS-Gesetzesnummern-Tabelle & Fail-Closed RIS-Verifikation
+- **Kanonische Gesetzesnummern-Tabelle (`src/ris/canonical-laws.ts`)**:
+  - Vorindizierte $O(1)$-Registry für über 50 österreichische Kern-Bundesgesetze (ABGB, MRG, WEG, WGG, HeizKG, MieWeG, KSchG, FAGG, VRUG, VKrG, HIKrG, UGB, GmbHG, AktG, GewO, EStG, UStG, BAO, GebG, GrEStG, B-VG, AVG, VStG, VVG, VwGVG, VwGG, VfGG, SPG, DSG, StGB, StPO, StVO, KFG, ZPO, JN, EO, IO, ASVG, AngG, ArbVG, AZG, ARG, UrlG, DHG, UWG, KartG, UrhG, PatG, MSchG, BVergG).
+  - Deterministische Lookups nach Slug, Standard-Abkürzung, Gesetzesnummer oder Alias.
+- **API-Suchbeschleunigung**:
+  - `resolveRisQuery` reichert Normzitate und Freitexte automatisch mit `lawId` (`Gesetzesnummer`) und `canonicalTitle` an.
+  - `searchBundesrechtApi` setzt bei vorhandener `lawId` prioritäre Suchversuche mit exakter `Gesetzesnummer` (`law_id+paragraph_field`), wodurch Treffer unmittelbar auf Seite 1 gefunden werden.
+- **Fast-Path für Gesamtfassungen**:
+  - `ris_fetch_whole_law` löst bekannte Gesetzeskürzel (z. B. `query: "MRG"`, `sourceId: "HeizKG"`) direkt auf die offizielle RIS-Gesamtfassungs-URL auf, ohne vorgelagerte Suchschleifen.
+- **Fail-Closed Verification Receipt & Metadaten**:
+  - Exakte Datumsvalidierung im Format `YYYY-MM-DD` inklusive Kalenderprüfung (Schaltjahre, Monatsgrenzen); ungültige Stichtage liefern fail-closed `VALIDATION_ERROR`.
+  - Zeitzonen-Präzision für Tagesdatum strikt in `Europe/Vienna`.
+  - `consolidated_as_of` enthält ausschließlich das tatsächlich aus Metadaten geparste Datum („Fassung vom“); fehlt die Angabe, bleibt es strikt `null` (keine Vermischung mit Stichtag oder Titel).
+  - Duale SHA-256 Hashes: `raw_content_sha256` (Upstream-Antwort) und `normalized_content_sha256` (bereinigter Normtext).
+  - Provenienz für Cache-Treffer: `cached: true` wird im Receipt ausgewiesen, die ursprüngliche `retrieval_method` bleibt erhalten.
+  - Neuer Status `insufficient_metadata`, falls die zeitliche Geltung anhand der RIS-Metadaten nicht belegbar ist.
+- **Multi-dimensionale Batch-Deduplizierung**:
+  - Deduplizierungsschlüssel `${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}` in `ris_sync_laws` verhindert das versehentliche Zusammenlegen von Anfragen mit unterschiedlichen Stichtagen.
+- **Rechtsstands-Regressionstests & Testsuiten**:
+  - 5 Testsuiten mit insgesamt 63 Tests (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:legal-regression`, `test:cli-json`) zu 100% grün.
+
 ## 0.15.0 - Robuste RIS-Primärrechtsprüfung, Verification Receipt, Stichtag-Validierung & Batch-Deduplizierung
 - **Capability-Check**: Dokumentierter Integritätscheck vor Rechtsrecherchen zur Sicherstellung der Verfügbarkeit von `ris_fetch_segment`, `ris_fetch_whole_law`, `ris_sync_laws`, `ris_search`.
 - **Gestufter RIS-Fallback**:

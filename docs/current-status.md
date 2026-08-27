@@ -2,6 +2,13 @@
 
 Stand: 2026-08-27 (laufend aktualisiert)
 
+## Kurzstand 2026-08-27 (v0.16.0 — Kanonische RIS-Gesetzesnummern-Tabelle & Fail-Closed RIS-Verifikation)
+- **Kanonische Gesetzesnummern-Tabelle**: Vorindizierte $O(1)$-Registry (`src/ris/canonical-laws.ts`) mit über 50 verifizierten Kern-Bundesgesetzen (ABGB, MRG, WEG, WGG, HeizKG, MieWeG, KSchG, FAGG, VRUG, VKrG, HIKrG, UGB, GmbHG, AktG, GewO, EStG, UStG, BAO, GebG, GrEStG, B-VG, AVG, VStG, VVG, VwGVG, VwGG, VfGG, SPG, DSG, StGB, StPO, StVO, KFG, ZPO, JN, EO, IO, ASVG, AngG, ArbVG, AZG, ARG, UrlG, DHG, UWG, KartG, UrhG, PatG, MSchG, BVergG).
+- **API-Suchbeschleunigung**: Zitate und Freitextsuchen werden automatisch mit der `Gesetzesnummer` angereichert und in `searchBundesrechtApi` prioritär abgefragt (`law_id+paragraph_field`), wodurch Treffer unmittelbar auf Seite 1 gefunden werden.
+- **Fast-Path für Gesamtfassungen**: `ris_fetch_whole_law` löst bekannte Gesetzeskürzel (z. B. `query: "MRG"`) direkt auf die offizielle RIS-Gesamtfassungs-URL auf.
+- **Fail-Closed Verification Receipt**: Zeitzone `Europe/Vienna`, exaktes `consolidated_as_of` (nur bei echtem Metadaten-Fund, sonst `null`), strikte ISO-Kalenderprüfung mit `VALIDATION_ERROR`, duale SHA-256 Hashes (`raw_content_sha256`, `normalized_content_sha256`) und `cached: true`-Provenienz.
+- **Test-Abdeckung**: 5 Testsuiten mit insgesamt 63 Tests zu 100% grün (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:legal-regression`, `test:cli-json`).
+
 ## Kurzstand 2026-08-27 (v0.15.0 — Robuste RIS-Primärrechtsprüfung)
 - **Capability-Check**: Verbindlicher Integritätscheck für die 4 RIS-Primärtools (`ris_fetch_segment`, `ris_fetch_whole_law`, `ris_sync_laws`, `ris_search`) im SKILL.md dokumentiert.
 - **Gestufter RIS-Fallback**: 3-Stufen-Modell (1: Direkte Source-ID, 2: ELI-/Dokument-URL mit Domain-Safety, 3: RIS-Websuche als Notbehelf).

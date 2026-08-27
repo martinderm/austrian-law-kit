@@ -38,8 +38,9 @@ Enthalten sind:
   - `ris_fetch_segment` (Einzelner Paragraf mit `VerificationReceipt`, Stichtagsprüfung, ELI-/URL-Safety)
   - `ris_fetch_whole_law` (Gesamtfassung mit `representation: "whole_law"` und Receipt)
   - `ris_sync_laws` (Batch-Synchronisation einzelner Paragrafen mehrerer Gesetze & Gesamtnormen mit Deduplizierung)
-  - `ris_search` (Discovery-Hilfe / Notbehelf)
-- Maschinenlesbarer `VerificationReceipt` (Dokumentnummer, ELI, SHA-256, Inkrafttreten, Stichtagsabgleich, Abrufpfad)
+  - `ris_search` (Discovery-Hilfe / Notbehelf mit beschleunigter Gesetzesnummer-Suche)
+- **Kanonische RIS-Gesetzesnummern-Tabelle** (`src/ris/canonical-laws.ts`) mit 50+ vorindizierten österreichischen Kern-Bundesgesetzen
+- Maschinenlesbarer `VerificationReceipt` (Dokumentnummer, ELI, duale SHA-256 Hashes, Inkrafttreten, Stichtagsabgleich, Europe/Vienna Zeitzone, Abrufpfad, Cache-Provenienz)
 - Produktive JUSLINE-MVP-Funktionen (ausschließlich als opt-in Sekundärquelle):
   - `jusline_fetch_discussions`
   - `jusline_list_decisions`
@@ -63,13 +64,16 @@ Bewusst noch eingeschränkt:
 - `templates/memory/` optionale Vorlagen für Instanzen
 
 
-## Lokaler Smoke-Test-Workflow
+## Lokaler Test-Workflow
 
 Im Verzeichnis `plugin/openclaw-austrian-law/`:
 
 - Parser-Smoke-Tests: `npm run test:parser-smoke`
 - Tool-Smoke-Tests: `npm run test:tool-smoke`
-- beide Smoke-Test-Sets zusammen: `npm run test:smoke`
+- Kanonische Gesetze: `npm run test:canonical-laws`
+- Österreichische Rechtsstands-Regressionen: `npm run test:legal-regression`
+- Standalone CLI JSON-Tests: `npm run test:cli-json`
+- Gesamte Test-Suite: `npm test` (führt alle 5 Suiten aus)
 
 ## Standalone CLI-Nutzung (Harness-Agnostisch)
 

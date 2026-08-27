@@ -70,10 +70,14 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 - `receipt`: maschinenlesbarer `VerificationReceipt` mit:
   - `source_id`, `gesetzesnummer`, `dokumentnummer`, `eli`, `paragraf`
   - `consolidated_as_of`, `retrieved_at`, `effective_from`, `effective_to`, `kundmachungsorgan`
-  - `content_sha256`, `retrieval_method`, `verification_status`, `fallback_reason`, `warning`
+  - `raw_content_sha256`, `normalized_content_sha256` (Duale SHA-256 Hashes)
+  - `cached: boolean` (Provenienzkennzeichnung für lokale Cache-Treffer)
+  - `retrieval_method` (`direct_source_id`, `eli_url`, `norm_document_url`, `ris_api_discovery`, `ris_html_search`, `web_search_fallback`)
+  - `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`, `unverified_fallback`)
+  - `fallback_reason`, `warning`
 
 **Fehlerklassen:**
-- `VALIDATION_ERROR` (inkl. unsichere/fremde Domains)
+- `VALIDATION_ERROR` (inkl. unsichere/fremde Domains, ungültige Stichtage)
 - `NOT_FOUND`
 - `UPSTREAM_UNAVAILABLE` (inkl. HTTP 503 retryable)
 - `NOT_IMPLEMENTED`
@@ -82,9 +86,12 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 
 **Zweck:** Abruf eines einzelnen RIS-Gesamtdokuments als `norm_document` mit `representation: "whole_law"` und `VerificationReceipt`.
 
+**Fast-Path (Kanonische Gesetze):**
+- Wird `query` oder `sourceId` mit einem bekannten Gesetzeskürzel (z. B. `"MRG"`, `"WEG"`, `"HeizKG"`, `"EStG"`, `"ABGB"`) übergeben, löst das Tool direkt über die Kanonische Gesetzesnummern-Tabelle auf die offizielle RIS-Gesamtfassungs-URL auf (`https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=...`), ohne Suchschleife.
+
 **Input:**
-- `query?: string` (Gesetzesname zur automatischen Notbehelf-Auflösung)
-- `sourceId?: string` (z. B. RIS-Dokumentnummer oder `LAW:Bundesnormen:10002894`)
+- `query?: string` (Gesetzesname/Kürzel zur automatischen oder kanonischen Auflösung)
+- `sourceId?: string` (z. B. RIS-Dokumentnummer, Gesetzeskürzel oder `LAW:Bundesnormen:10002894`)
 - `sourceUrl?: string` (direkte RIS-Dokument-URL oder ELI-URL)
 - `wholeLawUrl?: string` (bereits aufgelöste Gesamtfassungs-URL)
 - `scope?: "bund" | "land" | "municipal"`
@@ -94,10 +101,10 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 
 **Output:**
 - `artifact`: dokumentbezogenes Artefakt (`stable_id`, `frontmatter`, `content`, `metadata`)
-- `receipt`: maschinenlesbarer `VerificationReceipt`
+- `receipt`: maschinenlesbarer `VerificationReceipt` (inkl. `raw_content_sha256`, `normalized_content_sha256`, `cached`)
 
 **Fehlerklassen:**
-- `VALIDATION_ERROR` (inkl. unsichere Domains)
+- `VALIDATION_ERROR` (inkl. unsichere Domains, ungültige Stichtage)
 - `NOT_FOUND`
 - `UPSTREAM_UNAVAILABLE` (inkl. HTTP 503 retryable)
 
@@ -140,6 +147,6 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 
 **Verhalten:**
 - Unterstützt gemischte Batches aus Paragrafen und Gesamtnormen.
-- Dedupliziert identische Dokumentnummern / Source IDs innerhalb eines Batches.
+- Dedupliziert über einen mehrdimensionalen Schlüssel (`${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}`), sodass Anfragen nach demselben Paragrafen mit unterschiedlichen Stichtagen eigenständig geprüft werden.
 - Liefert den `VerificationReceipt` pro synchronisiertem Item.
 

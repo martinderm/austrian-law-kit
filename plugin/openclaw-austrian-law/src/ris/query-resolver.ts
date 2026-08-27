@@ -1,3 +1,5 @@
+import { lookupCanonicalLaw } from "./canonical-laws.js";
+
 const LAW_ALIASES: Record<string, string> = {
   abgb: "ABGB",
   stvo: "StVO",
@@ -5,11 +7,15 @@ const LAW_ALIASES: Record<string, string> = {
   stgb: "StGB",
   avg: "AVG",
   gewo: "GewO",
+  gewo1994: "GewO",
   emrk: "EMRK",
   mrg: "MRG",
   weg: "WEG",
+  weg2002: "WEG",
   ustg: "UStG",
+  ustg1994: "UStG",
   estg: "EStG",
+  estg1988: "EStG",
   kschg: "KSchG",
   asvg: "ASVG",
   zpo: "ZPO",
@@ -32,10 +38,14 @@ const LAW_ALIASES: Record<string, string> = {
   eodg: "EODG",
   urhg: "UrhG",
   patg: "PatG",
+  patg1970: "PatG",
   mschg: "MSchG",
+  mschg1970: "MSchG",
   uwg: "UWG",
   kartg: "KartG",
+  kartg2005: "KartG",
   bvergg: "BVergG",
+  bvergg2018: "BVergG",
   bverg: "BVergG",
   angg: "AngG",
   arbvg: "ArbVG",
@@ -46,6 +56,17 @@ const LAW_ALIASES: Record<string, string> = {
   eheg: "EheG",
   mieweg: "MieWeG",
   heizkg: "HeizKG",
+  jn: "JN",
+  eo: "EO",
+  gebg: "GebG 1957",
+  grestg: "GrEStG 1987",
+  vvg: "VVG",
+  vwgvg: "VwGVG",
+  kfg: "KFG 1967",
+  fagg: "FAGG",
+  vrug: "VRUG",
+  vkrg: "VKrG",
+  hikrg: "HIKrG",
 };
 
 export type RisResolvedQuery =
@@ -61,6 +82,8 @@ export type RisResolvedQuery =
       normalizedQuery: string;
       lawAbbreviation: string;
       sectionRef: string;
+      lawId?: string;
+      canonicalTitle?: string;
       headingRemainder?: string;
       searchVariants: string[];
     }
@@ -68,6 +91,8 @@ export type RisResolvedQuery =
       kind: "freeText";
       rawQuery: string;
       normalizedQuery: string;
+      lawId?: string;
+      canonicalTitle?: string;
       searchVariants: string[];
     };
 
@@ -182,29 +207,42 @@ export function resolveRisQuery(query: string): RisResolvedQuery {
 
   const normRef = extractNormRef(normalizedQuery);
   if (normRef) {
+    const canonical = lookupCanonicalLaw(normRef.lawAbbreviation);
+    const lawAbbreviation = normRef.lawAbbreviation;
     const sectionNumber = normRef.sectionRef.replace(/^§\s*/i, "").replace(/^Art\s*/i, "");
     return {
       kind: "normRef",
       rawQuery,
       normalizedQuery,
-      lawAbbreviation: normRef.lawAbbreviation,
+      lawAbbreviation,
       sectionRef: normRef.sectionRef,
+      lawId: canonical?.gesetzesnummer,
+      canonicalTitle: canonical?.title,
       headingRemainder: normRef.headingRemainder,
       searchVariants: dedupe([
-        `${normRef.lawAbbreviation} ${normRef.sectionRef}`,
-        `${normRef.sectionRef} ${normRef.lawAbbreviation}`,
-        `${normRef.lawAbbreviation} ${sectionNumber}`,
-        `${sectionNumber} ${normRef.lawAbbreviation}`,
-        normRef.headingRemainder ? `${normRef.lawAbbreviation} ${normRef.sectionRef} ${normRef.headingRemainder}` : "",
-        normRef.headingRemainder ? `${normRef.sectionRef} ${normRef.lawAbbreviation} ${normRef.headingRemainder}` : "",
+        `${lawAbbreviation} ${normRef.sectionRef}`,
+        `${normRef.sectionRef} ${lawAbbreviation}`,
+        canonical?.abbreviation && canonical.abbreviation !== lawAbbreviation ? `${canonical.abbreviation} ${normRef.sectionRef}` : "",
+        canonical?.title && canonical.title !== lawAbbreviation ? `${canonical.title} ${normRef.sectionRef}` : "",
+        `${lawAbbreviation} ${sectionNumber}`,
+        `${sectionNumber} ${lawAbbreviation}`,
+        normRef.headingRemainder ? `${lawAbbreviation} ${normRef.sectionRef} ${normRef.headingRemainder}` : "",
+        normRef.headingRemainder ? `${normRef.sectionRef} ${lawAbbreviation} ${normRef.headingRemainder}` : "",
       ]),
     };
   }
 
+  const freeTextCanonical = lookupCanonicalLaw(normalizedQuery);
   return {
     kind: "freeText",
     rawQuery,
     normalizedQuery,
-    searchVariants: dedupe([normalizedQuery]),
+    lawId: freeTextCanonical?.gesetzesnummer,
+    canonicalTitle: freeTextCanonical?.title,
+    searchVariants: dedupe([
+      normalizedQuery,
+      freeTextCanonical?.abbreviation ? freeTextCanonical.abbreviation : "",
+      freeTextCanonical?.title ? freeTextCanonical.title : "",
+    ]),
   };
 }
