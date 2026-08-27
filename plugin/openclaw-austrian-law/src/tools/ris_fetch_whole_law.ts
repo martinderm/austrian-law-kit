@@ -8,7 +8,7 @@ import {
   normalizeWholeLawStableIdFromSourceId,
 } from "../ris/whole-law-url.js";
 import { validateSafeRisUrl } from "../ris/segment-url.js";
-import { buildVerificationReceipt } from "../ris/verification-receipt.js";
+import { buildVerificationReceipt, validateStichtag } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
@@ -19,6 +19,18 @@ import { risSearchStub } from "./ris_search.js";
 import type { CachedArtifact, RetrievalMethod, RisFetchWholeLawInput, RisFetchWholeLawOutput } from "../types/tool-contracts.js";
 
 export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promise<RisFetchWholeLawOutput> {
+  const stichtagCheck = validateStichtag(input.stichtag);
+  if (!stichtagCheck.valid) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: stichtagCheck.error!,
+      },
+      meta: { tool: "ris_fetch_whole_law", source: "ris" },
+    };
+  }
+
   let fallbackReason: string | undefined;
   let initialRetrievalMethod: RetrievalMethod = input.sourceId
     ? "direct_source_id"
@@ -28,7 +40,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   if (!input.wholeLawUrl && !input.sourceId && !input.sourceUrl && input.query?.trim()) {
     fallbackReason = `Auto-resolve via query '${input.query.trim()}'`;
-    initialRetrievalMethod = "web_search_fallback";
+    initialRetrievalMethod = "ris_api_discovery";
     const searchResult = await risSearchStub({
       query: input.query.trim(),
       scope: input.scope,
@@ -104,18 +116,21 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     ? { hit: false, artifact: undefined, warning: undefined }
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_document" });
   if (cacheRead.hit && cacheRead.artifact) {
+    const existingReceipt = cacheRead.artifact.metadata?.verification_receipt as any;
     const receipt = buildVerificationReceipt({
       sourceId,
-      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined,
+      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined ?? existingReceipt?.gesetzesnummer,
       dokumentnummer: sourceId,
-      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : undefined,
+      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : existingReceipt?.eli,
       paragraf: "Gesamte Rechtsvorschrift",
-      consolidatedAsOf: cacheRead.artifact.frontmatter.effective_date,
+      consolidatedAsOf: existingReceipt?.consolidated_as_of ?? null,
       effectiveFrom: cacheRead.artifact.frontmatter.effective_date,
       effectiveTo: cacheRead.artifact.frontmatter.repealed_date,
       kundmachungsorgan: cacheRead.artifact.frontmatter.promulgation,
       content: cacheRead.artifact.content,
-      retrievalMethod: "cache_hit",
+      rawContent: existingReceipt?.raw_content_sha256 ? undefined : cacheRead.artifact.content,
+      retrievalMethod: existingReceipt?.retrieval_method ?? initialRetrievalMethod,
+      cached: true,
       stichtag: input.stichtag,
       normStatus: cacheRead.artifact.frontmatter.norm_status,
       fallbackReason,
@@ -209,19 +224,34 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   try {
     const parsed = parseRisWholeLawHtml(html);
 
+    const urlGesetzesnummer = (() => {
+      try {
+        const u = new URL(effectiveSourceUrl);
+        const gn = u.searchParams.get("Gesetzesnummer");
+        if (gn && /^\d+$/.test(gn.trim())) return gn.trim();
+      } catch {
+        const match = effectiveSourceUrl.match(/Gesetzesnummer=(\d+)/i);
+        if (match?.[1]) return match[1];
+      }
+      return undefined;
+    })();
+
     const receipt = buildVerificationReceipt({
       sourceId,
-      gesetzesnummer: apiLookup?.lawId,
+      gesetzesnummer: parsed.gesetzesnummer ?? urlGesetzesnummer ?? apiLookup?.lawId,
       dokumentnummer: sourceId,
       eli: apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined),
       paragraf: "Gesamte Rechtsvorschrift",
-      consolidatedAsOf: parsed.title,
+      consolidatedAsOf: parsed.consolidatedAsOf,
       effectiveFrom: undefined,
       effectiveTo: undefined,
-      kundmachungsorgan: undefined,
+      kundmachungsorgan: parsed.promulgation,
+      rawContent: html,
       content: parsed.content,
       retrievalMethod: initialRetrievalMethod,
+      cached: false,
       stichtag: input.stichtag,
+      normStatus: parsed.normStatus,
       fallbackReason,
     });
 

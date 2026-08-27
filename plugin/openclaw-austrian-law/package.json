@@ -13,7 +13,9 @@
     "test:parser-smoke": "tsx tests/parser-smoke.test.ts",
     "test:tool-smoke": "tsx tests/tool-smoke.test.ts",
     "test:cli-json": "tsx tests/cli-json.test.ts",
-    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke && npm run test:cli-json"
+    "test:legal-regression": "tsx tests/legal-regression.test.ts",
+    "test:smoke": "npm run test:parser-smoke && npm run test:tool-smoke && npm run test:legal-regression && npm run test:cli-json",
+    "test": "npm run test:smoke"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

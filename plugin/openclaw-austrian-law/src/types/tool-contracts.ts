@@ -32,32 +32,38 @@ export type RetrievalMethod =
   | "direct_source_id"
   | "eli_url"
   | "norm_document_url"
-  | "web_search_fallback"
-  | "cache_hit";
+  | "ris_api_discovery"
+  | "ris_html_search"
+  | "web_search_fallback";
 
 export type VerificationStatus =
   | "verified_current"
   | "historical_valid_for_stichtag"
   | "stichtag_mismatch"
+  | "insufficient_metadata"
   | "unverified_fallback";
 
 export interface VerificationReceipt {
-  source_id?: string;
-  gesetzesnummer?: string;
-  dokumentnummer?: string;
-  eli?: string;
-  paragraf?: string;
-  consolidated_as_of?: string;
+  source_id?: string | null;
+  gesetzesnummer?: string | null;
+  dokumentnummer?: string | null;
+  eli?: string | null;
+  paragraf?: string | null;
+  consolidated_as_of: string | null;
   retrieved_at: string;
-  effective_from?: string;
-  effective_to?: string;
-  kundmachungsorgan?: string;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  norm_status?: "in_force" | "current" | "historical" | "repealed" | "unknown";
+  kundmachungsorgan?: string | null;
+  raw_content_sha256: string;
+  normalized_content_sha256: string;
   content_sha256: string;
   retrieval_method: RetrievalMethod;
+  cached: boolean;
   verification_status: VerificationStatus;
-  fallback_reason?: string;
-  stichtag?: string;
-  warning?: string;
+  fallback_reason?: string | null;
+  stichtag: string;
+  warning?: string | null;
 }
 
 export interface LegalReviewJudicatureItem {

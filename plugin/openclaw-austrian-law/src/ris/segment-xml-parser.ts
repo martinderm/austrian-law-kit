@@ -9,7 +9,12 @@ export interface ParsedRisSegmentXml {
   effectiveDateRaw?: string;
   repealedDate?: string;
   repealedDateRaw?: string;
-  normStatus?: "current" | "historical" | "repealed";
+  consolidatedAsOf?: string;
+  consolidatedAsOfRaw?: string;
+  gesetzesnummer?: string;
+  dokumentnummer?: string;
+  eli?: string;
+  normStatus?: "in_force" | "current" | "historical" | "repealed" | "unknown";
   indexLabel?: string;
   promulgation?: string;
   heading?: string;
@@ -244,10 +249,56 @@ function extractTextSection(xml: string): string {
   return result;
 }
 
-function deriveNormStatus(params: { promulgation?: string; repealedDate?: string; }): "current" | "historical" | "repealed" | undefined {
+function deriveNormStatus(params: {
+  promulgation?: string;
+  repealedDate?: string;
+  effectiveDate?: string;
+}): "in_force" | "current" | "historical" | "repealed" | "unknown" {
   if (params.promulgation && /aufgehoben/i.test(params.promulgation)) return "repealed";
   if (params.repealedDate) return "repealed";
-  return "current";
+  if (params.effectiveDate) return "in_force";
+  return "unknown";
+}
+
+function extractXmlConsolidatedAsOf(xml: string): { date?: string; raw?: string } {
+  const direct = extractByCt(xml, "fassung_vom");
+  if (direct) {
+    return { date: toIsoDate(direct), raw: direct };
+  }
+  const match = xml.match(/<fassung_vom>([\s\S]*?)<\/fassung_vom>/i) ||
+                xml.match(/Fassung\s+vom\s+(\d{1,2}\.\d{1,2}\.\d{4}|\d{4}-\d{2}-\d{2})/i);
+  if (match && match[1]) {
+    const raw = match[1].trim();
+    const iso = raw.includes("-") ? raw : toIsoDate(raw);
+    return { date: iso, raw };
+  }
+  return {};
+}
+
+function extractXmlDokumentnummer(xml: string): string | undefined {
+  const byCt = extractByCt(xml, "dokumentnummer");
+  if (byCt && /^[A-Z0-9]+$/i.test(byCt.trim())) return byCt.trim();
+  const match = xml.match(/<dokumentnummer>([\s\S]*?)<\/dokumentnummer>/i) ||
+                xml.match(/<id>([A-Z0-9]+)<\/id>/i);
+  return match?.[1]?.trim();
+}
+
+function extractXmlGesetzesnummer(xml: string): string | undefined {
+  const byCt = extractByCt(xml, "gesetzesnummer");
+  if (byCt && /^\d+$/.test(byCt.trim())) return byCt.trim();
+  const match = xml.match(/<gesetzesnummer>([\s\S]*?)<\/gesetzesnummer>/i);
+  return match?.[1]?.trim();
+}
+
+function extractXmlEli(xml: string): string | undefined {
+  const byCt = extractByCt(xml, "eli");
+  if (byCt && byCt.startsWith("http")) return byCt.trim();
+  const match = xml.match(/<eli>([\s\S]*?)<\/eli>/i) || xml.match(/(\/eli\/bgbl\/[^\s<"']+)/i);
+  if (match?.[1]) {
+    const val = match[1].trim();
+    return val.startsWith("http") ? val : `https://www.ris.bka.gv.at${val}`;
+  }
+  return undefined;
 }
 
 export function parseRisSegmentXml(xml: string): ParsedRisSegmentXml {
@@ -257,7 +308,12 @@ export function parseRisSegmentXml(xml: string): ParsedRisSegmentXml {
   const repealedDateRaw = extractByCt(xml, "akra");
   const promulgation = extractByCt(xml, "kundmachungsorgan");
   const segmentRef = extractByCt(xml, "artikel_anlage");
+  const effectiveDate = toIsoDate(effectiveDateRaw);
   const repealedDate = toIsoDate(repealedDateRaw);
+  const fassung = extractXmlConsolidatedAsOf(xml);
+  const gesetzesnummer = extractXmlGesetzesnummer(xml);
+  const dokumentnummer = extractXmlDokumentnummer(xml);
+  const eli = extractXmlEli(xml);
 
   return {
     title: extractTitle(xml),
@@ -266,11 +322,16 @@ export function parseRisSegmentXml(xml: string): ParsedRisSegmentXml {
     lawAbbreviation,
     lawSlug: deriveLawSlug(lawAbbreviation),
     lawType: extractByCt(xml, "typ"),
-    effectiveDate: toIsoDate(effectiveDateRaw),
+    effectiveDate,
     effectiveDateRaw,
     repealedDate,
     repealedDateRaw,
-    normStatus: deriveNormStatus({ promulgation, repealedDate }),
+    consolidatedAsOf: fassung.date,
+    consolidatedAsOfRaw: fassung.raw,
+    gesetzesnummer,
+    dokumentnummer,
+    eli,
+    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate }),
     indexLabel: extractByCt(xml, "index"),
     promulgation,
     heading: extractParaHeading(xml),

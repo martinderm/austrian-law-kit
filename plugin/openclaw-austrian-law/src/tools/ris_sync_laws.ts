@@ -4,6 +4,7 @@ import { risSearchStub } from "./ris_search.js";
 import { resolveRisQuery } from "../ris/query-resolver.js";
 import { extractSourceIdFromRisUrl } from "../ris/segment-url.js";
 import { extractSourceIdFromWholeLawUrl } from "../ris/whole-law-url.js";
+import { validateStichtag } from "../ris/verification-receipt.js";
 import type {
   RisSyncLawsInput,
   RisSyncLawsItem,
@@ -24,6 +25,20 @@ function isSegmentItem(item: RisSyncLawsItem): boolean {
   return false;
 }
 
+function buildSyncDedupeKey(params: {
+  representation: "segment" | "whole_law";
+  sourceId?: string;
+  paragraph?: string;
+  stichtag?: string;
+  query?: string;
+}): string {
+  const rep = params.representation;
+  const source = (params.sourceId || params.query || "").trim().toLowerCase();
+  const para = (params.paragraph || "").trim().toLowerCase();
+  const stichtag = (params.stichtag || "current").trim();
+  return `${rep}::${source}::${para}::${stichtag}`;
+}
+
 export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncLawsOutput> {
   if (!input || !Array.isArray(input.laws) || input.laws.length === 0) {
     return {
@@ -36,8 +51,22 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
     };
   }
 
+  if (input.stichtag) {
+    const rootStichtagCheck = validateStichtag(input.stichtag);
+    if (!rootStichtagCheck.valid) {
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: rootStichtagCheck.error!,
+        },
+        meta: { tool: "ris_sync_laws", source: "ris" },
+      };
+    }
+  }
+
   const results: SyncedLawResult[] = [];
-  const seenSourceIds = new Map<string, SyncedLawResult>();
+  const seenEntries = new Map<string, SyncedLawResult>();
   let synced = 0;
   let cached = 0;
   let failed = 0;
@@ -75,9 +104,17 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
           }
         }
 
+        const dedupeKey = buildSyncDedupeKey({
+          representation: "segment",
+          sourceId: segmentSourceId,
+          paragraph: item.paragraph,
+          stichtag: effectiveStichtag,
+          query: item.query,
+        });
+
         // Deduplication check
-        if (segmentSourceId && seenSourceIds.has(segmentSourceId)) {
-          const prior = seenSourceIds.get(segmentSourceId)!;
+        if (seenEntries.has(dedupeKey)) {
+          const prior = seenEntries.get(dedupeKey)!;
           deduplicated++;
           cached++;
           results.push({
@@ -116,9 +153,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
             ok: true,
             receipt: fetchResult.data.receipt,
           };
-          if (artifact.frontmatter.source_id) {
-            seenSourceIds.set(artifact.frontmatter.source_id, resItem);
-          }
+          seenEntries.set(dedupeKey, resItem);
           results.push(resItem);
         } else {
           failed++;
@@ -138,8 +173,15 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
           wholeSourceId = extractSourceIdFromWholeLawUrl(wholeUrl) ?? undefined;
         }
 
-        if (wholeSourceId && seenSourceIds.has(wholeSourceId)) {
-          const prior = seenSourceIds.get(wholeSourceId)!;
+        const dedupeKey = buildSyncDedupeKey({
+          representation: "whole_law",
+          sourceId: wholeSourceId,
+          stichtag: effectiveStichtag,
+          query: item.query,
+        });
+
+        if (seenEntries.has(dedupeKey)) {
+          const prior = seenEntries.get(dedupeKey)!;
           deduplicated++;
           cached++;
           results.push({
@@ -174,9 +216,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
             ok: true,
             receipt: fetchResult.data.receipt,
           };
-          if (artifact.frontmatter.source_id) {
-            seenSourceIds.set(artifact.frontmatter.source_id, resItem);
-          }
+          seenEntries.set(dedupeKey, resItem);
           results.push(resItem);
         } else {
           failed++;

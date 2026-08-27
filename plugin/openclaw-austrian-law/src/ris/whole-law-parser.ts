@@ -2,6 +2,19 @@ export interface ParsedRisWholeLaw {
   title: string;
   content: string;
   lawTitle?: string;
+  consolidatedAsOf?: string;
+  consolidatedAsOfRaw?: string;
+  gesetzesnummer?: string;
+  promulgation?: string;
+  normStatus?: "in_force" | "current" | "historical" | "repealed" | "unknown";
+  eli?: string;
+}
+
+function toIsoDate(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const match = value.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!match) return undefined;
+  return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
 function decodeHtml(text: string): string {
@@ -123,6 +136,27 @@ function extractLawTitle(html: string): string | undefined {
   ]) ?? undefined;
 }
 
+function extractWholeLawConsolidatedAsOf(html: string): { date?: string; raw?: string } {
+  const match = html.match(/Fassung\s+vom\s+(\d{1,2}\.\d{1,2}\.\d{4}|\d{4}-\d{2}-\d{2})/i) ||
+                html.match(/FassungVom=(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})/i);
+  if (match && match[1]) {
+    const raw = match[1].trim();
+    const iso = raw.includes("-") ? raw : toIsoDate(raw);
+    return { date: iso, raw };
+  }
+  return {};
+}
+
+function extractWholeLawGesetzesnummer(html: string): string | undefined {
+  const match = html.match(/Gesetzesnummer=(\d+)/i);
+  return match?.[1]?.trim();
+}
+
+function extractWholeLawPromulgation(html: string): string | undefined {
+  const stfMatch = html.match(/StF:\s*([^<\n]+)/i);
+  return stfMatch?.[1]?.trim();
+}
+
 function extractDocumentContentBlocks(html: string): string[] {
   const blocks = Array.from(
     html.matchAll(/<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*(?=<div\b[^>]*class\s*=\s*["'][^"']*documentContent[^"']*["'][^>]*>|<\/div>\s*<div id=|<div id="BottomPageNavigation")/gi),
@@ -162,10 +196,18 @@ export function looksLikeRisWholeLawNotFound(html: string): boolean {
 export function parseRisWholeLawHtml(html: string): ParsedRisWholeLaw {
   const headingTitle = extractDocumentHeadingTitle(html);
   const lawTitle = extractLawTitle(html);
+  const fassung = extractWholeLawConsolidatedAsOf(html);
+  const gesetzesnummer = extractWholeLawGesetzesnummer(html);
+  const promulgation = extractWholeLawPromulgation(html);
 
   return {
     title: lawTitle ?? headingTitle,
     content: extractContent(html),
     lawTitle,
+    consolidatedAsOf: fassung.date,
+    consolidatedAsOfRaw: fassung.raw,
+    gesetzesnummer,
+    promulgation,
+    normStatus: looksLikeRisWholeLawNotFound(html) ? "unknown" : "in_force",
   };
 }

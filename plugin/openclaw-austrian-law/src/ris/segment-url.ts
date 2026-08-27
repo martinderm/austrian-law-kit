@@ -10,14 +10,22 @@ const ALLOWED_RIS_HOSTS = new Set([
 export function isSafeRisUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
     const host = url.hostname.toLowerCase();
-    if (ALLOWED_RIS_HOSTS.has(host)) return true;
+
+    // Check if a custom base URL override is configured (e.g. test environments)
     const customBase = resolveRisBaseUrl();
     if (customBase) {
       const customUrl = new URL(customBase);
-      if (customUrl.hostname.toLowerCase() === host) return true;
+      if (customUrl.hostname.toLowerCase() === host) {
+        return url.protocol === "https:" || url.protocol === "http:";
+      }
     }
+
+    // Official production hosts must strictly use HTTPS
+    if (ALLOWED_RIS_HOSTS.has(host)) {
+      return url.protocol === "https:";
+    }
+
     return false;
   } catch {
     return false;

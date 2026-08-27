@@ -25,7 +25,7 @@ export interface FrontmatterBase {
   effective_date_raw?: string;
   repealed_date?: string;
   repealed_date_raw?: string;
-  norm_status?: "current" | "historical" | "repealed";
+  norm_status?: "in_force" | "current" | "historical" | "repealed" | "unknown";
   published_date?: string;
   language?: string;
   jurisdiction?: string;

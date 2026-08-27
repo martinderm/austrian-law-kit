@@ -9,7 +9,7 @@ import {
   normalizeStableIdFromSourceId,
   validateSafeRisUrl,
 } from "../ris/segment-url.js";
-import { buildVerificationReceipt } from "../ris/verification-receipt.js";
+import { buildVerificationReceipt, validateStichtag } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
@@ -23,7 +23,7 @@ function buildDisplayTitle(params: {
   lawAbbreviation?: string;
   lawTitle?: string;
   heading?: string;
-  normStatus?: "current" | "historical" | "repealed";
+  normStatus?: "in_force" | "current" | "historical" | "repealed" | "unknown";
   fallbackTitle: string;
 }): string {
   const lawLabel = params.lawAbbreviation || params.lawTitle;
@@ -43,6 +43,18 @@ function buildDisplayTitle(params: {
 }
 
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
+  const stichtagCheck = validateStichtag(input.stichtag);
+  if (!stichtagCheck.valid) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: stichtagCheck.error!,
+      },
+      meta: { tool: "ris_fetch_segment", source: "ris" },
+    };
+  }
+
   if (input.segmentRef && input.segmentRef.trim().length > 0) {
     return {
       success: false,
@@ -99,18 +111,21 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     ? { hit: false, artifact: undefined, warning: undefined }
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
   if (cacheRead.hit && cacheRead.artifact) {
+    const existingReceipt = cacheRead.artifact.metadata?.verification_receipt as any;
     const receipt = buildVerificationReceipt({
       sourceId,
-      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined,
+      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined ?? existingReceipt?.gesetzesnummer,
       dokumentnummer: sourceId,
-      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : undefined,
+      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : existingReceipt?.eli,
       paragraf: cacheRead.artifact.frontmatter.segment_ref,
-      consolidatedAsOf: cacheRead.artifact.frontmatter.effective_date,
+      consolidatedAsOf: existingReceipt?.consolidated_as_of ?? null,
       effectiveFrom: cacheRead.artifact.frontmatter.effective_date,
       effectiveTo: cacheRead.artifact.frontmatter.repealed_date,
       kundmachungsorgan: cacheRead.artifact.frontmatter.promulgation,
       content: cacheRead.artifact.content,
-      retrievalMethod: "cache_hit",
+      rawContent: existingReceipt?.raw_content_sha256 ? undefined : cacheRead.artifact.content,
+      retrievalMethod: existingReceipt?.retrieval_method ?? initialRetrievalMethod,
+      cached: true,
       stichtag: input.stichtag,
       normStatus: cacheRead.artifact.frontmatter.norm_status,
     });
@@ -225,16 +240,18 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
     const receipt = buildVerificationReceipt({
       sourceId,
-      gesetzesnummer: apiLookup?.lawId,
-      dokumentnummer: sourceId,
-      eli: apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined),
+      gesetzesnummer: parsed.gesetzesnummer ?? apiLookup?.lawId,
+      dokumentnummer: parsed.dokumentnummer ?? sourceId,
+      eli: parsed.eli ?? (apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined)),
       paragraf: parsed.segmentRef,
-      consolidatedAsOf: parsed.effectiveDate,
+      consolidatedAsOf: parsed.consolidatedAsOf,
       effectiveFrom: parsed.effectiveDate,
       effectiveTo: parsed.repealedDate,
       kundmachungsorgan: parsed.promulgation,
+      rawContent: rawBody,
       content: parsed.content,
       retrievalMethod: initialRetrievalMethod,
+      cached: false,
       stichtag: input.stichtag,
       normStatus: parsed.normStatus,
     });

@@ -4,6 +4,7 @@ import { resolveRisQuery } from "../ris/query-resolver.js";
 import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
 import { parseRisDirectDocumentHit, parseRisSearchHtml } from "../ris/search-parser.js";
+import { validateStichtag } from "../ris/verification-receipt.js";
 import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
 
 const SEARCH_HEADERS = {
@@ -38,6 +39,13 @@ function filterExactSectionHits(hits: SearchHit[], resolved: ReturnType<typeof r
 function validateInput(input: RisSearchInput): string | null {
   if (typeof input.query !== "string" || input.query.trim().length < 2) {
     return "query must be a non-empty string with at least 2 characters";
+  }
+
+  if (input.stichtag) {
+    const stichtagCheck = validateStichtag(input.stichtag);
+    if (!stichtagCheck.valid) {
+      return stichtagCheck.error!;
+    }
   }
 
   if (input.scope === "land") {

@@ -9,7 +9,12 @@ export interface ParsedRisSegment {
   effectiveDateRaw?: string;
   repealedDate?: string;
   repealedDateRaw?: string;
-  normStatus?: "current" | "historical" | "repealed";
+  consolidatedAsOf?: string;
+  consolidatedAsOfRaw?: string;
+  gesetzesnummer?: string;
+  dokumentnummer?: string;
+  eli?: string;
+  normStatus?: "in_force" | "current" | "historical" | "repealed" | "unknown";
   indexLabel?: string;
   promulgation?: string;
   heading?: string;
@@ -104,6 +109,10 @@ function extractFirstNonEmpty(html: string, patterns: RegExp[]): string | null {
 function extractFieldByHeading(html: string, heading: string): string | undefined {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const patterns = [
+    new RegExp(
+      `<div\\b[^>]*class\\s*=\\s*["'][^"']*(?:contentBlock|p|embeddedContent)[^"']*["'][^>]*>[\\s\\S]*?<h[1-6]\\b[^>]*>[\\s\\S]*?${escaped}[\\s\\S]*?<\\/h[1-6]>([\\s\\S]*?)<\\/div>`,
+      "i",
+    ),
     new RegExp(
       `<div\\b[^>]*class\\s*=\\s*["'][^"']*p[^"']*["'][^>]*>[\\s\\S]*?<h3>\\s*${escaped}\\s*<\\/h3>([\\s\\S]*?)<\\/div>`,
       "i",
@@ -393,13 +402,54 @@ function extractHeading(html: string): string | undefined {
   ]) ?? undefined;
 }
 
+function extractConsolidatedAsOf(html: string): { date?: string; raw?: string } {
+  const directHeading = extractFieldByHeading(html, "Fassung vom");
+  if (directHeading) {
+    return { date: toIsoDate(directHeading), raw: directHeading };
+  }
+  const match = html.match(/Fassung\s+vom\s+(\d{1,2}\.\d{1,2}\.\d{4}|\d{4}-\d{2}-\d{2})/i) ||
+                html.match(/FassungVom=(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})/i);
+  if (match && match[1]) {
+    const raw = match[1];
+    const iso = raw.includes("-") ? raw : toIsoDate(raw);
+    return { date: iso, raw };
+  }
+  return {};
+}
+
+function extractGesetzesnummer(html: string): string | undefined {
+  const direct = extractFieldByHeading(html, "Gesetzesnummer");
+  if (direct && /^\d+$/.test(direct.trim())) return direct.trim();
+  const match = html.match(/Gesetzesnummer=(\d+)/i) || html.match(/data-norm-popup=["'](\d+)["']/i);
+  return match?.[1]?.trim();
+}
+
+function extractDokumentnummer(html: string): string | undefined {
+  const direct = extractFieldByHeading(html, "Dokumentnummer");
+  if (direct && /^[A-Z0-9]+$/i.test(direct.trim())) return direct.trim();
+  const match = html.match(/Dokumentnummer=([A-Z0-9]+)/i) || html.match(/\/Bundesnormen\/([A-Z0-9]+)\//i);
+  return match?.[1]?.trim();
+}
+
+function extractEli(html: string): string | undefined {
+  const direct = extractFieldByHeading(html, "ELI");
+  if (direct && direct.startsWith("http")) return direct.trim();
+  const match = html.match(/href=["'](\/eli\/bgbl\/[^"']+)["']/i);
+  if (match?.[1]) {
+    return `https://www.ris.bka.gv.at${match[1]}`;
+  }
+  return undefined;
+}
+
 function deriveNormStatus(params: {
   promulgation?: string;
   repealedDate?: string;
-}): "current" | "historical" | "repealed" | undefined {
+  effectiveDate?: string;
+}): "in_force" | "current" | "historical" | "repealed" | "unknown" {
   if (params.promulgation && /aufgehoben/i.test(params.promulgation)) return "repealed";
   if (params.repealedDate) return "repealed";
-  return "current";
+  if (params.effectiveDate) return "in_force";
+  return "unknown";
 }
 
 export function looksLikeRisNotFound(html: string): boolean {
@@ -409,13 +459,18 @@ export function looksLikeRisNotFound(html: string): boolean {
 export function parseRisSegmentHtml(html: string): ParsedRisSegment {
   const lawAbbreviation = extractFieldByHeading(html, "Abkürzung") ?? extractFieldByHeading(html, "Abkuerzung");
   const effectiveDateRaw = extractFieldByHeading(html, "Inkrafttretensdatum");
-  const repealedDateRaw = extractFieldByHeading(html, "Außerkrafttretensdatum") ?? extractFieldByHeading(html, "Außerkrafttretensdatum");
+  const repealedDateRaw = extractFieldByHeading(html, "Außerkrafttretensdatum") ?? extractFieldByHeading(html, "Aussenkrafttretensdatum");
   const promulgation = extractFieldByHeading(html, "Kundmachungsorgan");
   const heading = extractHeading(html);
   const segmentRef = normalizeSegmentRef(
-    extractFieldByHeading(html, "§/Artikel/Anlage") ?? extractFieldByHeading(html, "�/Artikel/Anlage"),
+    extractFieldByHeading(html, "§/Artikel/Anlage") ?? extractFieldByHeading(html, "/Artikel/Anlage"),
   );
+  const effectiveDate = toIsoDate(effectiveDateRaw);
   const repealedDate = toIsoDate(repealedDateRaw);
+  const fassung = extractConsolidatedAsOf(html);
+  const gesetzesnummer = extractGesetzesnummer(html);
+  const dokumentnummer = extractDokumentnummer(html);
+  const eli = extractEli(html);
 
   return {
     title: extractTitle(html),
@@ -424,11 +479,16 @@ export function parseRisSegmentHtml(html: string): ParsedRisSegment {
     lawAbbreviation,
     lawSlug: deriveLawSlug(lawAbbreviation),
     lawType: extractFieldByHeading(html, "Typ"),
-    effectiveDate: toIsoDate(effectiveDateRaw),
+    effectiveDate,
     effectiveDateRaw,
     repealedDate,
     repealedDateRaw,
-    normStatus: deriveNormStatus({ promulgation, repealedDate }),
+    consolidatedAsOf: fassung.date,
+    consolidatedAsOfRaw: fassung.raw,
+    gesetzesnummer,
+    dokumentnummer,
+    eli,
+    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate }),
     indexLabel: extractFieldByHeading(html, "Index"),
     promulgation,
     heading,
