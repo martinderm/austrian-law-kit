@@ -46,7 +46,7 @@ Enthalten sind:
   - `jusline_list_decisions` (Entscheidungslisten mit strukturierter Metadaten-Extraktion für Geschäftszahlen, RS-Nummern, ECLI, Gericht, Datum, Fundstellen und Spruch)
 - Lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS- und JUSLINE-Artefakte
 - JUSLINE-Query-Index für Cache-Reuse über `query + kind + limit` (TTL 24h, `refresh=true` als Force-Reload)
-- Umfassende Regressionstests und 6 Testsuiten mit **72 Tests** (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
+- Umfassende Regressionstests und 6 Testsuiten mit **76 Tests** (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
 
 Bewusst noch eingeschränkt:
 - JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle (RIS hat Vorrang)

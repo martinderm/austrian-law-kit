@@ -85,6 +85,12 @@ export interface RisApiDocumentReference {
           Gesetzesnummer?: string;
           GesamteRechtsvorschriftUrl?: string;
           Eli?: string;
+          Inkrafttretedatum?: string;
+          Inkrafttretensdatum?: string;
+          Ausserkrafttretedatum?: string;
+          Ausserkrafttretensdatum?: string;
+          FassungVom?: string;
+          Aenderungsrecht?: string;
         };
       };
       Landesrecht?: {
@@ -100,6 +106,12 @@ export interface RisApiDocumentReference {
           Gesetzesnummer?: string;
           GesamteRechtsvorschriftUrl?: string;
           Eli?: string;
+          Inkrafttretedatum?: string;
+          Inkrafttretensdatum?: string;
+          Ausserkrafttretedatum?: string;
+          Ausserkrafttretensdatum?: string;
+          FassungVom?: string;
+          Aenderungsrecht?: string;
         };
       };
       Gemeinden?: {

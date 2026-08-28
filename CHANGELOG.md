@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.18.0 - Stichtagsbezogene Auflösung konsolidierter RIS-Normen & Robuste Batch-Synchronisation
+- **Stichtagsbezogenes Suchranking (`src/ris/search-ranking.ts` & `src/tools/ris_search.ts`)**:
+  - `rankRisSearchHits` bewertet Kandidaten anhand von `effective_from`, `effective_to`, `norm_status`, `consolidated_as_of` und dem gewünschten Stichtag (Zeitzone `Europe/Vienna`).
+  - Am Stichtag in Kraft befindliche Fassungen (`verified_current` / `historical_valid_for_stichtag`) erhalten einen starken Ranking-Bonus (`+250`), abgelaufene oder noch nicht in Kraft getretene Fassungen (`stichtag_mismatch`) einen deutlichen Abzug (`-300`).
+  - Historische Fassungen (z. B. `NOR12040713` für `MRG § 3` oder `NOR40045312` für `KSchG § 6`) werden nicht mehr allein wegen exakter Paragraphenübereinstimmung als `best_candidate` priorisiert.
+- **Kandidaten-Prüfschleife in `ris_sync_laws` (`src/tools/ris_sync_laws.ts`)**:
+  - Bei Query-Auflösung (z. B. `MRG § 3` am Stichtag `2026-08-28`) evaluiert `ris_sync_laws` die RIS-Treffer der Reihe nach: Historische Fassungen mit `stichtag_mismatch` werden automatisch verworfen (und in `discarded_candidates` dokumentiert), bis die am Stichtag gültige Fassung (`NOR40167127`) ermittelt ist.
+  - Wird kein Treffer am Stichtag gefunden, schlägt das Item fail-closed mit deklariertem `stichtag_mismatch` und `ok: false` fehl; keine historische Fassung wird als erfolgreicher Sync gezählt.
+- **Differenzierte Batch-Zähler (`src/types/tool-contracts.ts` & `src/tools/ris_sync_laws.ts`)**:
+  - `RisSyncLawsOutput` liefert getrennte Zähler für `verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`, `synced`, `cached`, `failed`. `synced` suggeriert keine Aktualität.
+- **Strukturierte Netzwerkfehler-Diagnose**:
+  - Bei Netzwerkfehlern (z. B. `fetch failed`) geben alle Tools (`ris_fetch_segment`, `ris_fetch_whole_law`, `ris_search`, `ris-api/client.ts`) `retryable: true`, Fehlerphase (`phase`) und Upstream-URL nachvollziehbar im Fehlerobjekt aus.
+- **Erweiterte Regressions-Suite (`tests/legal-regression.test.ts`)**:
+  - 4 neue Regressionstests für `MRG § 3` (`NOR40167127`), `KSchG § 6` (`NOR40274264`), gemischte Stichtags-Batches und Netzwerkfehler-Diagnose (76 Tests über 6 Testsuiten zu 100% grün).
+
 ## 0.17.0 - JUSLINE Detail-Extraktion für Gerichtsentscheidungen
 - **Strukturierte Metadaten-Extraktion aus JUSLINE-Entscheidungen (`src/jusline/decision-detail.ts`)**:
   - **Gerichtliche Geschäftszahl (`case_number` / `geschaeftszahl`)**: Automatische Erkennung und Normalisierung von Geschäftszahlen für alle österreichischen Höchst- und Instanzgerichte (OGH wie `5Ob121/08t`, `1Ob23/15k`, `9Os12/21p`; VwGH wie `Ra 2021/05/0123`; VfGH wie `G 12/2023`, `V 45/2022`, `B 123/2012`; BVwG wie `W123 2123456-1`; LVwG wie `LVwG-AV-123/001-2022`).

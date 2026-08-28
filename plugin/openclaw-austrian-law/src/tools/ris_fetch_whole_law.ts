@@ -182,7 +182,8 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
-        message: `RIS whole-law request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
+        message: `Network error during RIS whole-law fetch from ${effectiveSourceUrl}: ${error instanceof Error ? error.message : "fetch failed"}`,
+        details: { phase: "fetch_whole_law_http_request", url: effectiveSourceUrl, error: error instanceof Error ? error.message : String(error) },
         retryable: true,
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },

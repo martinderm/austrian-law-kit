@@ -167,7 +167,8 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       success: false,
       error: {
         code: "UPSTREAM_UNAVAILABLE",
-        message: `RIS segment request failed: ${error instanceof Error ? error.message : "Unknown fetch error"}`,
+        message: `Network error during RIS segment fetch from ${effectiveSourceUrl}: ${error instanceof Error ? error.message : "fetch failed"}`,
+        details: { phase: "fetch_segment_http_request", url: effectiveSourceUrl, error: error instanceof Error ? error.message : String(error) },
         retryable: true,
       },
       meta: { tool: "ris_fetch_segment", source: "ris" },

@@ -1,6 +1,13 @@
 # Current Status
 
-Stand: 2026-08-27 (laufend aktualisiert)
+Stand: 2026-08-28 (laufend aktualisiert)
+
+## Kurzstand 2026-08-28 (v0.18.0 — Stichtagsbezogene Normauflösung & Robuste Batch-Synchronisation)
+- **Stichtagsbezogenes Ranking**: `rankRisSearchHits` bewertet Suchtreffer temporal anhand von `effective_from`, `effective_to`, `norm_status`, `consolidated_as_of` und dem Stichtag. Aktuelle Fassungen erhalten `+250` Bonus, veraltete Fassungen `-300` Abzug.
+- **Kandidaten-Schleife in `ris_sync_laws`**: Sucht automatisch nach der am Stichtag gültigen Fassung (z. B. `NOR40167127` für `MRG § 3`, `NOR40274264` für `KSchG § 6`) und verwirft historische Treffer (`NOR12040713`, `NOR40045312`) fail-closed.
+- **Getrennte Batch-Zähler**: `RisSyncLawsOutput` unterscheidet `verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata` von `synced`, `cached`, `failed`.
+- **Strukturierte Netzwerkfehler-Diagnose**: Netzwerkfehler wie `fetch failed` enthalten `retryable: true`, `phase` und Upstream-URL.
+- **Test-Abdeckung**: 6 Testsuiten mit insgesamt 76 Tests zu 100% grün (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
 
 ## Kurzstand 2026-08-27 (v0.17.0 — JUSLINE Detail-Extraktion für Gerichtsentscheidungen)
 - **Strukturierte Metadaten-Extraktion**: Automatische Erkennung von gerichtlichen Geschäftszahlen (`case_number` / `geschaeftszahl`) für OGH, VwGH, VfGH, BVwG, LVwG und Instanzgerichte sowie OGH-Rechtssatznummern (`RS...`), ECLI und Fundstellen-Zitaten (`SZ`, `EvBl`, `wobl`, `immolex`, `ecolex`, `RdW`, `Zak`, `JBl`, `ÖJZ`, `ZVR`, `MietSlg`).

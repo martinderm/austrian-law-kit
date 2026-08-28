@@ -26,6 +26,11 @@ export interface SearchHit {
   promulgation?: string;
   published_at?: string;
   changed_at?: string;
+  effective_from?: string;
+  effective_to?: string;
+  consolidated_as_of?: string;
+  norm_status?: "in_force" | "current" | "historical" | "repealed" | "unknown";
+  verification_status?: VerificationStatus;
 }
 
 export type RetrievalMethod =
@@ -188,6 +193,12 @@ export interface SyncedLawResult {
   ok: boolean;
   error?: string;
   receipt?: VerificationReceipt;
+  discarded_candidates?: Array<{
+    source_id?: string;
+    title?: string;
+    reason: string;
+    verification_status?: VerificationStatus;
+  }>;
 }
 
 export type RisSyncLawsOutput = ToolResult<{
@@ -196,6 +207,10 @@ export type RisSyncLawsOutput = ToolResult<{
   cached: number;
   failed: number;
   deduplicated?: number;
+  verified_current: number;
+  historical_valid_for_stichtag: number;
+  stichtag_mismatch: number;
+  insufficient_metadata: number;
   laws: SyncedLawResult[];
 }>;
 

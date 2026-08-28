@@ -82,3 +82,11 @@
 3. Server-Side-HTML: RIS und JUSLINE liefern klassisch serverseitig gerendertes HTML aus stabilen relationalen Datenbanken.
 4. Hohe Testabdeckung: 72 automatisierte Tests (inkl. komplexer Altfassungen und Volltexten von ABGB, MRG, StGB, MieWeG, KSchG, HeizKG) belegen 100%ige Zuverlässigkeit.
 5. Prinzip: Keine architektonischen Umbauten ohne konkreten Fehler- oder Evidenzbeleg („Never change a running system without concrete failure evidence“).
+
+## 2026-08-28 — Stichtagsbezogenes Suchranking & Kandidaten-Prüfschleife in ris_sync_laws
+**Entscheidung:**
+1. `rankRisSearchHits` bindet die temporale Validitätsprüfung (`effective_from`, `effective_to`, `norm_status`, `consolidated_as_of`) an den gewünschten Stichtag an.
+2. `ris_sync_laws` iteriert bei der Auflösung von Normzitaten durch gefundene Suchkandidaten und verwirft historische Fassungen mit `stichtag_mismatch` automatisch, bis die am Stichtag gültige Fassung gefunden ist.
+3. Der Batch-Output trennt physischen I/O-Sync (`synced`, `cached`, `failed`) strikt von rechtlichen Validierungszählern (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`).
+**Warum:**
+Verhindert, dass veraltete oder aufgehobene Fassungen allein wegen identischer Paragraphennummer fälschlicherweise als `best_candidate` ausgewählt oder als erfolgreicher aktueller Sync ausgewiesen werden. Stellt sicher, dass das Toolkit bei Nichterreichbarkeit der aktuellen Norm fail-closed arbeitet.

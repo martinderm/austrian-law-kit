@@ -85,7 +85,12 @@ async function fetchWithRetry(url: string): Promise<{ response?: Response; error
       }
       return { response, attempts };
     } catch (error) {
-      lastError = error;
+      lastError = {
+        message: error instanceof Error ? error.message : "fetch failed",
+        phase: "fetch_html_search_http_request",
+        url,
+        error: error instanceof Error ? error.message : String(error),
+      };
       if (attempts > MAX_RETRIES) break;
     }
   }
@@ -201,7 +206,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       const apiHits = apiResult.hits.map((entry) => entry.hit);
       const exactSectionHits = resolved.kind === "normRef" ? filterExactSectionHits(apiHits, resolved) : apiHits;
       if (resolved.kind !== "normRef" || exactSectionHits.length > 0) {
-        const rankedHits = rankRisSearchHits(exactSectionHits, resolved).slice(0, limit);
+        const rankedHits = rankRisSearchHits(exactSectionHits, resolved, input.stichtag).slice(0, limit);
         return {
           success: true,
           data: {
@@ -340,7 +345,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         continue;
       }
 
-      const rankedHits = rankRisSearchHits(filteredHtmlHits, resolved);
+      const rankedHits = rankRisSearchHits(filteredHtmlHits, resolved, input.stichtag);
 
       return {
         success: true,

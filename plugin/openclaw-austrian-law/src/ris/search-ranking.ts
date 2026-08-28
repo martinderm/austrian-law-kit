@@ -1,5 +1,6 @@
 import type { SearchHit } from "../types/tool-contracts.js";
 import type { RisResolvedQuery } from "./query-resolver.js";
+import { evaluateStichtagValidity, getViennaTodayDate, validateStichtag } from "./verification-receipt.js";
 
 function normalize(value: string | undefined): string {
   return (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -138,29 +139,85 @@ function scoreFreeTextHit(hit: SearchHit, resolved: RisResolvedQuery & { kind: "
   return { score, matchReason, confidence };
 }
 
-function scoreHit(hit: SearchHit, resolved: RisResolvedQuery): { score: number; matchReason: string; confidence: "high" | "medium" | "low" } {
+function scoreHit(hit: SearchHit, resolved: RisResolvedQuery, targetStichtag: string): {
+  score: number;
+  matchReason: string;
+  confidence: "high" | "medium" | "low";
+  verificationStatus: SearchHit["verification_status"];
+} {
+  let base: { score: number; matchReason: string; confidence: "high" | "medium" | "low" };
+
   if (resolved.kind === "sourceId") {
-    return { score: 100, matchReason: "direct sourceId match", confidence: "high" };
+    base = { score: 100, matchReason: "direct sourceId match", confidence: "high" };
+  } else if (resolved.kind === "normRef") {
+    base = scoreNormRefHit(hit, resolved);
+  } else {
+    base = scoreFreeTextHit(hit, resolved);
   }
 
-  if (resolved.kind === "normRef") {
-    return scoreNormRefHit(hit, resolved);
+  let score = base.score;
+  let matchReason = base.matchReason;
+  let confidence = base.confidence;
+
+  // Stichtag and Temporal Validity Evaluation
+  const temporalEval = evaluateStichtagValidity({
+    stichtag: targetStichtag,
+    effectiveFrom: hit.effective_from,
+    effectiveTo: hit.effective_to,
+    consolidatedAsOf: hit.consolidated_as_of,
+    normStatus: hit.norm_status,
+    retrievalMethod: "ris_api_discovery",
+  });
+
+  const verificationStatus = temporalEval.status;
+
+  if (verificationStatus === "verified_current") {
+    score += 250;
+    matchReason = `${matchReason} (in force on stichtag ${targetStichtag})`;
+  } else if (verificationStatus === "historical_valid_for_stichtag") {
+    score += 200;
+    matchReason = `${matchReason} (historical version valid for stichtag ${targetStichtag})`;
+  } else if (verificationStatus === "stichtag_mismatch") {
+    score -= 300;
+    matchReason = `${matchReason} (stichtag_mismatch for ${targetStichtag})`;
+    confidence = "low";
+  } else if (verificationStatus === "insufficient_metadata") {
+    score -= 40;
   }
 
-  return scoreFreeTextHit(hit, resolved);
+  // Recency bonus: prefer more recent amendment/promulgation dates when base scores are close
+  const dateCandidate = hit.changed_at || hit.published_at || hit.effective_from || hit.consolidated_as_of;
+  if (dateCandidate) {
+    const yr = parseInt(dateCandidate.slice(0, 4), 10);
+    if (!isNaN(yr) && yr >= 1970) {
+      score += Math.min(50, Math.floor((yr - 1970) / 1.5));
+    }
+  }
+
+  // Document ID generation heuristic: NOR40xxx are modern consolidated versions vs NOR12xxx older legacy IDs
+  if (hit.source_id?.toUpperCase().startsWith("NOR40")) {
+    score += 20;
+  }
+
+  return { score, matchReason, confidence, verificationStatus };
 }
 
-export function rankRisSearchHits(hits: SearchHit[], resolved: RisResolvedQuery): SearchHit[] {
+export function rankRisSearchHits(hits: SearchHit[], resolved: RisResolvedQuery, stichtag?: string): SearchHit[] {
+  const stichtagCheck = validateStichtag(stichtag);
+  const targetStichtag = stichtagCheck.valid ? stichtagCheck.stichtag : getViennaTodayDate();
+
   return [...hits]
     .map((hit) => {
-      const ranked = scoreHit(hit, resolved);
+      const ranked = scoreHit(hit, resolved, targetStichtag);
       return {
         ...hit,
         match_reason: ranked.matchReason,
         confidence: ranked.confidence,
+        verification_status: ranked.verificationStatus,
         __score: ranked.score,
       } as SearchHit & { __score: number };
     })
     .sort((a, b) => b.__score - a.__score)
     .map(({ __score, ...hit }) => hit);
 }
+

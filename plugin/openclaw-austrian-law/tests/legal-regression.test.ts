@@ -418,13 +418,14 @@ await test("Legal Regression: Batch items with identical sourceId but different 
 
   await withTempCacheRoot(async () => {
     let fetchCount = 0;
+    const viennaToday = getViennaTodayDate();
     await withMockedFetch(async () => {
       fetchCount++;
       return new Response(normHtml, { status: 200 });
     }, async () => {
       const res = await risSyncLawsStub({
         laws: [
-          { sourceId: "NOR99999999", paragraph: "§ 1", stichtag: "2026-08-27" },
+          { sourceId: "NOR99999999", paragraph: "§ 1", stichtag: viennaToday },
           { sourceId: "NOR99999999", paragraph: "§ 1", stichtag: "2025-01-01" }, // Different Stichtag!
         ],
       });
@@ -433,10 +434,360 @@ await test("Legal Regression: Batch items with identical sourceId but different 
       if (!res.success) return;
       assert.equal(res.data.total, 2);
       assert.equal(res.data.deduplicated, 0); // Must NOT be deduplicated!
+      assert.equal(res.data.verified_current, 1);
+      assert.equal(res.data.stichtag_mismatch, 1);
+      assert.equal(res.data.failed, 1);
+      assert.equal(res.data.laws[0]?.ok, true);
       assert.equal(res.data.laws[0]?.receipt?.verification_status, "verified_current");
+      assert.equal(res.data.laws[1]?.ok, false);
       assert.equal(res.data.laws[1]?.receipt?.verification_status, "stichtag_mismatch"); // Not in force in 2025
     });
   });
 });
 
+// 8. MRG § 3 Stichtagsauflösung: NOR40167127 (in force) vs NOR12040713 (historical)
+await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-08-28", async () => {
+  const mrg3ApiResponse = {
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "#text": "2", "@pageNumber": "1", "@pageSize": "10" },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR12040713", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR12040713", Veroeffentlicht: "1982-01-01" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002531",
+                    ArtikelParagraphAnlage: "§ 3",
+                    Paragraphnummer: "3",
+                    Inkrafttretedatum: "1982-01-01",
+                    Ausserkrafttretedatum: "2014-12-31",
+                    FassungVom: "2014-12-31",
+                    Kundmachungsorgan: "BGBl. Nr. 520/1981 aufgehoben durch BGBl. I Nr. 100/2014",
+                    Typ: "Historisch",
+                  },
+                },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR40167127", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40167127", Veroeffentlicht: "2015-01-01" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002531",
+                    ArtikelParagraphAnlage: "§ 3",
+                    Paragraphnummer: "3",
+                    Inkrafttretedatum: "2015-01-01",
+                    FassungVom: "2026-08-28",
+                    Kundmachungsorgan: "BGBl. Nr. 520/1981 zuletzt geändert durch BGBl. I Nr. 100/2014",
+                    Typ: "BG",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  };
+
+  const nor40167127Html = `<!doctype html><html><head><title>MRG § 3</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.2015</div>
+    <div class="contentBlock"><h3>Fassung vom</h3>28.08.2026</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR40167127</div>
+    <div class="documentContent"><p>§ 3. Erhaltung</p><p>(1) Der Vermieter hat das Mietobjekt zu erhalten.</p></div>
+  </body></html>`;
+
+  const nor12040713Html = `<!doctype html><html><head><title>MRG § 3 alt</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.1982</div>
+    <div class="contentBlock"><h3>Außerkrafttretensdatum</h3>31.12.2014</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR12040713</div>
+    <div class="documentContent"><p>§ 3 alte Fassung</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes("/Bundesrecht") || urlStr.includes("api.ris.bka.gv.at")) {
+        return new Response(JSON.stringify(mrg3ApiResponse), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (urlStr.includes("NOR40167127")) {
+        return new Response(nor40167127Html, { status: 200 });
+      }
+      if (urlStr.includes("NOR12040713")) {
+        return new Response(nor12040713Html, { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      // 1. Search Ranking test
+      const searchRes = await risSearchStub({
+        query: "MRG § 3",
+        stichtag: "2026-08-28",
+      });
+      assert.equal(searchRes.success, true);
+      if (!searchRes.success) return;
+      assert.equal(searchRes.data.best_candidate?.source_id, "NOR40167127");
+      assert.equal(searchRes.data.hits[0]?.source_id, "NOR40167127");
+      assert.equal(searchRes.data.hits[0]?.verification_status, "verified_current");
+      assert.equal(searchRes.data.hits[1]?.source_id, "NOR12040713");
+      assert.equal(searchRes.data.hits[1]?.verification_status, "stichtag_mismatch");
+
+      // 2. ris_sync_laws candidate resolution test
+      const syncRes = await risSyncLawsStub({
+        laws: [{ query: "MRG § 3", stichtag: "2026-08-28" }],
+      });
+      assert.equal(syncRes.success, true);
+      if (!syncRes.success) return;
+      assert.equal(syncRes.data.total, 1);
+      assert.equal(syncRes.data.synced, 1);
+      assert.equal(syncRes.data.failed, 0);
+      assert.equal(syncRes.data.verified_current, 1);
+      assert.equal(syncRes.data.laws[0]?.source_id, "NOR40167127");
+      assert.equal(syncRes.data.laws[0]?.ok, true);
+      assert.equal(syncRes.data.laws[0]?.receipt?.verification_status, "verified_current");
+    });
+  });
+});
+
+// 9. KSchG § 6 Stichtagsauflösung: NOR40274264 (in force) vs NOR40045312 (historical)
+await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 2026-08-28", async () => {
+  const kschg6ApiResponse = {
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "#text": "2", "@pageNumber": "1", "@pageSize": "10" },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR40045312", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40045312" },
+                Bundesrecht: {
+                  Kurztitel: "Konsumentenschutzgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002462",
+                    ArtikelParagraphAnlage: "§ 6",
+                    Paragraphnummer: "6",
+                    Inkrafttretedatum: "1979-10-01",
+                    Ausserkrafttretedatum: "2024-12-31",
+                    FassungVom: "2024-12-31",
+                    Typ: "Historisch",
+                  },
+                },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR40274264", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40274264" },
+                Bundesrecht: {
+                  Kurztitel: "Konsumentenschutzgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002462",
+                    ArtikelParagraphAnlage: "§ 6",
+                    Paragraphnummer: "6",
+                    Inkrafttretedatum: "2025-01-01",
+                    FassungVom: "2026-08-28",
+                    Typ: "BG",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  };
+
+  const nor40274264Html = `<!doctype html><html><head><title>KSchG § 6</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Konsumentenschutzgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 6</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.2025</div>
+    <div class="contentBlock"><h3>Fassung vom</h3>28.08.2026</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR40274264</div>
+    <div class="documentContent"><p>§ 6. Unzulässige Vertragsbestandteile</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes("/Bundesrecht") || urlStr.includes("api.ris.bka.gv.at")) {
+        return new Response(JSON.stringify(kschg6ApiResponse), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (urlStr.includes("NOR40274264")) {
+        return new Response(nor40274264Html, { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      const syncRes = await risSyncLawsStub({
+        laws: [{ query: "KSchG § 6", stichtag: "2026-08-28" }],
+      });
+      assert.equal(syncRes.success, true);
+      if (!syncRes.success) return;
+      assert.equal(syncRes.data.total, 1);
+      assert.equal(syncRes.data.verified_current, 1);
+      assert.equal(syncRes.data.laws[0]?.source_id, "NOR40274264");
+      assert.equal(syncRes.data.laws[0]?.ok, true);
+    });
+  });
+});
+
+// 10. Mixed Batch with Current and Historical Stichtage for the same norm
+await test("Legal Regression: Mixed batch with current and historical stichtag resolves distinct versions", async () => {
+  const mrg3ApiResponse = {
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "#text": "2", "@pageNumber": "1", "@pageSize": "10" },
+        OgdDocumentReference: [
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR12040713", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR12040713" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002531",
+                    ArtikelParagraphAnlage: "§ 3",
+                    Paragraphnummer: "3",
+                    Inkrafttretedatum: "1982-01-01",
+                    Ausserkrafttretedatum: "2014-12-31",
+                    FassungVom: "2014-12-31",
+                  },
+                },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
+                Technisch: { ID: "NOR40167127", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40167127" },
+                Bundesrecht: {
+                  Kurztitel: "Mietrechtsgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002531",
+                    ArtikelParagraphAnlage: "§ 3",
+                    Paragraphnummer: "3",
+                    Inkrafttretedatum: "2015-01-01",
+                    FassungVom: "2026-08-28",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  };
+
+  const nor40167127Html = `<!doctype html><html><head><title>MRG § 3</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.2015</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR40167127</div>
+    <div class="documentContent"><p>§ 3 aktuelle Fassung</p></div>
+  </body></html>`;
+
+  const nor12040713Html = `<!doctype html><html><head><title>MRG § 3 alt</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.1982</div>
+    <div class="contentBlock"><h3>Außerkrafttretensdatum</h3>31.12.2014</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR12040713</div>
+    <div class="documentContent"><p>§ 3 historische Fassung</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes("/Bundesrecht") || urlStr.includes("api.ris.bka.gv.at")) {
+        return new Response(JSON.stringify(mrg3ApiResponse), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (urlStr.includes("NOR40167127")) {
+        return new Response(nor40167127Html, { status: 200 });
+      }
+      if (urlStr.includes("NOR12040713")) {
+        return new Response(nor12040713Html, { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      const syncRes = await risSyncLawsStub({
+        laws: [
+          { query: "MRG § 3", stichtag: "2026-08-28" },
+          { query: "MRG § 3", stichtag: "2000-01-01" },
+        ],
+      });
+
+      assert.equal(syncRes.success, true);
+      if (!syncRes.success) return;
+      assert.equal(syncRes.data.total, 2);
+      assert.equal(syncRes.data.verified_current, 1);
+      assert.equal(syncRes.data.historical_valid_for_stichtag, 1);
+      assert.equal(syncRes.data.failed, 0);
+      assert.equal(syncRes.data.laws[0]?.source_id, "NOR40167127");
+      assert.equal(syncRes.data.laws[0]?.receipt?.verification_status, "verified_current");
+      assert.equal(syncRes.data.laws[1]?.source_id, "NOR12040713");
+      assert.equal(syncRes.data.laws[1]?.receipt?.verification_status, "historical_valid_for_stichtag");
+    });
+  });
+});
+
+// 11. Fail-closed batch for stichtag mismatch and network error diagnostic details
+await test("Legal Regression: Fail-closed batch for stichtag mismatch & detailed network error diagnostics", async () => {
+  // Test A: Direct fetch of historical version on modern stichtag fails closed
+  const nor12040713Html = `<!doctype html><html><head><title>MRG § 3 alt</title></head><body>
+    <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
+    <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
+    <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.1982</div>
+    <div class="contentBlock"><h3>Außerkrafttretensdatum</h3>31.12.2014</div>
+    <div class="contentBlock"><h3>Dokumentnummer</h3>NOR12040713</div>
+    <div class="documentContent"><p>§ 3 historische Fassung</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(nor12040713Html, { status: 200 }), async () => {
+      const syncRes = await risSyncLawsStub({
+        laws: [{ sourceId: "NOR12040713", stichtag: "2026-08-28" }],
+      });
+
+      // Single item batch with mismatch must return success: false
+      assert.equal(syncRes.success, false);
+      if (syncRes.success) return;
+      assert.equal(syncRes.error.code, "UPSTREAM_UNAVAILABLE");
+      const details = syncRes.error.details as Record<string, unknown>;
+      assert.equal(details.stichtag_mismatch, 1);
+      assert.equal(details.failed, 1);
+      assert.equal(details.verified_current, 0);
+    });
+
+    // Test B: Network failure emits phase, url, retryable: true
+    await withMockedFetch(async () => {
+      throw new TypeError("fetch failed");
+    }, async () => {
+      const segRes = await risFetchSegmentStub({ sourceId: "NOR40273695" });
+      assert.equal(segRes.success, false);
+      if (segRes.success) return;
+      assert.equal(segRes.error.code, "UPSTREAM_UNAVAILABLE");
+      assert.equal(segRes.error.retryable, true);
+      const details = segRes.error.details as Record<string, unknown>;
+      assert.equal(details.phase, "fetch_segment_http_request");
+      assert.ok(String(details.url).includes("NOR40273695"));
+    });
+  });
+});
+
 console.log("all legal regression tests passed");
+

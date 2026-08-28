@@ -1,4 +1,5 @@
 import { normalizeAustrianState } from "../ris/collections.js";
+import { normalizeDateString } from "../ris/verification-receipt.js";
 import type { SearchHit } from "../types/tool-contracts.js";
 import type { RisApiContentUrl, RisApiDocumentReference, RisApiSearchCandidate, RisApiSearchRequest, RisApiScope } from "./types.js";
 
@@ -106,6 +107,17 @@ export function mapApiDocumentReferences(
       sectionRef && sectionRef !== "§ 0" ? sectionRef : undefined,
     ]);
 
+    const effectiveFromRaw = scopedDetails?.Inkrafttretedatum || scopedDetails?.Inkrafttretensdatum;
+    const effectiveToRaw = scopedDetails?.Ausserkrafttretedatum || scopedDetails?.Ausserkrafttretensdatum;
+    const fassungVomRaw = scopedDetails?.FassungVom;
+    const effectiveFrom = normalizeDateString(effectiveFromRaw) ?? normalizeDateString(fassungVomRaw);
+    const effectiveTo = normalizeDateString(effectiveToRaw);
+    const consolidatedAsOf = normalizeDateString(fassungVomRaw);
+    const isRepealed = Boolean(effectiveToRaw) || (scopedDetails?.Kundmachungsorgan?.toLowerCase().includes("aufgehoben") ?? false);
+    const normStatus: SearchHit["norm_status"] = isRepealed
+      ? "repealed"
+      : (scopedDetails?.Typ?.toLowerCase().includes("historisch") ? "historical" : "in_force");
+
     const hit: SearchHit = {
       stable_id: stableIdFromSourceId(sourceId),
       source_id: sourceId,
@@ -127,6 +139,10 @@ export function mapApiDocumentReferences(
       promulgation: scopedDetails?.Kundmachungsorgan,
       published_at: general?.Veroeffentlicht,
       changed_at: general?.Geaendert,
+      effective_from: effectiveFrom,
+      effective_to: effectiveTo,
+      consolidated_as_of: consolidatedAsOf,
+      norm_status: normStatus,
     };
 
     hits.push({

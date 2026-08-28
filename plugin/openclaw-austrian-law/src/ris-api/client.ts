@@ -54,15 +54,22 @@ export function hasMoreRisApiPages(meta: RisApiHitsMeta): boolean {
 }
 
 export async function fetchRisApiJson(url: string): Promise<RisApiSearchResponseEnvelope> {
-  const response = await fetch(url, {
-    method: "GET",
-    headers: RIS_API_HEADERS,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      headers: RIS_API_HEADERS,
+    });
+  } catch (error) {
+    throw new RisApiError("HTTP_ERROR", `Network error during RIS API request from ${url}: ${error instanceof Error ? error.message : "fetch failed"}`, {
+      details: { phase: "fetch_api_http_request", url, error: error instanceof Error ? error.message : String(error) },
+    });
+  }
 
   if (!response.ok) {
     throw new RisApiError("HTTP_ERROR", `RIS API returned HTTP ${response.status}`, {
       status: response.status,
-      details: { url },
+      details: { phase: "fetch_api_http_response", url },
     });
   }
 
