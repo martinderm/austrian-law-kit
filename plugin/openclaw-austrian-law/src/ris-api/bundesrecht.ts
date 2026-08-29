@@ -1,5 +1,6 @@
 import { buildRisApiUrl, extractRisApiHitsMeta, fetchRisApiJson, hasMoreRisApiPages, RisApiError } from "./client.js";
 import { mapApiDocumentReferences } from "./mappers.js";
+import { extractSectionNumber } from "../ris/section-ref.js";
 import type { RisApiSearchCandidate, RisApiSearchRequest, RisApiSearchResult } from "./types.js";
 
 function extractRequestedParagraph(normalizedQuery: string): string | undefined {
@@ -137,7 +138,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
 
         const dedupedCurrent = dedupeCandidates(aggregateHits);
         const exactMatches = requestedParagraph
-          ? dedupedCurrent.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
+          ? dedupedCurrent.filter((candidate) => extractSectionNumber(candidate.hit.section_ref, candidate.hit.paragraph_number) === requestedParagraph)
           : [];
 
         if (requestedParagraph && exactMatches.length >= request.limit) {
@@ -160,7 +161,7 @@ export async function searchBundesrechtApi(request: RisApiSearchRequest): Promis
 
     const dedupedAfterAttempt = dedupeCandidates(aggregateHits);
     const exactAfterAttempt = requestedParagraph
-      ? dedupedAfterAttempt.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
+      ? dedupedAfterAttempt.filter((candidate) => extractSectionNumber(candidate.hit.section_ref, candidate.hit.paragraph_number) === requestedParagraph)
       : [];
 
     if (exactAfterAttempt.length > 0) {

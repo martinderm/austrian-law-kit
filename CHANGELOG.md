@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.1 - Exakte Abschnittsauflösung, XML-Konsistenz & CLI-Fehlersemantik
+- Exakte Paragrafenfilter leiten die Kennung vorrangig aus `section_ref` ab; `KSchG § 6` akzeptiert damit keine Treffer für `§§ 6a–6c`, selbst wenn das RIS-Feld `Paragraphnummer` nur `6` enthält.
+- API-Suchergebnisse tragen `xml_content_url`; query-basierte Segment-Synchronisation verwendet XML-first mit HTML-Fallback. Raw-Hashes bewahren die konkrete Upstream-Repräsentation, normalisierte Hashes gleichen reine Darstellungsunterschiede aus.
+- Reine Stichtagsfehler liefern `NO_VALID_VERSION_FOR_STICHTAG` (`retryable: false`) statt `UPSTREAM_UNAVAILABLE`.
+- Die CLI wertet sowohl `success: false` als auch `ok: false` als Fehlschlag und setzt nach Ausgabe des JSON einen Exit-Code ungleich null.
+- Paket-, Lockfile-, Plugin-Manifest-, User-Agent- und Dokumentationsversion sind auf `0.18.1` synchronisiert; Regressionstests decken die neuen Verträge ab.
+
 ## 0.18.0 - Stichtagsbezogene Auflösung konsolidierter RIS-Normen & Robuste Batch-Synchronisation
 - **Stichtagsbezogenes Suchranking (`src/ris/search-ranking.ts` & `src/tools/ris_search.ts`)**:
   - `rankRisSearchHits` bewertet Kandidaten anhand von `effective_from`, `effective_to`, `norm_status`, `consolidated_as_of` und dem gewünschten Stichtag (Zeitzone `Europe/Vienna`).

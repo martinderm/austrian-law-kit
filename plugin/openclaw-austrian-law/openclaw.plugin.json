@@ -2,7 +2,7 @@
   "id": "austrian-law-kit",
   "name": "Austrian Law Kit",
   "description": "OpenClaw-Plugin für österreichische Rechtsquellen mit RIS als Primärquelle und optionaler JUSLINE-Sekundärquelle.",
-  "version": "0.1.0",
+  "version": "0.18.1",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,

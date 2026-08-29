@@ -112,6 +112,13 @@ async function runCliJsonTests(): Promise<void> {
       assert.equal(result.results[1].success, true);
     });
 
+    // Test 6: ToolResult.success=false must propagate to the CLI exit decision
+    await test("processJsonPayload marks unsuccessful ToolResult as failed", async () => {
+      const { result, isOk } = await processJsonPayload({ laws: [] }, "ris_sync_laws", tempDir);
+      assert.equal(result.success, false);
+      assert.equal(isOk, false);
+    });
+
     console.log("cli-json tests passed");
   } finally {
     rmSync(tempDir, { recursive: true, force: true });

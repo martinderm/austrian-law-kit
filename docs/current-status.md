@@ -2,6 +2,12 @@
 
 Stand: 2026-08-28 (laufend aktualisiert)
 
+## Kurzstand 2026-08-28 (v0.18.1 — Exakte Abschnittsauflösung & konsistente Fehlersemantik)
+- **Exaktes Abschnittsmatching**: `section_ref` ist für die Abschnittskennung maßgeblich; Suffixparagraphen wie `§ 6a` werden nicht mehr als exakter Treffer für `§ 6` behandelt.
+- **XML-first und duale Hashsemantik**: Query-Auflösungen reichen `xml_content_url` bis zum Segmentabruf durch. Raw-Hashes bleiben repräsentationsspezifisch; normalisierte Hashes sind gegen reine Markdown-/Whitespace-Darstellungsunterschiede stabil.
+- **Fehler- und Prozessvertrag**: Reine Stichtagsabweichungen liefern `NO_VALID_VERSION_FOR_STICHTAG` ohne Retry-Empfehlung; `success: false` führt in der CLI zu einem Exit-Code ungleich null.
+- **Versionierung**: Paket, Lockfile, Plugin-Manifest, User-Agent und Dokumentation tragen einheitlich `0.18.1`.
+
 ## Kurzstand 2026-08-28 (v0.18.0 — Stichtagsbezogene Normauflösung & Robuste Batch-Synchronisation)
 - **Stichtagsbezogenes Ranking**: `rankRisSearchHits` bewertet Suchtreffer temporal anhand von `effective_from`, `effective_to`, `norm_status`, `consolidated_as_of` und dem Stichtag. Aktuelle Fassungen erhalten `+250` Bonus, veraltete Fassungen `-300` Abzug.
 - **Kandidaten-Schleife in `ris_sync_laws`**: Sucht automatisch nach der am Stichtag gültigen Fassung (z. B. `NOR40167127` für `MRG § 3`, `NOR40274264` für `KSchG § 6`) und verwirft historische Treffer (`NOR12040713`, `NOR40045312`) fail-closed.

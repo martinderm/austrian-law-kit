@@ -123,6 +123,12 @@ async function executeSingleCall(
   return await tool(toolArgs);
 }
 
+export function isSuccessfulToolResult(result: unknown): boolean {
+  if (typeof result !== "object" || result === null) return true;
+  const candidate = result as { success?: boolean; ok?: boolean };
+  return candidate.success !== false && candidate.ok !== false;
+}
+
 export async function processJsonPayload(
   parsedPayload: unknown,
   cliToolName?: string,
@@ -152,7 +158,7 @@ export async function processJsonPayload(
 
       try {
         const singleResult = await executeSingleCall(callTool, callArgs, workspaceDir);
-        const ok = singleResult?.ok !== false;
+        const ok = isSuccessfulToolResult(singleResult);
         if (ok) succeeded++;
         else failed++;
         results.push({
@@ -201,13 +207,13 @@ export async function processJsonPayload(
       const effectiveArgs = obj.arguments || obj.params || {};
       const effectiveWorkspace = obj.workspace || workspaceDir;
       const singleResult = await executeSingleCall(effectiveTool, effectiveArgs, effectiveWorkspace);
-      return { result: singleResult, isOk: singleResult?.ok !== false };
+      return { result: singleResult, isOk: isSuccessfulToolResult(singleResult) };
     }
 
     // Case B.3: Raw arguments object with cliToolName
     if (cliToolName) {
       const singleResult = await executeSingleCall(cliToolName, obj, workspaceDir);
-      return { result: singleResult, isOk: singleResult?.ok !== false };
+      return { result: singleResult, isOk: isSuccessfulToolResult(singleResult) };
     }
   }
 
@@ -309,7 +315,7 @@ async function main() {
     }
 
     if (!isOk) {
-      process.exit(1);
+      process.exitCode = 1;
     }
   } catch (e: any) {
     console.error("Error executing tool:", e?.message || e);

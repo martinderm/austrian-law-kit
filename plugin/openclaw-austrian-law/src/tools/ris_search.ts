@@ -4,12 +4,13 @@ import { resolveRisQuery } from "../ris/query-resolver.js";
 import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
 import { parseRisDirectDocumentHit, parseRisSearchHtml } from "../ris/search-parser.js";
+import { extractSectionNumber } from "../ris/section-ref.js";
 import { validateStichtag } from "../ris/verification-receipt.js";
 import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
 
 const SEARCH_HEADERS = {
   accept: "text/html,application/xhtml+xml",
-  "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.1)",
+  "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.18.1)",
 };
 
 const MAX_RETRIES = 2;
@@ -32,7 +33,7 @@ function extractRequestedSectionNumber(resolved: ReturnType<typeof resolveRisQue
 function filterExactSectionHits(hits: SearchHit[], resolved: ReturnType<typeof resolveRisQuery>): SearchHit[] {
   const requestedSection = extractRequestedSectionNumber(resolved);
   if (!requestedSection) return hits;
-  const exact = hits.filter((hit) => (hit.paragraph_number ?? "").trim().toLowerCase() === requestedSection.toLowerCase());
+  const exact = hits.filter((hit) => extractSectionNumber(hit.section_ref, hit.paragraph_number) === requestedSection.toLowerCase());
   return exact.length > 0 ? exact : [];
 }
 

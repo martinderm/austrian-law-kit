@@ -16,6 +16,7 @@ export interface SearchHit {
   district?: string;
   law_id?: string;
   content_url?: string;
+  xml_content_url?: string;
   whole_law_url?: string;
   document_url?: string;
   document_type?: string;

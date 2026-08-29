@@ -9,7 +9,11 @@ import { risFetchWholeLawStub } from "../src/tools/ris_fetch_whole_law.js";
 import { risSyncLawsStub } from "../src/tools/ris_sync_laws.js";
 import { risSearchStub } from "../src/tools/ris_search.js";
 import { formatLegalReviewMarkdown } from "../src/tools/format-result.js";
-import { getViennaTodayDate, validateStichtag } from "../src/ris/verification-receipt.js";
+import {
+  buildVerificationReceipt,
+  getViennaTodayDate,
+  validateStichtag,
+} from "../src/ris/verification-receipt.js";
 
 function test(name: string, fn: () => Promise<void> | void): Promise<void> {
   return Promise.resolve()
@@ -48,6 +52,40 @@ function withTempCacheRoot<T>(fn: () => Promise<T> | T): Promise<T> {
 }
 
 // ============================================================================
+
+await test("Legal Regression: normalized hashes are representation-neutral while raw hashes retain provenance", () => {
+  const common = {
+    sourceId: "NOR40274264",
+    paragraf: "§ 6",
+    retrievalMethod: "norm_document_url" as const,
+    stichtag: "2026-08-28",
+    effectiveFrom: "2025-01-01",
+    normStatus: "in_force" as const,
+  };
+  const htmlReceipt = buildVerificationReceipt({
+    ...common,
+    rawContent: "<p>(1) Vertragsbestimmungen sind nicht verbindlich.</p>",
+    content: "(1)Vertragsbestimmungen sind nicht verbindlich.",
+  });
+  const xmlReceipt = buildVerificationReceipt({
+    ...common,
+    rawContent: "<absatz nummer=\"1\">Vertragsbestimmungen sind nicht verbindlich.</absatz>",
+    content: "## Unzulässige Vertragsbestandteile\n\n(1)  Vertragsbestimmungen sind nicht verbindlich.",
+  });
+
+  assert.notEqual(htmlReceipt.raw_content_sha256, xmlReceipt.raw_content_sha256);
+  assert.equal(htmlReceipt.normalized_content_sha256, xmlReceipt.normalized_content_sha256);
+
+  const changedLegalStructureReceipt = buildVerificationReceipt({
+    ...common,
+    content: "(1) Vertragsbestimmungen sind nicht verbindlich.\n\n## Zusätzliche Zwischenüberschrift",
+  });
+  assert.notEqual(
+    htmlReceipt.normalized_content_sha256,
+    changedLegalStructureReceipt.normalized_content_sha256,
+  );
+});
+
 // VERIFIED AUSTRIAN LEGAL REGRESSION SUITE (B)
 // Primary Source: Rechtsinformationssystem des Bundes (RIS - ris.bka.gv.at)
 // Reference Date / Stichtag Context: Europe/Vienna
@@ -446,7 +484,8 @@ await test("Legal Regression: Batch items with identical sourceId but different 
 });
 
 // 8. MRG § 3 Stichtagsauflösung: NOR40167127 (in force) vs NOR12040713 (historical)
-await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-08-28", async () => {
+await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on current stichtag", async () => {
+  const viennaToday = getViennaTodayDate();
   const mrg3ApiResponse = {
     OgdSearchResult: {
       OgdDocumentResults: {
@@ -485,7 +524,7 @@ await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-
                     ArtikelParagraphAnlage: "§ 3",
                     Paragraphnummer: "3",
                     Inkrafttretedatum: "2015-01-01",
-                    FassungVom: "2026-08-28",
+                    FassungVom: viennaToday,
                     Kundmachungsorgan: "BGBl. Nr. 520/1981 zuletzt geändert durch BGBl. I Nr. 100/2014",
                     Typ: "BG",
                   },
@@ -502,7 +541,7 @@ await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-
     <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
     <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 3</div>
     <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.2015</div>
-    <div class="contentBlock"><h3>Fassung vom</h3>28.08.2026</div>
+    <div class="contentBlock"><h3>Fassung vom</h3>${viennaToday}</div>
     <div class="contentBlock"><h3>Dokumentnummer</h3>NOR40167127</div>
     <div class="documentContent"><p>§ 3. Erhaltung</p><p>(1) Der Vermieter hat das Mietobjekt zu erhalten.</p></div>
   </body></html>`;
@@ -533,7 +572,7 @@ await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-
       // 1. Search Ranking test
       const searchRes = await risSearchStub({
         query: "MRG § 3",
-        stichtag: "2026-08-28",
+        stichtag: viennaToday,
       });
       assert.equal(searchRes.success, true);
       if (!searchRes.success) return;
@@ -545,7 +584,7 @@ await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-
 
       // 2. ris_sync_laws candidate resolution test
       const syncRes = await risSyncLawsStub({
-        laws: [{ query: "MRG § 3", stichtag: "2026-08-28" }],
+        laws: [{ query: "MRG § 3", stichtag: viennaToday }],
       });
       assert.equal(syncRes.success, true);
       if (!syncRes.success) return;
@@ -561,11 +600,12 @@ await test("Legal Regression: MRG § 3 resolves to in-force NOR40167127 on 2026-
 });
 
 // 9. KSchG § 6 Stichtagsauflösung: NOR40274264 (in force) vs NOR40045312 (historical)
-await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 2026-08-28", async () => {
+await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on current stichtag", async () => {
+  const viennaToday = getViennaTodayDate();
   const kschg6ApiResponse = {
     OgdSearchResult: {
       OgdDocumentResults: {
-        Hits: { "#text": "2", "@pageNumber": "1", "@pageSize": "10" },
+        Hits: { "#text": "3", "@pageNumber": "1", "@pageSize": "10" },
         OgdDocumentReference: [
           {
             Data: {
@@ -590,6 +630,25 @@ await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 202
           {
             Data: {
               Metadaten: {
+                Technisch: { ID: "NOR40148651", Applikation: "BrKons" },
+                Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40148651" },
+                Bundesrecht: {
+                  Kurztitel: "Konsumentenschutzgesetz",
+                  BrKons: {
+                    Gesetzesnummer: "10002462",
+                    ArtikelParagraphAnlage: "§ 6a",
+                    Paragraphnummer: "6",
+                    Inkrafttretedatum: "2010-06-11",
+                    FassungVom: viennaToday,
+                    Typ: "BG",
+                  },
+                },
+              },
+            },
+          },
+          {
+            Data: {
+              Metadaten: {
                 Technisch: { ID: "NOR40274264", Applikation: "BrKons" },
                 Allgemein: { DokumentUrl: "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40274264" },
                 Bundesrecht: {
@@ -599,7 +658,7 @@ await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 202
                     ArtikelParagraphAnlage: "§ 6",
                     Paragraphnummer: "6",
                     Inkrafttretedatum: "2025-01-01",
-                    FassungVom: "2026-08-28",
+                    FassungVom: viennaToday,
                     Typ: "BG",
                   },
                 },
@@ -615,7 +674,7 @@ await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 202
     <div class="contentBlock"><h3>Kurztitel</h3>Konsumentenschutzgesetz</div>
     <div class="contentBlock"><h3>§/Artikel/Anlage</h3>§ 6</div>
     <div class="contentBlock"><h3>Inkrafttretensdatum</h3>01.01.2025</div>
-    <div class="contentBlock"><h3>Fassung vom</h3>28.08.2026</div>
+    <div class="contentBlock"><h3>Fassung vom</h3>${viennaToday}</div>
     <div class="contentBlock"><h3>Dokumentnummer</h3>NOR40274264</div>
     <div class="documentContent"><p>§ 6. Unzulässige Vertragsbestandteile</p></div>
   </body></html>`;
@@ -631,8 +690,18 @@ await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 202
       }
       return new Response("Not Found", { status: 404 });
     }, async () => {
+      const searchRes = await risSearchStub({
+        query: "KSchG § 6",
+        stichtag: viennaToday,
+      });
+      assert.equal(searchRes.success, true);
+      if (!searchRes.success) return;
+      assert.ok(searchRes.data.hits.length > 0);
+      assert.ok(searchRes.data.hits.every((hit) => hit.paragraph_number === "6"));
+      assert.ok(searchRes.data.hits.every((hit) => hit.source_id !== "NOR40148651"));
+
       const syncRes = await risSyncLawsStub({
-        laws: [{ query: "KSchG § 6", stichtag: "2026-08-28" }],
+        laws: [{ query: "KSchG § 6", stichtag: viennaToday }],
       });
       assert.equal(syncRes.success, true);
       if (!syncRes.success) return;
@@ -646,6 +715,7 @@ await test("Legal Regression: KSchG § 6 resolves to in-force NOR40274264 on 202
 
 // 10. Mixed Batch with Current and Historical Stichtage for the same norm
 await test("Legal Regression: Mixed batch with current and historical stichtag resolves distinct versions", async () => {
+  const viennaToday = getViennaTodayDate();
   const mrg3ApiResponse = {
     OgdSearchResult: {
       OgdDocumentResults: {
@@ -682,7 +752,7 @@ await test("Legal Regression: Mixed batch with current and historical stichtag r
                     ArtikelParagraphAnlage: "§ 3",
                     Paragraphnummer: "3",
                     Inkrafttretedatum: "2015-01-01",
-                    FassungVom: "2026-08-28",
+                    FassungVom: viennaToday,
                   },
                 },
               },
@@ -726,7 +796,7 @@ await test("Legal Regression: Mixed batch with current and historical stichtag r
     }, async () => {
       const syncRes = await risSyncLawsStub({
         laws: [
-          { query: "MRG § 3", stichtag: "2026-08-28" },
+          { query: "MRG § 3", stichtag: viennaToday },
           { query: "MRG § 3", stichtag: "2000-01-01" },
         ],
       });
@@ -747,6 +817,7 @@ await test("Legal Regression: Mixed batch with current and historical stichtag r
 
 // 11. Fail-closed batch for stichtag mismatch and network error diagnostic details
 await test("Legal Regression: Fail-closed batch for stichtag mismatch & detailed network error diagnostics", async () => {
+  const viennaToday = getViennaTodayDate();
   // Test A: Direct fetch of historical version on modern stichtag fails closed
   const nor12040713Html = `<!doctype html><html><head><title>MRG § 3 alt</title></head><body>
     <div class="contentBlock"><h3>Kurztitel</h3>Mietrechtsgesetz</div>
@@ -760,13 +831,14 @@ await test("Legal Regression: Fail-closed batch for stichtag mismatch & detailed
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(nor12040713Html, { status: 200 }), async () => {
       const syncRes = await risSyncLawsStub({
-        laws: [{ sourceId: "NOR12040713", stichtag: "2026-08-28" }],
+        laws: [{ sourceId: "NOR12040713", stichtag: viennaToday }],
       });
 
       // Single item batch with mismatch must return success: false
       assert.equal(syncRes.success, false);
       if (syncRes.success) return;
-      assert.equal(syncRes.error.code, "UPSTREAM_UNAVAILABLE");
+      assert.equal(syncRes.error.code, "NO_VALID_VERSION_FOR_STICHTAG");
+      assert.equal(syncRes.error.retryable, false);
       const details = syncRes.error.details as Record<string, unknown>;
       assert.equal(details.stichtag_mismatch, 1);
       assert.equal(details.failed, 1);

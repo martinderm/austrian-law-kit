@@ -34,6 +34,31 @@ export function computeContentSha256(content: string): string {
 }
 
 /**
+ * Produces a representation-neutral text form for semantic comparison.
+ * Raw upstream bytes remain available separately through raw_content_sha256.
+ */
+export function normalizeLegalContentForHash(content: string): string {
+  const lines = content
+    .normalize("NFKC")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  while (lines[0] && /^#{1,6}\s+/.test(lines[0])) {
+    lines.shift();
+  }
+
+  return lines
+    .map((line) => line.replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, ""))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .replace(/(\([0-9]+[a-z]?\))(?=\p{L})/giu, "$1 ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
+/**
  * Returns today's date in Europe/Vienna timezone as YYYY-MM-DD.
  */
 export function getViennaTodayDate(): string {
@@ -243,7 +268,7 @@ export function buildVerificationReceipt(params: ComputeReceiptParams): Verifica
   }
 
   const rawSha = computeSha256(params.rawContent || params.content);
-  const normalizedSha = computeSha256(params.content);
+  const normalizedSha = computeSha256(normalizeLegalContentForHash(params.content));
 
   const receipt: VerificationReceipt = {
     source_id: params.sourceId ?? null,

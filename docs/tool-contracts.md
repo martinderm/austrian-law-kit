@@ -29,7 +29,7 @@ Dieses Dokument definiert die aktuellen Tool-Verträge für das Plugin `austrian
 - Trefferliste mit Referenzen (`stable_id`, `source_id`, `title`, `source_url`, optional `snippet`)
 - optional `best_candidate` als bestgerankter Treffer
 - bei RIS-Treffern optionale Zusatzfelder wie `match_reason`, `confidence`, `normalized_query`, `resolver_kind`
-- im API-first-Pfad zusätzlich erste Metadatenfelder wie `application`, `scope`, `state`, `municipality`, `district`, `law_id`, `content_url`, `whole_law_url`, `document_type`, `legal_type`, `section_ref`
+- im API-first-Pfad zusätzlich erste Metadatenfelder wie `application`, `scope`, `state`, `municipality`, `district`, `law_id`, `content_url`, `xml_content_url`, `whole_law_url`, `document_type`, `legal_type`, `section_ref`
 
 **Aktueller Suchpfad (MVP):**
 - direkte `NOR...`-/`LOO...`-/`GEMRE...`-Dokumentnummern werden sofort aufgelöst
@@ -152,7 +152,9 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
 
 **Verhalten:**
 - **Kandidaten-Schleife bei Query-Auflösung**: Wenn ein Paragraf per Query angefordert wird (z. B. `MRG § 3`), prüft `ris_sync_laws` die RIS-Treffer der Reihe nach und verwirft historische Fassungen mit `stichtag_mismatch` automatisch, bis die am Stichtag gültige Fassung ermittelt ist.
+- **XML-first nach Query-Auflösung**: Liefert die OGD-RIS-API eine `xml_content_url`, wird diese für den Segmentabruf verwendet; `content_url` (HTML) bleibt Fallback. Der Raw-Hash bleibt repräsentationsspezifisch, der normalisierte Hash ist darstellungsneutral.
 - **Fail-Closed Stichtagsdisziplin**: Wird keine am Stichtag gültige Fassung gefunden, meldet das Item `ok: false`, inkrementiert `stichtag_mismatch` und `failed`. `synced` suggeriert keine Aktualität.
+- Scheitern alle Batch-Items ausschließlich an der zeitlichen Geltung, liefert das Tool `NO_VALID_VERSION_FOR_STICHTAG` mit `retryable: false`; `UPSTREAM_UNAVAILABLE` bleibt Transport- und Upstreamfehlern vorbehalten.
 - **Deduplizierung**: Dedupliziert über einen mehrdimensionalen Schlüssel (`${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}`), sodass Anfragen nach demselben Paragrafen mit unterschiedlichen Stichtagen eigenständig geprüft werden.
 - Liefert den `VerificationReceipt` pro synchronisiertem Item.
 

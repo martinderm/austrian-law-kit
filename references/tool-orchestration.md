@@ -51,7 +51,7 @@ Jeder erfolgreiche Abruf erzeugt im Metadaten-Objekt und in der Antwort einen `V
 - `effective_to`: Außerkrafttretedatum (YYYY-MM-DD)
 - `kundmachungsorgan`: z. B. `BGBl. Nr. 520/1981 zuletzt geändert durch BGBl. I Nr. 114/2025`
 - `raw_content_sha256`: SHA-256 Hash der Original-Upstream-Antwort
-- `normalized_content_sha256`: SHA-256 Hash des bereinigten Normtextes
+- `normalized_content_sha256`: SHA-256 Hash einer darstellungsneutral normalisierten Textform; die Markdown-Auszeichnung einer führenden Überschrift, Zeilenumbrüche und Listenmarker beeinflussen ihn nicht, inhaltliche Zwischenüberschriften bleiben erhalten
 - `cached`: `true`, wenn aus dem lokalen Cache bedient (ursprüngliche `retrieval_method` bleibt erhalten)
 - `retrieval_method`: `direct_source_id` | `eli_url` | `norm_document_url` | `ris_api_discovery` | `ris_html_search` | `web_search_fallback`
 - `verification_status`: `verified_current` | `historical_valid_for_stichtag` | `stichtag_mismatch` | `insufficient_metadata` | `unverified_fallback`
@@ -66,6 +66,8 @@ Jeder erfolgreiche Abruf erzeugt im Metadaten-Objekt und in der Antwort einen `V
 - Einzelne Paragrafen mehrerer Gesetze (`laws: [{ query: "MieWeG § 1" }, { query: "ABGB § 1096" }]`)
 - Ganze Gesetze (`laws: [{ query: "HeizKG" }]`)
 - Dedupliziert über den mehrdimensionalen Schlüssel `${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}`, wodurch gleiche Paragrafen mit verschiedenen Stichtagen eigenständig validiert werden.
+- Query-basierte Segmentauflösungen reichen die von der OGD-RIS-API gelieferte XML-Inhalts-URL an den Abruf weiter; HTML bleibt Fallback. Der `raw_content_sha256` bewahrt die konkrete Upstream-Repräsentation, der normalisierte Hash ermöglicht den repräsentationsneutralen Vergleich.
+- Wenn alle angefragten Fassungen ausschließlich am Stichtag scheitern, lautet der nicht retry-fähige Fehlercode `NO_VALID_VERSION_FOR_STICHTAG`; Transport- und Upstream-Ausfälle bleiben `UPSTREAM_UNAVAILABLE`.
 
 ## JUSLINE (Sekundärquelle)
 

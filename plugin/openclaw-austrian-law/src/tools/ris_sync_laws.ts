@@ -134,7 +134,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
             for (const cand of searchResult.data.hits) {
               const fetchCand = await risFetchSegmentStub({
                 sourceId: cand.source_id,
-                contentUrl: cand.content_url,
+                contentUrl: cand.xml_content_url ?? cand.content_url,
                 refresh: item.refresh,
                 stichtag: effectiveStichtag,
               });
@@ -150,7 +150,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
                     receipt,
                     isCacheHit,
                     sourceId: cand.source_id ?? fetchCand.data.artifact.frontmatter.source_id ?? "",
-                    contentUrl: cand.content_url,
+                    contentUrl: cand.xml_content_url ?? cand.content_url,
                   };
                   break;
                 } else {
@@ -488,11 +488,15 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
   }
 
   if (failed === input.laws.length) {
+    const stichtagOnlyFailure = stichtagMismatch === failed;
     return {
       success: false,
       error: {
-        code: "UPSTREAM_UNAVAILABLE",
-        message: `Failed to sync all ${input.laws.length} requested laws`,
+        code: stichtagOnlyFailure ? "NO_VALID_VERSION_FOR_STICHTAG" : "UPSTREAM_UNAVAILABLE",
+        message: stichtagOnlyFailure
+          ? `No requested law has a valid version for the requested stichtag`
+          : `Failed to sync all ${input.laws.length} requested laws`,
+        retryable: !stichtagOnlyFailure,
         details: {
           total: input.laws.length,
           failed,

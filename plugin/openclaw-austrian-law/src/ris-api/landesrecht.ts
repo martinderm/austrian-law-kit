@@ -1,5 +1,6 @@
 import { buildRisApiUrl, extractRisApiHitsMeta, fetchRisApiJson, hasMoreRisApiPages, RisApiError } from "./client.js";
 import { mapApiDocumentReferences } from "./mappers.js";
+import { extractSectionNumber } from "../ris/section-ref.js";
 import type { RisApiSearchCandidate, RisApiSearchRequest, RisApiSearchResult } from "./types.js";
 
 function asArray<T>(value: T | T[] | undefined): T[] {
@@ -142,7 +143,7 @@ export async function searchLandesrechtApi(request: RisApiSearchRequest): Promis
     const dedupedHits = dedupeCandidates(variantHits);
     const requestedParagraph = extractRequestedParagraph(request.normalizedQuery);
     const exactParagraphHits = requestedParagraph
-      ? dedupedHits.filter((candidate) => candidate.hit.paragraph_number?.toLowerCase() === requestedParagraph)
+      ? dedupedHits.filter((candidate) => extractSectionNumber(candidate.hit.section_ref, candidate.hit.paragraph_number) === requestedParagraph)
       : [];
     if (exactParagraphHits.length > 0) {
       return {

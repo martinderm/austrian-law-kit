@@ -1,4 +1,5 @@
 import { normalizeAustrianState } from "../ris/collections.js";
+import { extractSectionNumber } from "../ris/section-ref.js";
 import { normalizeDateString } from "../ris/verification-receipt.js";
 import type { SearchHit } from "../types/tool-contracts.js";
 import type { RisApiContentUrl, RisApiDocumentReference, RisApiSearchCandidate, RisApiSearchRequest, RisApiScope } from "./types.js";
@@ -129,12 +130,13 @@ export function mapApiDocumentReferences(
       state: normalizeAustrianState(state),
       law_id: scopedDetails?.Gesetzesnummer,
       content_url: htmlUrl,
+      xml_content_url: xmlUrl,
       whole_law_url: scopedDetails?.GesamteRechtsvorschriftUrl,
       document_url: general?.DokumentUrl,
       document_type: scopedDetails?.Dokumenttyp,
       legal_type: scopedDetails?.Typ,
       section_ref: sectionRef,
-      paragraph_number: scopedDetails?.Paragraphnummer,
+      paragraph_number: extractSectionNumber(sectionRef, scopedDetails?.Paragraphnummer),
       law_abbreviation: isBund ? bundesrecht?.BrKons?.Abkuerzung : undefined,
       promulgation: scopedDetails?.Kundmachungsorgan,
       published_at: general?.Veroeffentlicht,

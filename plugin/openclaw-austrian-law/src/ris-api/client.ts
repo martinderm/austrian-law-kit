@@ -3,7 +3,7 @@ import type { RisApiHitsMeta, RisApiSearchResponseEnvelope } from "./types.js";
 
 const RIS_API_HEADERS = {
   accept: "application/json",
-  "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.1)",
+  "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.18.1)",
 };
 
 export type RisApiErrorCode = "HTTP_ERROR" | "INVALID_JSON" | "API_ERROR";

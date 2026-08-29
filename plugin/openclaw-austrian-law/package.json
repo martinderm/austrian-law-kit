@@ -1,6 +1,6 @@
 {
   "name": "austrian-law-kit",
-  "version": "0.1.0",
+  "version": "0.18.1",
   "description": "Native Austrian law plugin kit for OpenClaw.",
   "license": "MIT",
   "type": "module",
