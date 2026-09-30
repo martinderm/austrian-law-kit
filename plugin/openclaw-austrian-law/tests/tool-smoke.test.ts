@@ -1741,4 +1741,222 @@ await test("ris_sync_laws deduplicates duplicate document numbers in batch", asy
   });
 });
 
+await test("ris_fetch_segment derives post-fetch document identity and fails closed for unresolvable NormDokument URLs (T3)", async () => {
+  const { extractSourceIdFromRisUrl } = await import("../src/ris/segment-url.ts");
+  const { extractSourceIdFromWholeLawUrl } = await import("../src/ris/whole-law-url.ts");
+
+  assert.equal(
+    extractSourceIdFromRisUrl("https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004569&Paragraf=24&FassungVom=2026-09-30"),
+    null,
+  );
+  assert.equal(
+    extractSourceIdFromRisUrl("https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004569&Paragraf=9"),
+    null,
+  );
+  assert.equal(
+    extractSourceIdFromRisUrl("https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40258475/NOR40258475.xml"),
+    "NOR40258475",
+  );
+  assert.equal(
+    extractSourceIdFromRisUrl("https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40269397"),
+    "NOR40269397",
+  );
+  assert.equal(
+    extractSourceIdFromRisUrl("https://www.ris.bka.gv.at/eli/bgbl/1981/520/P29/NOR40273695"),
+    "NOR40273695",
+  );
+  assert.equal(
+    extractSourceIdFromRisUrl("https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40269397"),
+    "NOR40269397",
+  );
+  assert.equal(extractSourceIdFromWholeLawUrl("https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Paragraf=1"), null);
+  assert.equal(
+    extractSourceIdFromWholeLawUrl("https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40258475/NOR40258475.xml"),
+    "NOR40258475",
+  );
+  assert.equal(
+    extractSourceIdFromWholeLawUrl("https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002296"),
+    "LAW:Bundesnormen:10002296",
+  );
+
+  const segmentHtml = (docNo: string, gesetz: string, paragraf: string, eli: string) => `<!doctype html><html><head><title>TestG ${paragraf} - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>${paragraf}</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>${gesetz}</div>
+    <div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>${docNo}</div>
+    <div class="contentBlock"><h1 class="Titel">ELI</h1>${eli}</div>
+    <div class="documentContent"><p>Testnormtext zu ${paragraf}.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      if (url.includes("Paragraf=24")) {
+        return new Response(
+          segmentHtml("NOR40263406", "10004569", "§ 24", "https://www.ris.bka.gv.at/eli/bgbl/2026/1/P24/NOR40263406"),
+          { status: 200 },
+        );
+      }
+      if (url.includes("Paragraf=9")) {
+        return new Response(
+          segmentHtml("NOR40269397", "10004569", "§ 9", "https://www.ris.bka.gv.at/eli/bgbl/2026/1/P9/NOR40269397"),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
+          <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz ohne Identitaet</div>
+          <div class="documentContent"><p>Kein Dokumentnummernfeld vorhanden.</p></div>
+        </body></html>`,
+        { status: 200 },
+      );
+    }, async () => {
+      const first = await risFetchSegmentStub({
+        sourceUrl: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004569&Paragraf=24&FassungVom=2026-09-30",
+      });
+      assert.equal(first.success, true);
+      if (!first.success) return;
+      assert.equal(first.data.artifact.stable_id, "ris:segment:nor40263406");
+      assert.equal(first.data.artifact.frontmatter.source_id, "NOR40263406");
+      assert.equal(first.data.receipt?.dokumentnummer, "NOR40263406");
+
+      const second = await risFetchSegmentStub({
+        sourceUrl: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004569&Paragraf=9",
+      });
+      assert.equal(second.success, true);
+      if (!second.success) return;
+      assert.equal(second.data.artifact.stable_id, "ris:segment:nor40269397");
+      assert.notEqual(first.data.artifact.stable_id, second.data.artifact.stable_id);
+
+      const unresolved = await risFetchSegmentStub({
+        sourceUrl: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004569&Paragraf=1",
+      });
+      assert.equal(unresolved.success, false);
+      if (!unresolved.success) {
+        assert.equal(unresolved.error.code, "VALIDATION_ERROR");
+        assert.ok(unresolved.error.message.includes("Unable to resolve source_id"));
+      }
+    });
+  });
+});
+
+await test("ris_fetch_segment cache hits preserve original receipt provenance across stichtage (T7)", async () => {
+  const html = `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz für Cache-Provenienz</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>10004569</div>
+    <div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>NOR40263406</div>
+    <div class="contentBlock"><h1 class="Titel">ELI</h1>https://www.ris.bka.gv.at/eli/bgbl/2026/1/P1/NOR40263406</div>
+    <div class="documentContent"><p>Testnormtext für die Provenienzprüfung.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    let fetchCount = 0;
+    await withMockedFetch(async () => {
+      fetchCount += 1;
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const fresh = await risFetchSegmentStub({
+        sourceId: "NOR40263406",
+        contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40263406/NOR40263406.html",
+        refresh: true,
+      });
+      assert.equal(fresh.success, true);
+      if (!fresh.success) return;
+      const original = fresh.data.receipt!;
+      assert.equal(fetchCount, 1);
+
+      const hit = await risFetchSegmentStub({ sourceId: "NOR40263406" });
+      assert.equal(hit.success, true);
+      if (!hit.success) return;
+      assert.equal(fetchCount, 1);
+      const cached = hit.data.receipt!;
+      assert.equal(cached.cached, true);
+      assert.equal(cached.raw_content_sha256, original.raw_content_sha256);
+      assert.equal(cached.retrieved_at, original.retrieved_at);
+      assert.equal(cached.gesetzesnummer, original.gesetzesnummer);
+      assert.equal(cached.eli, original.eli);
+      assert.equal(cached.retrieval_method, original.retrieval_method);
+      assert.equal(cached.dokumentnummer, original.dokumentnummer);
+      assert.equal(cached.gesetzesnummer, "10004569");
+    });
+  });
+});
+
+await test("ris_fetch_whole_law cache hits preserve original receipt provenance and persisted norm metadata (T7)", async () => {
+  const html = `<!doctype html><html><head><title>HeizKG - Gesamte Rechtsvorschrift - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Heizkostenabrechnungsgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Langtitel</h1>Bundesgesetz über die Aufteilung der Heiz- und Warmwasserkosten<br>StF: BGBl. Nr. 827/1992</div>
+    <div class="contentBlock"><h1 class="Titel">Fassung vom</h1>27.09.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>10002894</div>
+    <div class="documentContent"><p>§ 1. Heizkostenabrechnungsgesetz Inhalt.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    let fetchCount = 0;
+    await withMockedFetch(async () => {
+      fetchCount += 1;
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const wholeLawUrl = "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002894";
+      const fresh = await risFetchWholeLawStub({ wholeLawUrl, refresh: true });
+      assert.equal(fresh.success, true);
+      if (!fresh.success) return;
+      const original = fresh.data.receipt!;
+      assert.equal(fetchCount, 1);
+      assert.equal(fresh.data.artifact.frontmatter.norm_status, "in_force");
+      assert.ok(fresh.data.artifact.frontmatter.promulgation?.includes("BGBl. Nr. 827/1992"));
+
+      const hit = await risFetchWholeLawStub({ wholeLawUrl });
+      assert.equal(hit.success, true);
+      if (!hit.success) return;
+      assert.equal(fetchCount, 1);
+      const cached = hit.data.receipt!;
+      assert.equal(cached.cached, true);
+      assert.equal(cached.raw_content_sha256, original.raw_content_sha256);
+      assert.equal(cached.retrieved_at, original.retrieved_at);
+      assert.equal(cached.gesetzesnummer, original.gesetzesnummer);
+      assert.equal(cached.retrieval_method, original.retrieval_method);
+      assert.equal(hit.data.artifact.frontmatter.norm_status, "in_force");
+    });
+  });
+});
+
+await test("ris_fetch_segment cache hits flag incomplete legacy provenance without network access (T7)", async () => {
+  await withTempCacheRoot(async () => {
+    const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+    const legacyArtifact = {
+      stable_id: "ris:segment:norlegacy001",
+      frontmatter: {
+        stable_id: "ris:segment:norlegacy001",
+        source: "ris",
+        source_url: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORLEGACY001/NORLEGACY001.html",
+        doc_type: "norm_segment",
+        title: "Legacy Segment",
+        fetched_at: new Date().toISOString(),
+        version_label: "unknown",
+        fassung_typ: "Arbeitsfassung",
+        source_id: "NORLEGACY001",
+        segment_ref: "§ 1",
+      },
+      content: "Legacy Cache Inhalt",
+      metadata: {},
+    };
+    await writeThroughCacheForRisArtifact(legacyArtifact as any);
+
+    await withMockedFetch(async () => {
+      throw new Error("network must not be used for a valid cache");
+    }, async () => {
+      const hit = await risFetchSegmentStub({ sourceId: "NORLEGACY001" });
+      assert.equal(hit.success, true);
+      if (!hit.success) return;
+      assert.equal(hit.data.receipt?.cached, true);
+      assert.ok(hit.data.receipt?.warning?.includes("legacy cache receipt: provenance incomplete"));
+      assert.equal(hit.data.receipt?.gesetzesnummer, null);
+    });
+  });
+});
+
 console.log("tool smoke tests passed");

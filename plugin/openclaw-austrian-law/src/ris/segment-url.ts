@@ -46,6 +46,17 @@ function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Lan
   return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
 }
 
+const DOCUMENT_ID_PATTERN = /\b(NOR\d+|LOO\d+|GEMREA_[0-9A-Z_]+|GEMRE_[0-9A-Z_]+)\b/i;
+
+export function extractDocumentIdFromRisPath(pathname: string): string | null {
+  const isDocumentPath = /\/Dokumente\//i.test(pathname);
+  const isEliPath = /\/eli\//i.test(pathname);
+  if (!isDocumentPath && !isEliPath) return null;
+
+  const match = pathname.match(DOCUMENT_ID_PATTERN);
+  return match?.[1] ? match[1].toUpperCase() : null;
+}
+
 export function extractSourceIdFromRisUrl(sourceUrl: string): string | null {
   let url: URL;
   try {
@@ -57,10 +68,7 @@ export function extractSourceIdFromRisUrl(sourceUrl: string): string | null {
   const docNo = url.searchParams.get("Dokumentnummer")?.trim();
   if (docNo && docNo.length > 0) return docNo;
 
-  const pathMatch = url.pathname.match(/\b(NOR[0-9A-Z]+|LOO[0-9A-Z]+|GEMREA_[0-9A-Z]+|GEMRE_[0-9A-Z]+)\b/i);
-  if (pathMatch?.[1]) return pathMatch[1].toUpperCase();
-
-  return null;
+  return extractDocumentIdFromRisPath(url.pathname);
 }
 
 export function buildRisSegmentUrl(params: { sourceId?: string; sourceUrl?: string }): string {

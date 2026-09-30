@@ -1,4 +1,8 @@
-import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
+import {
+  applyCachedReceiptProvenance,
+  tryReadCachedRisArtifact,
+  type CacheReadReuseResult,
+} from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { deriveNormStatus, parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
@@ -40,6 +44,66 @@ export function buildDisplayTitle(params: {
   if (params.normStatus === "repealed") return `${withHeading} (historisch/aufgehoben)`;
   if (params.normStatus === "historical") return `${withHeading} (historisch)`;
   return withHeading;
+}
+
+function serveSegmentCacheHit(params: {
+  artifact: CachedArtifact;
+  sourceId: string;
+  initialRetrievalMethod: RetrievalMethod;
+  stichtag: string;
+}): RisFetchSegmentOutput {
+  const existingReceipt = params.artifact.metadata?.verification_receipt;
+  const cacheNormStatus = deriveNormStatus({
+    promulgation: params.artifact.frontmatter.promulgation,
+    repealedDate: params.artifact.frontmatter.repealed_date,
+    effectiveDate: params.artifact.frontmatter.effective_date,
+    stichtag: params.stichtag,
+  });
+  const cacheDisplayTitle = buildDisplayTitle({
+    segmentRef: params.artifact.frontmatter.segment_ref,
+    lawAbbreviation: params.artifact.frontmatter.law_abbreviation,
+    lawTitle: params.artifact.frontmatter.law_title,
+    heading: params.artifact.frontmatter.heading,
+    normStatus: cacheNormStatus,
+    fallbackTitle: params.artifact.frontmatter.title,
+  });
+  const receipt = buildVerificationReceipt({
+    sourceId: params.sourceId,
+    gesetzesnummer: (params.artifact.metadata?.ris_api as Record<string, unknown> | undefined)?.law_id as string | undefined ?? existingReceipt?.gesetzesnummer,
+    dokumentnummer: params.sourceId,
+    eli: params.artifact.frontmatter.source_url?.includes("/eli/") ? params.artifact.frontmatter.source_url : existingReceipt?.eli,
+    paragraf: params.artifact.frontmatter.segment_ref,
+    consolidatedAsOf: existingReceipt?.consolidated_as_of ?? null,
+    effectiveFrom: params.artifact.frontmatter.effective_date,
+    effectiveTo: params.artifact.frontmatter.repealed_date,
+    kundmachungsorgan: params.artifact.frontmatter.promulgation,
+    content: params.artifact.content,
+    rawContent: existingReceipt?.raw_content_sha256 ? undefined : params.artifact.content,
+    retrievalMethod: existingReceipt?.retrieval_method ?? params.initialRetrievalMethod,
+    cached: true,
+    stichtag: params.stichtag,
+    normStatus: cacheNormStatus,
+  });
+  applyCachedReceiptProvenance(receipt, existingReceipt);
+
+  const artifact: CachedArtifact = {
+    ...params.artifact,
+    frontmatter: {
+      ...params.artifact.frontmatter,
+      norm_status: cacheNormStatus,
+      title: cacheDisplayTitle,
+    },
+    metadata: {
+      ...(params.artifact.metadata ?? {}),
+      verification_receipt: receipt,
+    },
+  };
+
+  return {
+    success: true,
+    data: { artifact, receipt },
+    meta: buildCacheHitMeta("ris_fetch_segment"),
+  };
 }
 
 export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<RisFetchSegmentOutput> {
@@ -89,81 +153,35 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
-  const sourceId = resolveSourceIdFromInputOrUrl({
+  const knownSourceId = resolveSourceIdFromInputOrUrl({
     sourceId: input.sourceId,
     sourceUrl,
     extractFromUrl: extractSourceIdFromRisUrl,
   });
-  if (!sourceId) {
-    return {
-      success: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
-      },
-      meta: { tool: "ris_fetch_segment", source: "ris" },
-    };
-  }
 
-  const stableId = normalizeStableIdFromSourceId(sourceId);
   const refresh = input.refresh === true;
-  const cacheRead = refresh
-    ? { hit: false, artifact: undefined, warning: undefined }
-    : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
-  if (cacheRead.hit && cacheRead.artifact) {
-    const existingReceipt = cacheRead.artifact.metadata?.verification_receipt as any;
-    const cacheNormStatus = deriveNormStatus({
-      promulgation: cacheRead.artifact.frontmatter.promulgation,
-      repealedDate: cacheRead.artifact.frontmatter.repealed_date,
-      effectiveDate: cacheRead.artifact.frontmatter.effective_date,
-      stichtag: stichtagCheck.stichtag,
-    });
-    const cacheDisplayTitle = buildDisplayTitle({
-      segmentRef: cacheRead.artifact.frontmatter.segment_ref,
-      lawAbbreviation: cacheRead.artifact.frontmatter.law_abbreviation,
-      lawTitle: cacheRead.artifact.frontmatter.law_title,
-      heading: cacheRead.artifact.frontmatter.heading,
-      normStatus: cacheNormStatus,
-      fallbackTitle: cacheRead.artifact.frontmatter.title,
-    });
-    const receipt = buildVerificationReceipt({
-      sourceId,
-      gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined ?? existingReceipt?.gesetzesnummer,
-      dokumentnummer: sourceId,
-      eli: cacheRead.artifact.frontmatter.source_url?.includes("/eli/") ? cacheRead.artifact.frontmatter.source_url : existingReceipt?.eli,
-      paragraf: cacheRead.artifact.frontmatter.segment_ref,
-      consolidatedAsOf: existingReceipt?.consolidated_as_of ?? null,
-      effectiveFrom: cacheRead.artifact.frontmatter.effective_date,
-      effectiveTo: cacheRead.artifact.frontmatter.repealed_date,
-      kundmachungsorgan: cacheRead.artifact.frontmatter.promulgation,
-      content: cacheRead.artifact.content,
-      rawContent: existingReceipt?.raw_content_sha256 ? undefined : cacheRead.artifact.content,
-      retrievalMethod: existingReceipt?.retrieval_method ?? initialRetrievalMethod,
-      cached: true,
-      stichtag: input.stichtag,
-      normStatus: cacheNormStatus,
-    });
-    cacheRead.artifact.frontmatter = {
-      ...cacheRead.artifact.frontmatter,
-      norm_status: cacheNormStatus,
-      title: cacheDisplayTitle,
-    };
-    cacheRead.artifact.metadata = {
-      ...(cacheRead.artifact.metadata ?? {}),
-      verification_receipt: receipt,
-    };
-    return {
-      success: true,
-      data: { artifact: cacheRead.artifact, receipt },
-      meta: buildCacheHitMeta("ris_fetch_segment"),
-    };
+  let stableId: string | undefined;
+  let cacheRead: CacheReadReuseResult = { hit: false };
+  if (knownSourceId) {
+    stableId = normalizeStableIdFromSourceId(knownSourceId);
+    if (!refresh) {
+      cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
+      if (cacheRead.hit && cacheRead.artifact) {
+        return serveSegmentCacheHit({
+          artifact: cacheRead.artifact,
+          sourceId: knownSourceId,
+          initialRetrievalMethod,
+          stichtag: stichtagCheck.stichtag,
+        });
+      }
+    }
   }
 
   let apiLookup = undefined as Awaited<ReturnType<typeof lookupRisApiBySourceId>>;
   let apiLookupWarning: string | undefined;
-  if (!input.sourceUrl && !input.contentUrl) {
+  if (knownSourceId && !input.sourceUrl && !input.contentUrl) {
     try {
-      apiLookup = await lookupRisApiBySourceId(sourceId);
+      apiLookup = await lookupRisApiBySourceId(knownSourceId);
     } catch (error) {
       apiLookupWarning = `api_lookup_failed: ${error instanceof Error ? error.message : "Unknown API lookup error"}`;
     }
@@ -249,6 +267,33 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       ? parseRisSegmentXml(rawBody, { stichtag: stichtagCheck.stichtag })
       : parseRisSegmentHtml(rawBody, { stichtag: stichtagCheck.stichtag });
 
+    const resolvedSourceId = knownSourceId ?? parsed.dokumentnummer?.trim() ?? null;
+    if (!resolvedSourceId) {
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Unable to resolve source_id (provide sourceId or sourceUrl with Dokumentnummer)",
+        },
+        meta: { tool: "ris_fetch_segment", source: "ris" },
+      };
+    }
+
+    if (!stableId) {
+      stableId = normalizeStableIdFromSourceId(resolvedSourceId);
+      if (!refresh) {
+        cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
+        if (cacheRead.hit && cacheRead.artifact) {
+          return serveSegmentCacheHit({
+            artifact: cacheRead.artifact,
+            sourceId: resolvedSourceId,
+            initialRetrievalMethod,
+            stichtag: stichtagCheck.stichtag,
+          });
+        }
+      }
+    }
+
     const displayTitle = buildDisplayTitle({
       segmentRef: parsed.segmentRef,
       lawAbbreviation: parsed.lawAbbreviation ?? apiLookup?.lawAbbreviation,
@@ -259,9 +304,9 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     });
 
     const receipt = buildVerificationReceipt({
-      sourceId,
+      sourceId: resolvedSourceId,
       gesetzesnummer: parsed.gesetzesnummer ?? apiLookup?.lawId,
-      dokumentnummer: parsed.dokumentnummer ?? sourceId,
+      dokumentnummer: parsed.dokumentnummer ?? resolvedSourceId,
       eli: parsed.eli ?? (apiLookup?.documentUrl?.includes("/eli/") ? apiLookup.documentUrl : (effectiveSourceUrl.includes("/eli/") ? effectiveSourceUrl : undefined)),
       paragraf: parsed.segmentRef,
       consolidatedAsOf: parsed.consolidatedAsOf,
@@ -287,7 +332,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
         fetched_at: new Date().toISOString(),
         version_label: parsed.effectiveDateRaw ?? "unknown",
         fassung_typ: "Arbeitsfassung",
-        source_id: sourceId,
+        source_id: resolvedSourceId,
         effective_date: parsed.effectiveDate,
         effective_date_raw: parsed.effectiveDateRaw,
         repealed_date: parsed.repealedDate,

@@ -1,5 +1,5 @@
 import { lookupCanonicalLaw } from "../ris/canonical-laws.js";
-import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
+import { applyCachedReceiptProvenance, tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
@@ -149,6 +149,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       normStatus: cacheRead.artifact.frontmatter.norm_status,
       fallbackReason,
     });
+    applyCachedReceiptProvenance(receipt, existingReceipt);
     cacheRead.artifact.metadata = {
       ...(cacheRead.artifact.metadata ?? {}),
       verification_receipt: receipt,
@@ -284,6 +285,8 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
         source_id: sourceId,
         law_title: parsed.lawTitle,
         representation: "whole_law",
+        norm_status: parsed.normStatus,
+        promulgation: parsed.promulgation,
       },
       content: parsed.content,
       metadata: {

@@ -10,10 +10,37 @@ import type {
   RisSyncLawsInput,
   RisSyncLawsItem,
   RisSyncLawsOutput,
+  SearchHit,
   SyncedLawResult,
   VerificationReceipt,
   VerificationStatus,
 } from "../types/tool-contracts.js";
+
+function normalizeParagraphRef(ref: string | undefined | null): string | undefined {
+  if (!ref) return undefined;
+  const normalized = ref
+    .replace(/\s+/g, " ")
+    .replace(/^(?:§|art\.?)\s*/i, "")
+    .trim()
+    .toLowerCase();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function resolveCandidateLawId(params: {
+  receipt: VerificationReceipt | undefined;
+  artifact: CachedArtifact;
+  hit: SearchHit;
+}): string | undefined {
+  const fromReceipt = params.receipt?.gesetzesnummer?.trim();
+  if (fromReceipt) return fromReceipt;
+  const fromMetadata = (params.artifact.metadata?.ris_api as Record<string, unknown> | undefined)?.law_id;
+  if (typeof fromMetadata === "string" && fromMetadata.trim().length > 0) return fromMetadata.trim();
+  return params.hit.law_id?.trim() || undefined;
+}
+
+function resolveCandidateParagraph(artifact: CachedArtifact, hit: SearchHit): string | undefined {
+  return artifact.frontmatter.segment_ref ?? hit.section_ref ?? hit.paragraph_number;
+}
 
 function isSegmentItem(item: RisSyncLawsItem): boolean {
   if (item.paragraph && item.paragraph.trim().length > 0) return true;
@@ -78,6 +105,7 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
   let historicalValid = 0;
   let stichtagMismatch = 0;
   let insufficientMetadata = 0;
+  let identityMismatchFailures = 0;
 
   for (const item of input.laws) {
     const effectiveStichtag = item.stichtag || input.stichtag;
@@ -131,6 +159,11 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
               contentUrl?: string;
             } | undefined;
 
+            const requestedLawId = resolved.lawId;
+            const requestedSectionRef = resolved.kind === "normRef" ? resolved.sectionRef : undefined;
+            const requestedLawAbbreviation = resolved.kind === "normRef" ? resolved.lawAbbreviation : undefined;
+            const requestedParagraph = normalizeParagraphRef(item.paragraph ?? requestedSectionRef);
+
             for (const cand of searchResult.data.hits) {
               const fetchCand = await risFetchSegmentStub({
                 sourceId: cand.source_id,
@@ -141,7 +174,34 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
 
               if (fetchCand.success && fetchCand.data?.artifact) {
                 const receipt = fetchCand.data.receipt;
+                const artifact = fetchCand.data.artifact;
                 const status = receipt?.verification_status;
+                const candidateId = cand.source_id ?? artifact.frontmatter.source_id ?? "";
+                const candidateLawId = resolveCandidateLawId({ receipt, artifact, hit: cand });
+                const candidateParagraph = normalizeParagraphRef(resolveCandidateParagraph(artifact, cand));
+
+                let identityReason: string | undefined;
+                if (!requestedLawId) {
+                  identityReason = `identity_unresolvable: cannot verify law identity for candidate ${candidateId}`;
+                } else if (!candidateLawId) {
+                  identityReason = `identity_unresolvable: cannot verify law identity for candidate ${candidateId}`;
+                } else if (candidateLawId !== requestedLawId) {
+                  identityReason = `law_identity_mismatch: candidate ${candidateId} belongs to law ${candidateLawId}, requested ${requestedLawId} (${requestedLawAbbreviation ?? "unknown"})`;
+                } else if (requestedParagraph && !candidateParagraph) {
+                  identityReason = `identity_unresolvable: cannot verify paragraph identity for candidate ${candidateId}`;
+                } else if (requestedParagraph && candidateParagraph !== requestedParagraph) {
+                  identityReason = `paragraph_identity_mismatch: candidate ${candidateId} is '${resolveCandidateParagraph(artifact, cand) ?? ""}', requested '${item.paragraph ?? requestedSectionRef ?? ""}'`;
+                }
+
+                if (identityReason) {
+                  discardedCandidates.push({
+                    source_id: cand.source_id,
+                    title: cand.title,
+                    reason: identityReason,
+                    verification_status: status,
+                  });
+                  continue;
+                }
 
                 if (status === "verified_current" || status === "historical_valid_for_stichtag") {
                   const isCacheHit = fetchCand.meta?.notices?.some((n) => n.includes("cache_hit")) ?? false;
@@ -211,15 +271,24 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
               results.push(resItem);
               continue;
             } else {
-              // No valid candidate on stichtag
-              stichtagMismatch++;
+              const identityOnlyDiscard = discardedCandidates.length > 0
+                && discardedCandidates.every((entry) => entry.reason.startsWith("law_identity_mismatch")
+                  || entry.reason.startsWith("paragraph_identity_mismatch")
+                  || entry.reason.startsWith("identity_unresolvable"));
+              if (identityOnlyDiscard) {
+                identityMismatchFailures++;
+              } else {
+                stichtagMismatch++;
+              }
               failed++;
               results.push({
                 query: item.query,
                 paragraph: item.paragraph,
                 ok: false,
                 cached: false,
-                error: `stichtag_mismatch: no in-force norm version found for query '${item.query}' on stichtag ${effectiveStichtag} (${discardedCandidates.length} candidate(s) evaluated and discarded)`,
+                error: identityOnlyDiscard
+                  ? `law_identity_mismatch: no candidate matches requested law identity for query '${item.query}' (${discardedCandidates.length} candidate(s) evaluated and discarded)`
+                  : `stichtag_mismatch: no in-force norm version found for query '${item.query}' on stichtag ${effectiveStichtag} (${discardedCandidates.length} candidate(s) evaluated and discarded)`,
                 discarded_candidates: discardedCandidates,
               });
               continue;
@@ -488,15 +557,18 @@ export async function risSyncLawsStub(input: RisSyncLawsInput): Promise<RisSyncL
   }
 
   if (failed === input.laws.length) {
-    const stichtagOnlyFailure = stichtagMismatch === failed;
+    const noValidVersionFailure = (stichtagMismatch + identityMismatchFailures) === failed;
+    const identityOnlyFailure = noValidVersionFailure && stichtagMismatch === 0;
     return {
       success: false,
       error: {
-        code: stichtagOnlyFailure ? "NO_VALID_VERSION_FOR_STICHTAG" : "UPSTREAM_UNAVAILABLE",
-        message: stichtagOnlyFailure
-          ? `No requested law has a valid version for the requested stichtag`
-          : `Failed to sync all ${input.laws.length} requested laws`,
-        retryable: !stichtagOnlyFailure,
+        code: noValidVersionFailure ? "NO_VALID_VERSION_FOR_STICHTAG" : "UPSTREAM_UNAVAILABLE",
+        message: identityOnlyFailure
+          ? `No requested law has a candidate matching the requested law identity`
+          : noValidVersionFailure
+            ? `No requested law has a valid version for the requested stichtag`
+            : `Failed to sync all ${input.laws.length} requested laws`,
+        retryable: !noValidVersionFailure,
         details: {
           total: input.laws.length,
           failed,

@@ -861,5 +861,192 @@ await test("Legal Regression: Fail-closed batch for stichtag mismatch & detailed
   });
 });
 
+// 12. Fachlichkeitsprüfung (T4): Kandidaten mit abweichender Gesetzes-/Paragraphidentität
+function buildSearchApiResponse(
+  references: Array<{
+    id: string;
+    lawTitle: string;
+    abbreviation?: string;
+    gesetzesnummer: string;
+    sectionRef: string;
+    paragraphNumber: string;
+    contentUrl: string;
+    published?: string;
+  }>,
+): string {
+  return JSON.stringify({
+    OgdSearchResult: {
+      OgdDocumentResults: {
+        Hits: { "#text": String(references.length), "@pageNumber": "1", "@pageSize": "10" },
+        OgdDocumentReference: references.map((ref) => ({
+          Data: {
+            Metadaten: {
+              Technisch: { ID: ref.id, Applikation: "BrKons" },
+              Allgemein: {
+                DokumentUrl: `https://www.ris.bka.gv.at/eli/bgbl/1990/1/P10/${ref.id}`,
+                ...(ref.published ? { Veroeffentlicht: ref.published } : {}),
+              },
+              Bundesrecht: {
+                Kurztitel: ref.lawTitle,
+                ...(ref.abbreviation ? { Abkuerzung: ref.abbreviation } : {}),
+                BrKons: {
+                  Gesetzesnummer: ref.gesetzesnummer,
+                  ArtikelParagraphAnlage: ref.sectionRef,
+                  Paragraphnummer: ref.paragraphNumber,
+                  Inkrafttretedatum: "1990-01-01",
+                  Typ: "BG",
+                },
+              },
+            },
+            Dokumentliste: {
+              ContentReference: {
+                Urls: { ContentUrl: [{ DataType: "Html", Url: ref.contentUrl }] },
+              },
+            },
+          },
+        })),
+      },
+    },
+  });
+}
+
+function segmentHtml(docNo: string, gesetzesnummer: string, sectionRef: string, lawTitle: string): string {
+  return `<!doctype html><html><head><title>${lawTitle} ${sectionRef} - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>${lawTitle}</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>${sectionRef}</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.1990</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>${gesetzesnummer}</div>
+    <div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>${docNo}</div>
+    <div class="documentContent"><p>Inhalt zu ${sectionRef}.</p></div>
+  </body></html>`;
+}
+
+await test("Legal Regression: ris_sync_laws discards law-identity mismatched candidates (T4)", async () => {
+  const eStGApi = buildSearchApiResponse([
+    {
+      id: "NOR40069305",
+      lawTitle: "Bausparen",
+      gesetzesnummer: "20004105",
+      sectionRef: "§ 10",
+      paragraphNumber: "10",
+      contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40069305/NOR40069305.html",
+      published: "2026-09-01",
+    },
+    {
+      id: "NOR40279887",
+      lawTitle: "Einkommensteuergesetz 1988",
+      abbreviation: "EStG",
+      gesetzesnummer: "10004570",
+      sectionRef: "§ 10",
+      paragraphNumber: "10",
+      contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40279887/NOR40279887.html",
+    },
+  ]);
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      if (url.includes("/Bundesrecht") || url.includes("data.bka.gv.at")) {
+        return new Response(eStGApi, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("NOR40069305")) {
+        return new Response(segmentHtml("NOR40069305", "20004105", "§ 10", "Bausparen"), { status: 200 });
+      }
+      if (url.includes("NOR40279887")) {
+        return new Response(segmentHtml("NOR40279887", "10004570", "§ 10", "Einkommensteuergesetz 1988"), { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      const result = await risSyncLawsStub({ laws: [{ query: "EStG § 10" }] });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.failed, 0);
+      assert.equal(result.data.laws[0]?.ok, true);
+      assert.equal(result.data.laws[0]?.source_id, "NOR40279887");
+      const discarded = result.data.laws[0]?.discarded_candidates ?? [];
+      const mismatch = discarded.find((entry) => entry.source_id === "NOR40069305");
+      assert.ok(mismatch, "foreign candidate must be reported as discarded");
+      assert.ok(mismatch?.reason.startsWith("law_identity_mismatch"));
+      assert.ok(mismatch?.reason.includes("20004105"));
+      assert.ok(mismatch?.reason.includes("10004570"));
+    });
+  });
+});
+
+await test("Legal Regression: ris_sync_laws fails closed when only law-identity mismatched candidates exist (T4)", async () => {
+  const foreignOnlyApi = buildSearchApiResponse([
+    {
+      id: "NOR40069305",
+      lawTitle: "Bausparen",
+      gesetzesnummer: "20004105",
+      sectionRef: "§ 10",
+      paragraphNumber: "10",
+      contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40069305/NOR40069305.html",
+      published: "2026-09-01",
+    },
+  ]);
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      if (url.includes("/Bundesrecht") || url.includes("data.bka.gv.at")) {
+        return new Response(foreignOnlyApi, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("NOR40069305")) {
+        return new Response(segmentHtml("NOR40069305", "20004105", "§ 10", "Bausparen"), { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      const result = await risSyncLawsStub({ laws: [{ query: "EStG § 10" }] });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      assert.equal(result.error.code, "NO_VALID_VERSION_FOR_STICHTAG");
+      const laws = (result.error.details as Record<string, unknown>).laws as Array<Record<string, unknown>>;
+      assert.equal(laws[0]?.ok, false);
+      assert.ok(String(laws[0]?.error).startsWith("law_identity_mismatch"));
+      assert.equal((result.error.details as Record<string, unknown>).stichtag_mismatch, 0);
+    });
+  });
+});
+
+await test("Legal Regression: ris_sync_laws enforces exact paragraph identity against mislabelled candidates (T4)", async () => {
+  const paragraphApi = buildSearchApiResponse([
+    {
+      id: "NOR40148651",
+      lawTitle: "Konsumentenschutzgesetz",
+      abbreviation: "KSchG",
+      gesetzesnummer: "10002462",
+      sectionRef: "§ 6",
+      paragraphNumber: "6",
+      contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40148651/NOR40148651.html",
+    },
+  ]);
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      if (url.includes("/Bundesrecht") || url.includes("data.bka.gv.at")) {
+        return new Response(paragraphApi, { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("NOR40148651")) {
+        return new Response(segmentHtml("NOR40148651", "10002462", "§ 6a", "Konsumentenschutzgesetz"), { status: 200 });
+      }
+      return new Response("Not Found", { status: 404 });
+    }, async () => {
+      const result = await risSyncLawsStub({ laws: [{ query: "KSchG § 6" }] });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      const laws = (result.error.details as Record<string, unknown>).laws as Array<Record<string, unknown>>;
+      const discarded = (laws[0]?.discarded_candidates ?? []) as Array<{ source_id?: string; reason: string }>;
+      const mismatch = discarded.find((entry) => entry.source_id === "NOR40148651");
+      assert.ok(mismatch, "§ 6a candidate must be discarded for requested § 6");
+      assert.ok(mismatch?.reason.startsWith("paragraph_identity_mismatch"));
+    });
+  });
+});
+
 console.log("all legal regression tests passed");
 
