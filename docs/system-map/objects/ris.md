@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: plugin/openclaw-austrian-law/src/ris/verification-receipt.ts
 verified_at: 2026-09-30
-revision: 2a94740e69a38706d0a57fcaceab8c6122b60a82
+revision: 7fc5439
 ---
 
 # Ris
