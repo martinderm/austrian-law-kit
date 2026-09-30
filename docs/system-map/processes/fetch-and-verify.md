@@ -4,7 +4,7 @@ universe: live
 status: verified
 entity: plugin/openclaw-austrian-law/src/tools/ris_fetch_segment.ts
 verified_at: 2026-09-30
-revision: 2a94740e69a38706d0a57fcaceab8c6122b60a82
+revision: f574fbc
 consumes: [../objects/tools.md, ../objects/ris.md, ../objects/settings.md]
 produces: [../objects/ris.md, ../objects/cache.md]
 ---
