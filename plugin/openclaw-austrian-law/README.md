@@ -31,7 +31,7 @@ Produktiv im MVP:
 Die Tool-Implementierung orientiert sich an folgenden Verträgen:
 - `docs/stable-id-strategy.md`
 - `docs/frontmatter-schema.md`
-- `docs/memory-layout.md`
+- [Runtime-Layout](../../docs/runtime-layout.md)
 
 ## Aktueller Status
 

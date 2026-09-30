@@ -90,3 +90,8 @@
 3. Der Batch-Output trennt physischen I/O-Sync (`synced`, `cached`, `failed`) strikt von rechtlichen Validierungszählern (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`).
 **Warum:**
 Verhindert, dass veraltete oder aufgehobene Fassungen allein wegen identischer Paragraphennummer fälschlicherweise als `best_candidate` ausgewählt oder als erfolgreicher aktueller Sync ausgewiesen werden. Stellt sicher, dass das Toolkit bei Nichterreichbarkeit der aktuellen Norm fail-closed arbeitet.
+
+## 2026-09-30 — GitHub Issues und ICM-System-Map
+**Entscheidung:** Neue Features, Bugs und offene Aufgaben werden ausschließlich in GitHub Issues geführt. Historische Status-, Handoff-, Scaffold- und erledigte Verbesserungsdokumente liegen in docs/archive/.
+**Warum:** Ein Backlog statt widersprüchlicher lokaler Arbeitslisten. Aktive Verträge bleiben unter docs/; die belegte Repository-Struktur und Änderungsauswirkungen stehen unter docs/system-map/ (ICM Form 6).
+**Folge:** Struktur-, Architektur-, Prozess- und Schemaänderungen ziehen die betroffenen Map-Karten synchron nach. Historische Aufgaben wurden nicht automatisch als Issues publiziert.

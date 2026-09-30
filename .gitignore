@@ -18,3 +18,6 @@ plugin/openclaw-austrian-law/memory/
 plugin/openclaw-austrian-law/data/
 memory/
 data/
+
+# Transient workspace ownership
+.agents/session.lock

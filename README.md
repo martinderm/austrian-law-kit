@@ -55,13 +55,12 @@ Bewusst noch eingeschränkt:
 
 ## Strukturüberblick
 
-- `docs/` Architektur, Quellenpolitik, Memory-Layout, Status/Übergaben
+- `docs/` aktive Verträge, Runtime-Layout und ICM-System-Map; Historie unter `docs/archive/`
 - `SKILL.md` fachliche Skill-Richtlinien und CLI-Dokumentation im Root
 - `references/` Fachliche Referenzen (z.B. `jusline.md`)
 - `example-config/` übertragbare Konfigurationsbeispiele
 - `plugin/` native Plugin-Implementierung und CLI-Wrapper (bin/cli.ts)
 - `tests/`, `fixtures/` testbare Entwicklung inkl. realitätsnaher Snapshot-Extrakte
-- `templates/memory/` optionale Vorlagen für Instanzen
 
 
 ## Lokaler Test-Workflow
@@ -73,7 +72,7 @@ Im Verzeichnis `plugin/openclaw-austrian-law/`:
 - Kanonische Gesetze: `npm run test:canonical-laws`
 - Österreichische Rechtsstands-Regressionen: `npm run test:legal-regression`
 - Standalone CLI JSON-Tests: `npm run test:cli-json`
-- Gesamte Test-Suite: `npm test` (führt alle 5 Suiten aus)
+- Gesamte Test-Suite: `npm test` (führt alle 6 Suiten aus)
 
 ## Standalone CLI-Nutzung (Harness-Agnostisch)
 
@@ -141,43 +140,11 @@ Kurz gesagt:
 - **Plugin/CLI** = Tools, Cache, technische Laufzeit
 - **Skill** = fachliche Orchestrierung, Antwortdisziplin, Quellenpolitik
 
-## 🚦 Projektstatus (Übergabe)
+## Dokumentation und Weiterentwicklung
 
-### Bereits abgeschlossene Phasen
-- Fachlicher Vertrag: Quellenpolitik + Response Contract + Rechtsberatungsgrenze
-- Workspace-Skill `SKILL.md` auf aktuellen MVP-Stand nachgezogen
-- Datenvertrag: Stable ID, Frontmatter, Memory-Layout
-- Harness-agnostische CLI-Ausführung (`bin/cli.ts`) und optionaler OpenClaw-Plugin-Entrypoint (`index.ts`)
-- Produktive RIS-MVP-Tools (`ris_search`, `ris_fetch_segment`, `ris_fetch_whole_law`)
-- Produktive JUSLINE-MVP-Funktionen (`jusline_fetch_discussions`, `jusline_list_decisions`) als Sekundärquelle
-- optionale JUSLINE-Detail-Previews für Kommentare und Entscheidungsdetailseiten mit angereicherten Metadaten
-- Lokale Cache-I/O mit klarer Trennung von Referenz-Dokumenten (Markdown in `memory/references/`) und Metadaten (JSON in `data/`)
-- Automatische settings.json-Auflösung unter dem Namensraum `"austrian-law-kit"` im Workspace-Root
-- JUSLINE-Query-Index mit 24h TTL und `refresh=true` als Force-Reload-Semantik
-- Meta-Signaltrennung (`notices` vs `warnings`) und Parser-Härtungen für MVP
-- kleine ausführbare Parser-/Tool-Smoke-Tests für den aktuellen Stand
+- [Dokumentationsindex](docs/README.md): aktive Verträge, Entscheidungen und Archiv.
+- [ICM-System-Map](docs/system-map/CLAUDE.md): Objekte, Prozesse und Änderungsauswirkungen.
+- [CHANGELOG](CHANGELOG.md): abgeschlossene Änderungen und Releases.
+- [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues): verbindlicher Ort für neue Features, Bugs, Verbesserungen und offene Aufgaben. Keine parallelen Backlog- oder Next-Session-Dateien in docs/.
 
-
-### Nächster empfohlener Schritt
-- kleine Parser-Smoke-Edge-Cases oder minimale Fixture-Klärungen nachziehen, ohne RIS-Primärlogik anzutasten.
-
-### Bewusst noch nicht implementiert
-- DOM-/Selektor-basierter HTML-Parser (aktuell MVP-regex-basiert)
-- breitere automatisierte Testabdeckung über die Smoke-Tests hinaus
-- inhaltliche juristische Interpretation/Normalisierung
-
-### Wichtigste Doku zum Weitermachen
-- `docs/current-status.md`
-- `docs/next-session.md`
-- `docs/tool-contracts.md`
-- `docs/tool-registration-plan.md`
-- `docs/cache-implementation-plan.md`
-- `docs/stable-id-strategy.md`
-- `docs/frontmatter-schema.md`
-
-## Nächste Schritte
-
-1. Fixture- und Testabdeckung für JUSLINE-Edge-Cases gezielt ausbauen
-2. Parser mittelfristig von Regex auf DOM-/Selektor-Zugriff umstellen
-3. Fixture- und Testabdeckung für Cache-/Meta-Signal-Edge-Cases weiter ausbauen
-4. Dokumentationspflege (`current-status`, `next-session`, `changelog`) pro Schritt strikt nachziehen
+Historische Statusberichte und erledigte bzw. überholte Pläne liegen in [docs/archive/](docs/archive/README.md). Änderungen an Architektur, Struktur, Prozessen oder Schemata aktualisieren die System-Map im selben Änderungssatz.
