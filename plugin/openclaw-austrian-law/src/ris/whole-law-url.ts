@@ -1,5 +1,6 @@
 import { resolveRisBaseUrl } from "./runtime.js";
 import { extractDocumentIdFromRisPath, validateSafeRisUrl } from "./segment-url.js";
+import { getViennaTodayDate } from "./verification-receipt.js";
 
 function inferRisCollectionFromSourceId(sourceId: string): "Bundesnormen" | "Landesnormen" {
   return /^L/i.test(sourceId.trim()) ? "Landesnormen" : "Bundesnormen";
@@ -51,6 +52,23 @@ export function buildRisWholeLawUrl(params: { sourceId?: string; sourceUrl?: str
   const base = new URL("/Dokument.wxe", resolveRisBaseUrl());
   base.searchParams.set("Abfrage", inferRisCollectionFromSourceId(normalizedSourceId));
   base.searchParams.set("Dokumentnummer", normalizedSourceId);
+  return base.toString();
+}
+
+export function buildRisWholeLawUrlForStichtag(params: {
+  gesetzesnummer: string;
+  stichtag?: string;
+  viennaToday?: string;
+}): string {
+  const base = new URL("/GeltendeFassung.wxe", resolveRisBaseUrl());
+  base.searchParams.set("Abfrage", "Bundesnormen");
+  base.searchParams.set("Gesetzesnummer", params.gesetzesnummer);
+
+  const viennaToday = params.viennaToday ?? getViennaTodayDate();
+  if (params.stichtag && params.stichtag !== viennaToday) {
+    base.searchParams.set("FassungVom", params.stichtag);
+  }
+
   return base.toString();
 }
 

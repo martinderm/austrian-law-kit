@@ -5,11 +5,12 @@ import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
 import {
   buildRisWholeLawUrl,
+  buildRisWholeLawUrlForStichtag,
   extractSourceIdFromWholeLawUrl,
   normalizeWholeLawStableIdFromSourceId,
 } from "../ris/whole-law-url.js";
 import { validateSafeRisUrl } from "../ris/segment-url.js";
-import { buildVerificationReceipt, validateStichtag } from "../ris/verification-receipt.js";
+import { buildVerificationReceipt, getViennaTodayDate, validateStichtag } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
   buildCacheWarnings,
@@ -32,16 +33,22 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     };
   }
 
+  const historicalStichtag = stichtagCheck.stichtag !== getViennaTodayDate() ? stichtagCheck.stichtag : undefined;
+
   // Canonical Law Fast-Path: Resolve known law aliases (e.g. "MRG", "WEG", "HeizKG", "EStG") directly
   const canonicalLaw = (!input.wholeLawUrl && !input.sourceUrl)
     ? (lookupCanonicalLaw(input.sourceId) ?? (input.query ? lookupCanonicalLaw(input.query) : undefined))
     : undefined;
 
   if (canonicalLaw) {
+    const canonicalSourceId = `LAW:Bundesnormen:${canonicalLaw.gesetzesnummer}`;
     input = {
       ...input,
-      wholeLawUrl: `https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=${canonicalLaw.gesetzesnummer}`,
-      sourceId: `LAW:Bundesnormen:${canonicalLaw.gesetzesnummer}`,
+      wholeLawUrl: buildRisWholeLawUrlForStichtag({
+        gesetzesnummer: canonicalLaw.gesetzesnummer,
+        stichtag: historicalStichtag,
+      }),
+      sourceId: historicalStichtag ? `${canonicalSourceId}:v${historicalStichtag}` : canonicalSourceId,
     };
   }
 
@@ -108,7 +115,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
     };
   }
 
-  const sourceId = resolveSourceIdFromInputOrUrl({
+  let sourceId = resolveSourceIdFromInputOrUrl({
     sourceId: input.sourceId,
     sourceUrl,
     extractFromUrl: extractSourceIdFromWholeLawUrl,
@@ -122,6 +129,9 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
     };
+  }
+  if (historicalStichtag && !sourceId.endsWith(`:v${historicalStichtag}`)) {
+    sourceId = `${sourceId}:v${historicalStichtag}`;
   }
 
   const stableId = normalizeWholeLawStableIdFromSourceId(sourceId);

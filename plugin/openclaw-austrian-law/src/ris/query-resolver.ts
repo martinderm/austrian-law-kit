@@ -195,7 +195,7 @@ export function resolveRisQuery(query: string): RisResolvedQuery {
       .replace(/,\s*(§|Art|[0-9])/gi, " $1"),
   );
 
-  const sourceIdMatch = normalizedQuery.match(/\b(?:NOR|LOO)[0-9A-Z]+\b/i);
+  const sourceIdMatch = normalizedQuery.match(/\b(?:NOR|LOO)\d+\b/i);
   if (sourceIdMatch) {
     return {
       kind: "sourceId",

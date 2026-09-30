@@ -11,6 +11,7 @@ import { risSearchStub } from "../src/tools/ris_search.js";
 import { formatLegalReviewMarkdown } from "../src/tools/format-result.js";
 import {
   buildVerificationReceipt,
+  evaluateStichtagValidity,
   getViennaTodayDate,
   validateStichtag,
 } from "../src/ris/verification-receipt.js";
@@ -1046,6 +1047,47 @@ await test("Legal Regression: ris_sync_laws enforces exact paragraph identity ag
       assert.ok(mismatch?.reason.startsWith("paragraph_identity_mismatch"));
     });
   });
+});
+
+await test("Legal Regression: consolidated version without narrower effective bounds fails closed for a historical stichtag (T9B)", () => {
+  const postdating = evaluateStichtagValidity({
+    stichtag: "2020-01-01",
+    consolidatedAsOf: "2026-09-30",
+    normStatus: "in_force",
+    retrievalMethod: "direct_source_id",
+  });
+  assert.equal(postdating.status, "stichtag_mismatch");
+  assert.notEqual(postdating.status, "historical_valid_for_stichtag");
+  assert.ok(postdating.warning?.includes("stichtag_mismatch"));
+  assert.ok(postdating.warning?.includes("postdates"));
+
+  const predating = evaluateStichtagValidity({
+    stichtag: "2020-01-01",
+    consolidatedAsOf: "2018-01-01",
+    normStatus: "in_force",
+    retrievalMethod: "direct_source_id",
+  });
+  assert.equal(predating.status, "stichtag_mismatch");
+  assert.ok(predating.warning?.includes("predates"));
+
+  const equalDate = evaluateStichtagValidity({
+    stichtag: "2020-01-01",
+    consolidatedAsOf: "2020-01-01",
+    normStatus: "in_force",
+    retrievalMethod: "direct_source_id",
+  });
+  assert.equal(equalDate.status, "historical_valid_for_stichtag");
+
+  const withNarrowerBounds = evaluateStichtagValidity({
+    stichtag: "2000-01-01",
+    effectiveFrom: "1982-01-01",
+    effectiveTo: "2014-12-31",
+    consolidatedAsOf: "2014-12-31",
+    normStatus: "in_force",
+    retrievalMethod: "direct_source_id",
+  });
+  assert.equal(withNarrowerBounds.status, "historical_valid_for_stichtag");
+  assert.equal(withNarrowerBounds.warning, undefined);
 });
 
 console.log("all legal regression tests passed");

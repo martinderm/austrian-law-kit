@@ -1959,4 +1959,164 @@ await test("ris_fetch_segment cache hits flag incomplete legacy provenance witho
   });
 });
 
+await test("ris_whole_law URL builder adds FassungVom only for non-current stichtage (T9A)", async () => {
+  const { buildRisWholeLawUrlForStichtag } = await import("../src/ris/whole-law-url.ts");
+
+  const historical = buildRisWholeLawUrlForStichtag({ gesetzesnummer: "10004570", stichtag: "2020-01-01" });
+  assert.equal(
+    historical,
+    "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004570&FassungVom=2020-01-01",
+  );
+
+  const current = buildRisWholeLawUrlForStichtag({ gesetzesnummer: "10004570" });
+  assert.equal(
+    current,
+    "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10004570",
+  );
+});
+
+await test("ris_fetch_whole_law fetches the official historical Fassung vom 01.01.2020 for EStG (T9A)", async () => {
+  const html = fixture("fixtures/ris/estg-whole-law-fassungvom-2020-01-01.html");
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      seenUrls.push(String(input));
+      return new Response(html, { status: 200 });
+    }, async () => {
+      const result = await risFetchWholeLawStub({ query: "EStG", stichtag: "2020-01-01", refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.ok(seenUrls.some((url) => url.includes("FassungVom=2020-01-01")));
+      assert.equal(result.data.artifact.stable_id, "ris:doc:law:bundesnormen:10004570:v2020-01-01");
+      assert.equal(result.data.artifact.frontmatter.source_url.includes("FassungVom=2020-01-01"), true);
+      assert.equal(result.data.receipt?.consolidated_as_of, "2020-01-01");
+      assert.equal(result.data.receipt?.verification_status, "historical_valid_for_stichtag");
+      assert.ok(result.data.artifact.content.includes("Gewinnfreibetrag"));
+    });
+  });
+});
+
+await test("ris_fetch_whole_law keeps historical and current EStG cache entries separate (T9A)", async () => {
+  const { getViennaTodayDate } = await import("../src/ris/verification-receipt.ts");
+  const viennaToday = getViennaTodayDate();
+  const historicalHtml = fixture("fixtures/ris/estg-whole-law-fassungvom-2020-01-01.html");
+  const currentHtml = `<!doctype html><html><head><title>RIS - Einkommensteuergesetz 1988 - Bundesrecht konsolidiert, Fassung vom ${viennaToday}</title></head><body>
+    <h1 id="Title">Bundesrecht konsolidiert: Gesamte Rechtsvorschrift für Einkommensteuergesetz 1988, Fassung vom ${viennaToday}</h1>
+    <div class="documentContent"><h2>§ 10</h2><p>Gewinnfreibetrag in der aktuellen Fassung.</p></div>
+    <div id="BottomPageNavigation"></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    let fetchCount = 0;
+    await withMockedFetch(async (input) => {
+      fetchCount += 1;
+      const url = String(input);
+      if (url.includes("FassungVom=2020-01-01")) return new Response(historicalHtml, { status: 200 });
+      return new Response(currentHtml, { status: 200 });
+    }, async () => {
+      const currentFirst = await risFetchWholeLawStub({ query: "EStG" });
+      assert.equal(currentFirst.success, true);
+      if (!currentFirst.success) return;
+      assert.equal(currentFirst.data.receipt?.cached, false);
+      assert.equal(currentFirst.data.receipt?.verification_status, "verified_current");
+      assert.equal(currentFirst.data.artifact.stable_id, "ris:doc:law:bundesnormen:10004570");
+      assert.equal(fetchCount, 1);
+
+      const historical = await risFetchWholeLawStub({ query: "EStG", stichtag: "2020-01-01" });
+      assert.equal(historical.success, true);
+      if (!historical.success) return;
+      assert.equal(historical.data.receipt?.cached, false);
+      assert.equal(historical.data.receipt?.consolidated_as_of, "2020-01-01");
+      assert.equal(historical.data.receipt?.verification_status, "historical_valid_for_stichtag");
+      assert.equal(historical.data.artifact.stable_id, "ris:doc:law:bundesnormen:10004570:v2020-01-01");
+      assert.equal(fetchCount, 2);
+
+      const currentAgain = await risFetchWholeLawStub({ query: "EStG" });
+      assert.equal(currentAgain.success, true);
+      if (!currentAgain.success) return;
+      assert.equal(currentAgain.data.receipt?.cached, true);
+      assert.equal(currentAgain.data.receipt?.consolidated_as_of, viennaToday);
+      assert.equal(currentAgain.data.receipt?.verification_status, "verified_current");
+      assert.equal(currentAgain.data.artifact.stable_id, "ris:doc:law:bundesnormen:10004570");
+      assert.equal(fetchCount, 2);
+    });
+  });
+});
+
+await test("ris_fetch_whole_law fails closed when a historical request returns a postdating version (T9A/T9B)", async () => {
+  const { getViennaTodayDate } = await import("../src/ris/verification-receipt.ts");
+  const viennaToday = getViennaTodayDate();
+  const currentHtml = `<!doctype html><html><head><title>RIS - Einkommensteuergesetz 1988 - Bundesrecht konsolidiert, Fassung vom ${viennaToday}</title></head><body>
+    <h1 id="Title">Bundesrecht konsolidiert: Gesamte Rechtsvorschrift für Einkommensteuergesetz 1988, Fassung vom ${viennaToday}</h1>
+    <div class="documentContent"><h2>§ 10</h2><p>Gewinnfreibetrag in der aktuellen Fassung.</p></div>
+    <div id="BottomPageNavigation"></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(currentHtml, { status: 200 }), async () => {
+      const result = await risFetchWholeLawStub({ query: "EStG", stichtag: "2020-01-01", refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.receipt?.verification_status, "stichtag_mismatch");
+      assert.notEqual(result.data.receipt?.verification_status, "historical_valid_for_stichtag");
+      assert.ok(result.data.receipt?.warning?.includes("stichtag_mismatch"));
+      assert.equal(result.data.artifact.stable_id, "ris:doc:law:bundesnormen:10004570:v2020-01-01");
+    });
+  });
+});
+
+await test("ris_search does not classify NormDokument query text as a sourceId (TQR)", async () => {
+  const { resolveRisQuery } = await import("../src/ris/query-resolver.ts");
+
+  const normDocumentWithParagraph = resolveRisQuery("NormDokument § 24");
+  assert.notEqual(normDocumentWithParagraph.kind, "sourceId");
+
+  const normDocumentWord = resolveRisQuery("NormDokument");
+  assert.notEqual(normDocumentWord.kind, "sourceId");
+
+  const norId = resolveRisQuery("NOR40269397");
+  assert.equal(norId.kind, "sourceId");
+  if (norId.kind === "sourceId") {
+    assert.equal(norId.sourceId, "NOR40269397");
+  }
+
+  const looId = resolveRisQuery("LOO12009295");
+  assert.equal(looId.kind, "sourceId");
+  if (looId.kind === "sourceId") {
+    assert.equal(looId.sourceId, "LOO12009295");
+  }
+});
+
+await test("ris_fetch_whole_law fails closed for explicit historical URLs returning a postdating version (T9A/T9B)", async () => {
+  const { getViennaTodayDate } = await import("../src/ris/verification-receipt.ts");
+  const viennaToday = getViennaTodayDate();
+  const explicitUrl = "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002894";
+  const currentHtml = `<!doctype html><html><head><title>RIS - Heizkostenabrechnungsgesetz - Bundesrecht konsolidiert, Fassung vom ${viennaToday}</title></head><body>
+    <h1 id="Title">Bundesrecht konsolidiert: Gesamte Rechtsvorschrift für Heizkostenabrechnungsgesetz, Fassung vom ${viennaToday}</h1>
+    <div class="documentContent"><h2>§ 1</h2><p>Aktuelle Fassung.</p></div>
+    <div id="BottomPageNavigation"></div>
+  </body></html>`;
+  const seenUrls: string[] = [];
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async (input) => {
+      seenUrls.push(String(input));
+      return new Response(currentHtml, { status: 200 });
+    }, async () => {
+      const result = await risFetchWholeLawStub({ wholeLawUrl: explicitUrl, stichtag: "2020-01-01", refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(seenUrls[0], explicitUrl);
+      assert.equal(result.data.artifact.frontmatter.source_url, explicitUrl);
+      assert.equal(result.data.artifact.stable_id, "ris:doc:law:bundesnormen:10002894:v2020-01-01");
+      assert.equal(result.data.receipt?.verification_status, "stichtag_mismatch");
+      assert.ok(result.data.receipt?.warning?.includes("stichtag_mismatch"));
+    });
+  });
+});
+
 console.log("tool smoke tests passed");

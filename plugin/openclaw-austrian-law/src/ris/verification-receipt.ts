@@ -223,6 +223,16 @@ export function evaluateStichtagValidity(params: {
     };
   }
 
+  if (!effectiveFrom && !effectiveTo && params.consolidatedAsOf && params.consolidatedAsOf !== targetDate) {
+    if (params.consolidatedAsOf > targetDate || !isTargetToday) {
+      const relation = params.consolidatedAsOf > targetDate ? "postdates" : "predates";
+      return {
+        status: "stichtag_mismatch",
+        warning: `stichtag_mismatch: consolidated version ${params.consolidatedAsOf} ${relation} requested stichtag ${targetDate} without narrower effective bounds`,
+      };
+    }
+  }
+
   // If no date evidence and status unknown -> insufficient metadata
   if (!effectiveFrom && !effectiveTo && !params.consolidatedAsOf && (!params.normStatus || params.normStatus === "unknown")) {
     return {
