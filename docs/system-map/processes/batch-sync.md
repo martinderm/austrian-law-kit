@@ -4,7 +4,7 @@ universe: live
 status: verified
 entity: plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts
 verified_at: 2026-09-30
-revision: f574fbc
+revision: af817c5
 consumes: [../objects/tools.md, ../objects/ris.md]
 produces: [../objects/ris.md, ../objects/cache.md]
 ---

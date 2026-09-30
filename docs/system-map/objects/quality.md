@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: plugin/openclaw-austrian-law/package.json
 verified_at: 2026-09-30
-revision: 2a94740e69a38706d0a57fcaceab8c6122b60a82
+revision: af817c5
 ---
 
 # Quality
