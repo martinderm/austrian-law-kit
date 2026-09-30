@@ -143,7 +143,7 @@ Kurz gesagt:
 ## Dokumentation und Weiterentwicklung
 
 - [Dokumentationsindex](docs/README.md): aktive Verträge, Entscheidungen und Archiv.
-- [ICM-System-Map](docs/system-map/CLAUDE.md): Objekte, Prozesse und Änderungsauswirkungen.
+- [ICM-System-Map](docs/system-map/README.md): Objekte, Prozesse und Änderungsauswirkungen.
 - [CHANGELOG](CHANGELOG.md): abgeschlossene Änderungen und Releases.
 - [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues): verbindlicher Ort für neue Features, Bugs, Verbesserungen und offene Aufgaben. Keine parallelen Backlog- oder Next-Session-Dateien in docs/.
 

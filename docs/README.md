@@ -6,7 +6,7 @@
 | :--- | :--- |
 | Nutzung, CLI, Installation | [Repository-README](../README.md) |
 | Quellenpolitik und Antwortformat | [SKILL.md](../SKILL.md), [Quellenpolitik](source-policy.md) |
-| Architektur und Änderungsauswirkungen | [System-Map](system-map/CLAUDE.md), [Architekturüberblick](architecture.md) |
+| Architektur und Änderungsauswirkungen | [System-Map](system-map/README.md), [Architekturüberblick](architecture.md) |
 | Tool-Schnittstellen | [Tool Contracts](tool-contracts.md) |
 | Persistierte Daten | [Runtime-Layout](runtime-layout.md), [Frontmatter](frontmatter-schema.md), [Stable IDs](stable-id-strategy.md) |
 | Entscheidungen und Releases | [Decision Log](decision-log.md), [CHANGELOG](../CHANGELOG.md) |

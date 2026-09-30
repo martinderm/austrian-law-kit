@@ -8,4 +8,4 @@ Objektabschnitte: Kurzdefinition, Why this shape, Shape mit Quellbelegen, Connec
 
 Quelllinks sind relativ; ergänzende path:line-Zitate sind repository-relativ. Laufzeitbehauptungen beziehen sich auf die angegebene Revision. Dokumentationsprozess am 2026-09-30 wird durch diesen ungestagten Änderungssatz eingeführt. Keine fremden Inhalte oder Testresultate aus historischen Statusdateien als verifiziert ausgeben.
 
-AGENTS.md und routing.md sind aus CLAUDE.md generierte, bytegleiche Zwillinge.
+AGENTS.md und routing.md sind aus README.md generierte, bytegleiche Zwillinge.

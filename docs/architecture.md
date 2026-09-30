@@ -6,4 +6,4 @@ Die sechs öffentlichen Tools teilen typisierte Ergebnisse, Eingabeschemata, RIS
 
 Markdown-Artefakte und JSON-Metadaten liegen in getrennten Workspace-Wurzeln: [Runtime-Layout](runtime-layout.md). Diese Nutzdaten werden nicht in das Repository eingecheckt.
 
-Objekte, tatsächliche Prozesse, Grenzen und Änderungsauswirkungen sind in der [ICM-System-Map](system-map/CLAUDE.md) kartiert. Aktive Aufgaben stehen in [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues).
+Objekte, tatsächliche Prozesse, Grenzen und Änderungsauswirkungen sind in der [ICM-System-Map](system-map/README.md) kartiert. Aktive Aufgaben stehen in [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues).
