@@ -1,3 +1,5 @@
+import { getViennaTodayDate } from "./verification-receipt.js";
+
 export interface ParsedRisSegmentXml {
   title: string;
   content: string;
@@ -39,6 +41,7 @@ function normalizeXmlText(text: string): string {
   return decodeXml(text)
     .replace(/<tab\b[^>]*\/>/gi, " ")
     .replace(/<feld\b[^>]*>[\s\S]*?<\/feld>/gi, " ")
+    .replace(/<gdash\b[^>]*\/>/gi, "-")
     .replace(/<span\b[^>]*>/gi, "")
     .replace(/<\/span>/gi, "")
     .replace(/<i\b[^>]*>/gi, "")
@@ -213,31 +216,73 @@ function renderXmlList(listBlock: string, indent = 0): string[] {
   return lines;
 }
 
+function extractTopLevelBlocks(input: string): Array<{ tag: string; block: string }> {
+  const blocks: Array<{ tag: string; block: string }> = [];
+  const startRe = /<([a-z][a-z0-9]*)\b[^>]*>/gi;
+  let cursor = 0;
+  while (cursor < input.length) {
+    startRe.lastIndex = cursor;
+    const match = startRe.exec(input);
+    if (!match) {
+      if (input.slice(cursor).trim().length > 0) {
+        throw new Error("Unclassified content in RIS segment text section");
+      }
+      break;
+    }
+    if (input.slice(cursor, match.index).trim().length > 0) {
+      throw new Error("Unclassified content in RIS segment text section");
+    }
+    const tag = (match[1] ?? "").toLowerCase();
+    const raw = match[0];
+    if (raw.endsWith("/>")) {
+      cursor = match.index + raw.length;
+      continue;
+    }
+    const end = findMatchingTag(input, match.index, tag);
+    if (end < 0) throw new Error(`Unterminated <${tag}> block in RIS segment text section`);
+    blocks.push({ tag, block: input.slice(match.index, end) });
+    cursor = end;
+  }
+  return blocks;
+}
+
 function extractTextSection(xml: string): string {
-  const start = xml.indexOf('<ueberschrift typ="titel" halign="j">Text</ueberschrift>');
+  const marker = '<ueberschrift typ="titel" halign="j">Text</ueberschrift>';
+  const start = xml.indexOf(marker);
   if (start < 0) throw new Error("Unable to locate Text section in RIS segment XML");
 
-  const after = xml.slice(start);
-  const nextMeta = after.indexOf('<ueberschrift typ="titel" halign="j">Anmerkung</ueberschrift>');
-  const section = nextMeta >= 0 ? after.slice(0, nextMeta) : after;
-
-  const heading = extractParaHeading(section);
-  const paragraphPattern = /<absatz\b[^>]*ct=["']text["'][^>]*>([\s\S]*?)<\/absatz>/gi;
-  const paragraphs = Array.from(section.matchAll(paragraphPattern))
-    .map((match) => normalizeLeadingParagraphMarker(normalizeXmlText(match[1] ?? "")))
-    .filter(Boolean);
+  const after = xml.slice(start + marker.length);
+  const boundaries = [after.indexOf('<ueberschrift typ="titel"'), after.indexOf("</abschnitt>")]
+    .filter((index) => index >= 0);
+  const section = boundaries.length > 0 ? after.slice(0, Math.min(...boundaries)) : after;
 
   const lines: string[] = [];
-  if (heading) lines.push(`## ${heading}`);
-  if (paragraphs[0]) lines.push(paragraphs[0]);
-
-  const topLevelLists = splitTopLevelTags(section, "liste");
-  if (topLevelLists[0]) {
-    lines.push(...renderXmlList(topLevelLists[0], 0));
-  }
-
-  for (const paragraph of paragraphs.slice(1)) {
-    lines.push(paragraph);
+  for (const { tag, block } of extractTopLevelBlocks(section)) {
+    if (tag === "ueberschrift") {
+      const headingText = normalizeXmlText(block).trim();
+      if (headingText) lines.push(`## ${headingText}`);
+      continue;
+    }
+    if (tag === "absatz") {
+      const ct = block.match(/^<absatz\b[^>]*\bct=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+      if (ct !== "text") {
+        throw new Error(`Unclassified top-level block in RIS segment text section: <absatz ct="${ct ?? ""}">`);
+      }
+      const inner = block.replace(/^<absatz\b[^>]*>/i, "").replace(/<\/absatz>$/i, "");
+      const paragraph = normalizeLeadingParagraphMarker(normalizeXmlText(inner));
+      if (paragraph) lines.push(paragraph);
+      continue;
+    }
+    if (tag === "liste") {
+      lines.push(...renderXmlList(block, 0));
+      continue;
+    }
+    if (tag === "schlussteil") {
+      const text = normalizeXmlText(block).trim();
+      if (text) lines.push(text);
+      continue;
+    }
+    throw new Error(`Unclassified top-level block in RIS segment text section: <${tag}>`);
   }
 
   const result = lines
@@ -249,14 +294,28 @@ function extractTextSection(xml: string): string {
   return result;
 }
 
+function resolveStichtagIso(stichtag?: string): string {
+  if (stichtag) {
+    const trimmed = stichtag.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const iso = toIsoDate(trimmed);
+    if (iso) return iso;
+  }
+  return getViennaTodayDate();
+}
+
 function deriveNormStatus(params: {
   promulgation?: string;
   repealedDate?: string;
   effectiveDate?: string;
+  stichtag?: string;
 }): "in_force" | "current" | "historical" | "repealed" | "unknown" {
   if (params.promulgation && /aufgehoben/i.test(params.promulgation)) return "repealed";
-  if (params.repealedDate) return "repealed";
-  if (params.effectiveDate) return "in_force";
+  const stichtag = resolveStichtagIso(params.stichtag);
+  if (params.repealedDate && params.repealedDate < stichtag) return "repealed";
+  if (params.effectiveDate) {
+    return stichtag < params.effectiveDate ? "unknown" : "in_force";
+  }
   return "unknown";
 }
 
@@ -278,6 +337,8 @@ function extractXmlConsolidatedAsOf(xml: string): { date?: string; raw?: string 
 function extractXmlDokumentnummer(xml: string): string | undefined {
   const byCt = extractByCt(xml, "dokumentnummer");
   if (byCt && /^[A-Z0-9]+$/i.test(byCt.trim())) return byCt.trim();
+  const byShortCt = extractByCt(xml, "doknr");
+  if (byShortCt && /^NOR\d+$/i.test(byShortCt.trim())) return byShortCt.trim();
   const match = xml.match(/<dokumentnummer>([\s\S]*?)<\/dokumentnummer>/i) ||
                 xml.match(/<id>([A-Z0-9]+)<\/id>/i);
   return match?.[1]?.trim();
@@ -286,6 +347,8 @@ function extractXmlDokumentnummer(xml: string): string | undefined {
 function extractXmlGesetzesnummer(xml: string): string | undefined {
   const byCt = extractByCt(xml, "gesetzesnummer");
   if (byCt && /^\d+$/.test(byCt.trim())) return byCt.trim();
+  const byShortCt = extractByCt(xml, "gesnr");
+  if (byShortCt && /^\d+$/.test(byShortCt.trim())) return byShortCt.trim();
   const match = xml.match(/<gesetzesnummer>([\s\S]*?)<\/gesetzesnummer>/i);
   return match?.[1]?.trim();
 }
@@ -301,7 +364,7 @@ function extractXmlEli(xml: string): string | undefined {
   return undefined;
 }
 
-export function parseRisSegmentXml(xml: string): ParsedRisSegmentXml {
+export function parseRisSegmentXml(xml: string, options: { stichtag?: string } = {}): ParsedRisSegmentXml {
   const lawTitle = extractByCt(xml, "kurztitel");
   const lawAbbreviation = extractByCt(xml, "abkuerzung");
   const effectiveDateRaw = extractByCt(xml, "ikra");
@@ -331,7 +394,7 @@ export function parseRisSegmentXml(xml: string): ParsedRisSegmentXml {
     gesetzesnummer,
     dokumentnummer,
     eli,
-    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate }),
+    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate, stichtag: options.stichtag }),
     indexLabel: extractByCt(xml, "index"),
     promulgation,
     heading: extractParaHeading(xml),

@@ -1459,6 +1459,46 @@ await test("Stichtag validation differentiates current, historical, and mismatch
   });
 });
 
+await test("ris_fetch_segment derives cache-hit title and receipt status consistently across stichtage", async () => {
+  const cacheConsistencyHtml = `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz für Cache-Konsistenz</div>
+    <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>TestG</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Außerkrafttretensdatum</h1>31.12.2027</div>
+    <div class="contentBlock"><h1 class="Titel">Kundmachungsorgan</h1>BGBl. I Nr. 1/2026</div>
+    <div class="documentContent"><p>Testnormtext für die Cache-Hit-Konsistenzprüfung.</p></div>
+  </body></html>`;
+
+  await withTempCacheRoot(async () => {
+    await withMockedFetch(async () => new Response(cacheConsistencyHtml, { status: 200 }), async () => {
+      const fresh = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: "2026-09-30", refresh: true });
+      assert.equal(fresh.success, true);
+      if (!fresh.success) return;
+      assert.equal(fresh.data.receipt?.cached, false);
+      assert.equal(fresh.data.receipt?.verification_status, "verified_current");
+      assert.equal(fresh.data.artifact.frontmatter.norm_status, "in_force");
+      assert.equal(fresh.data.artifact.frontmatter.title?.includes("(historisch/aufgehoben)"), false);
+
+      const cacheHitCurrent = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: "2026-09-30" });
+      assert.equal(cacheHitCurrent.success, true);
+      if (!cacheHitCurrent.success) return;
+      assert.equal(cacheHitCurrent.data.receipt?.cached, true);
+      assert.equal(cacheHitCurrent.data.receipt?.verification_status, "verified_current");
+      assert.equal(cacheHitCurrent.data.artifact.frontmatter.norm_status, "in_force");
+      assert.equal(cacheHitCurrent.data.artifact.frontmatter.title?.includes("(historisch/aufgehoben)"), false);
+
+      const cacheHitRepealed = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: "2028-01-01" });
+      assert.equal(cacheHitRepealed.success, true);
+      if (!cacheHitRepealed.success) return;
+      assert.equal(cacheHitRepealed.data.receipt?.cached, true);
+      assert.equal(cacheHitRepealed.data.receipt?.verification_status, "stichtag_mismatch");
+      assert.equal(cacheHitRepealed.data.artifact.frontmatter.norm_status, "repealed");
+      assert.equal(cacheHitRepealed.data.artifact.frontmatter.title?.includes("(historisch/aufgehoben)"), true);
+    });
+  });
+});
+
 await test("ris_fetch_segment resolves MRG § 29 ab 1.1.2026 with Verification Receipt and 5-layer response", async () => {
   const mrgP29Html = `<!doctype html><html><head><title>MRG § 29 - RIS</title></head><body>
     <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Mietrechtsgesetz</div>

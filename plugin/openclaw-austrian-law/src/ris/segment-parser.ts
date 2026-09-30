@@ -1,3 +1,5 @@
+import { getViennaTodayDate } from "./verification-receipt.js";
+
 export interface ParsedRisSegment {
   title: string;
   content: string;
@@ -441,14 +443,28 @@ function extractEli(html: string): string | undefined {
   return undefined;
 }
 
-function deriveNormStatus(params: {
+function resolveStichtagIso(stichtag?: string): string {
+  if (stichtag) {
+    const trimmed = stichtag.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const iso = toIsoDate(trimmed);
+    if (iso) return iso;
+  }
+  return getViennaTodayDate();
+}
+
+export function deriveNormStatus(params: {
   promulgation?: string;
   repealedDate?: string;
   effectiveDate?: string;
+  stichtag?: string;
 }): "in_force" | "current" | "historical" | "repealed" | "unknown" {
   if (params.promulgation && /aufgehoben/i.test(params.promulgation)) return "repealed";
-  if (params.repealedDate) return "repealed";
-  if (params.effectiveDate) return "in_force";
+  const stichtag = resolveStichtagIso(params.stichtag);
+  if (params.repealedDate && params.repealedDate < stichtag) return "repealed";
+  if (params.effectiveDate) {
+    return stichtag < params.effectiveDate ? "unknown" : "in_force";
+  }
   return "unknown";
 }
 
@@ -456,7 +472,7 @@ export function looksLikeRisNotFound(html: string): boolean {
   return /kein treffer|nicht gefunden|es wurden keine dokumente/i.test(normalizeText(html));
 }
 
-export function parseRisSegmentHtml(html: string): ParsedRisSegment {
+export function parseRisSegmentHtml(html: string, options: { stichtag?: string } = {}): ParsedRisSegment {
   const lawAbbreviation = extractFieldByHeading(html, "Abkürzung") ?? extractFieldByHeading(html, "Abkuerzung");
   const effectiveDateRaw = extractFieldByHeading(html, "Inkrafttretensdatum");
   const repealedDateRaw = extractFieldByHeading(html, "Außerkrafttretensdatum") ?? extractFieldByHeading(html, "Aussenkrafttretensdatum");
@@ -488,7 +504,7 @@ export function parseRisSegmentHtml(html: string): ParsedRisSegment {
     gesetzesnummer,
     dokumentnummer,
     eli,
-    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate }),
+    normStatus: deriveNormStatus({ promulgation, repealedDate, effectiveDate, stichtag: options.stichtag }),
     indexLabel: extractFieldByHeading(html, "Index"),
     promulgation,
     heading,

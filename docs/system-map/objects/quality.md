@@ -16,10 +16,12 @@ Sechs ausführbare Testsuiten und statische Vertragsnotizen sichern unterschiedl
 Offline-Fixtures machen Abruf- und Parserfehler reproduzierbar.
 
 ## Shape
-npm test aggregiert sechs Suiten; npm run check prüft TypeScript, build erzeugt dist. tests/skill/ und tests/plugin/ enthalten Markdown-Akzeptanznotizen; tests/live/ ist ein separater manueller Upstream-Check. Historische Testzahlen sind keine neue Ausführungsevidenz.
+npm test aggregiert sechs Suiten; npm run check prüft TypeScript, build erzeugt dist. tests/skill/ und tests/plugin/ enthalten Markdown-Akzeptanznotizen; tests/live/ ist ein separater manueller Upstream-Check. Parser-Regressionen pinnen reale amtliche XML-Snapshots unter fixtures/ris/ (z. B. NOR40258475, NOR40269397) und die stichtagsabhängige Rechtsstandsableitung; historische Testzahlen sind keine neue Ausführungsevidenz.
 
 - [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json) — `plugin/openclaw-austrian-law/package.json:19`
 - [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json) — `plugin/openclaw-austrian-law/package.json:10`
+- [fixtures/ris/nor40258475-segment.xml](../../../fixtures/ris/nor40258475-segment.xml) — `fixtures/ris/nor40258475-segment.xml:1`
+- [fixtures/ris/nor40269397-segment.xml](../../../fixtures/ris/nor40269397-segment.xml) — `fixtures/ris/nor40269397-segment.xml:1`
 - [tests/live/README.md](../../../tests/live/README.md) — `tests/live/README.md:1`
 
 ## Connected to

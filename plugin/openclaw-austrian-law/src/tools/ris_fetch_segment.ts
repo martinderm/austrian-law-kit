@@ -1,7 +1,7 @@
 import { tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
-import { parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
+import { deriveNormStatus, parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
 import { parseRisSegmentXml } from "../ris/segment-xml-parser.js";
 import {
   buildRisSegmentUrl,
@@ -18,7 +18,7 @@ import {
 } from "./ris-fetch-common.js";
 import type { CachedArtifact, RetrievalMethod, RisFetchSegmentInput, RisFetchSegmentOutput } from "../types/tool-contracts.js";
 
-function buildDisplayTitle(params: {
+export function buildDisplayTitle(params: {
   segmentRef?: string;
   lawAbbreviation?: string;
   lawTitle?: string;
@@ -112,6 +112,20 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     : await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
   if (cacheRead.hit && cacheRead.artifact) {
     const existingReceipt = cacheRead.artifact.metadata?.verification_receipt as any;
+    const cacheNormStatus = deriveNormStatus({
+      promulgation: cacheRead.artifact.frontmatter.promulgation,
+      repealedDate: cacheRead.artifact.frontmatter.repealed_date,
+      effectiveDate: cacheRead.artifact.frontmatter.effective_date,
+      stichtag: stichtagCheck.stichtag,
+    });
+    const cacheDisplayTitle = buildDisplayTitle({
+      segmentRef: cacheRead.artifact.frontmatter.segment_ref,
+      lawAbbreviation: cacheRead.artifact.frontmatter.law_abbreviation,
+      lawTitle: cacheRead.artifact.frontmatter.law_title,
+      heading: cacheRead.artifact.frontmatter.heading,
+      normStatus: cacheNormStatus,
+      fallbackTitle: cacheRead.artifact.frontmatter.title,
+    });
     const receipt = buildVerificationReceipt({
       sourceId,
       gesetzesnummer: (cacheRead.artifact.metadata?.ris_api as Record<string, unknown>)?.law_id as string | undefined ?? existingReceipt?.gesetzesnummer,
@@ -127,8 +141,13 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       retrievalMethod: existingReceipt?.retrieval_method ?? initialRetrievalMethod,
       cached: true,
       stichtag: input.stichtag,
-      normStatus: cacheRead.artifact.frontmatter.norm_status,
+      normStatus: cacheNormStatus,
     });
+    cacheRead.artifact.frontmatter = {
+      ...cacheRead.artifact.frontmatter,
+      norm_status: cacheNormStatus,
+      title: cacheDisplayTitle,
+    };
     cacheRead.artifact.metadata = {
       ...(cacheRead.artifact.metadata ?? {}),
       verification_receipt: receipt,
@@ -227,8 +246,8 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   try {
     const parsed = responseFormat === "xml"
-      ? parseRisSegmentXml(rawBody)
-      : parseRisSegmentHtml(rawBody);
+      ? parseRisSegmentXml(rawBody, { stichtag: stichtagCheck.stichtag })
+      : parseRisSegmentHtml(rawBody, { stichtag: stichtagCheck.stichtag });
 
     const displayTitle = buildDisplayTitle({
       segmentRef: parsed.segmentRef,
