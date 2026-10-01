@@ -4,6 +4,7 @@ import {
   type CacheReadReuseResult,
 } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
+import { archiveRawSource } from "../cache/raw-source-archive.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { deriveNormStatus, parseRisSegmentHtml, looksLikeRisNotFound } from "../ris/segment-parser.js";
 import { parseRisSegmentXml } from "../ris/segment-xml-parser.js";
@@ -53,12 +54,12 @@ export function buildDisplayTitle(params: {
   return withHeading;
 }
 
-function serveSegmentCacheHit(params: {
+async function serveSegmentCacheHit(params: {
   artifact: CachedArtifact;
   sourceId: string;
   initialRetrievalMethod: RetrievalMethod;
   stichtag: string;
-}): RisFetchSegmentOutput {
+}): Promise<RisFetchSegmentOutput> {
   const existingReceipt = params.artifact.metadata?.verification_receipt;
   const cacheNormStatus = deriveNormStatus({
     promulgation: params.artifact.frontmatter.promulgation,
@@ -91,7 +92,7 @@ function serveSegmentCacheHit(params: {
     stichtag: params.stichtag,
     normStatus: cacheNormStatus,
   });
-  applyCachedReceiptProvenance(receipt, existingReceipt);
+  await applyCachedReceiptProvenance(receipt, existingReceipt);
 
   const artifact: CachedArtifact = {
     ...params.artifact,
@@ -174,7 +175,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     if (!refresh) {
       cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
       if (cacheRead.hit && cacheRead.artifact) {
-        return serveSegmentCacheHit({
+        return await serveSegmentCacheHit({
           artifact: cacheRead.artifact,
           sourceId: knownSourceId,
           initialRetrievalMethod,
@@ -255,9 +256,10 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
   }
 
   let rawBody: string;
+  let contentType = "";
   try {
     rawBody = await readResponseBodyText(response, abortHandle);
-    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+    contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
     if (contentType.includes("xml") || /^\s*<\?xml\b/i.test(rawBody)) {
       responseFormat = "xml";
     }
@@ -288,6 +290,8 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
     };
   }
 
+  const archivedRaw = await archiveRawSource({ body: rawBody, format: responseFormat, contentType });
+
   try {
     const parsed = responseFormat === "xml"
       ? parseRisSegmentXml(rawBody, { stichtag: stichtagCheck.stichtag })
@@ -310,7 +314,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       if (!refresh) {
         cacheRead = await tryReadCachedRisArtifact({ stableId, docType: "norm_segment" });
         if (cacheRead.hit && cacheRead.artifact) {
-          return serveSegmentCacheHit({
+          return await serveSegmentCacheHit({
             artifact: cacheRead.artifact,
             sourceId: resolvedSourceId,
             initialRetrievalMethod,
@@ -345,7 +349,17 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       cached: false,
       stichtag: input.stichtag,
       normStatus: parsed.normStatus,
+      receiptVersion: 2,
+      rawSourcePath: archivedRaw.relativePath,
+      rawSourceSaved: archivedRaw.saved,
+      sourceUrlOfficial: input.contentUrl ?? input.sourceUrl,
+      contentUrlFinal: effectiveSourceUrl !== (input.contentUrl ?? input.sourceUrl) ? effectiveSourceUrl : undefined,
+      contentType: contentType || undefined,
     });
+
+    if (archivedRaw.warning) {
+      receipt.warning = receipt.warning ? `${receipt.warning}; ${archivedRaw.warning}` : archivedRaw.warning;
+    }
 
     const artifact: CachedArtifact = {
       stable_id: stableId,
@@ -438,6 +452,7 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS segment response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,
+        details: { phase: "parse_segment_response", raw_source_path: archivedRaw.relativePath },
       },
       meta: { tool: "ris_fetch_segment", source: "ris" },
     };

@@ -6,9 +6,11 @@ import { fileURLToPath } from "node:url";
 
 import {
   configureCacheRoot,
+  configureDataRoot,
   resolveToolContextCacheRoot,
   runWithCacheRoot,
 } from "../src/cache/cache-runtime.ts";
+import { archiveRawSource } from "../src/cache/raw-source-archive.ts";
 import { fetchHistoryApiRaw, searchGemeindenApiRaw } from "../src/ris-api/index.ts";
 import { juslineFetchDiscussionsStub } from "../src/tools/jusline_fetch_discussions.ts";
 import { juslineListDecisionsStub } from "../src/tools/jusline_list_decisions.ts";
@@ -17,6 +19,7 @@ import { risFetchWholeLawStub } from "../src/tools/ris_fetch_whole_law.ts";
 import { risSearchStub } from "../src/tools/ris_search.ts";
 import { risSyncLawsStub } from "../src/tools/ris_sync_laws.ts";
 import { formatLegalReviewMarkdown } from "../src/tools/format-result.ts";
+import { buildVerificationReceipt, computeSha256 } from "../src/ris/verification-receipt.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +61,21 @@ function withTempCacheRoot<T>(fn: () => Promise<T> | T): Promise<T> {
     .then(fn)
     .finally(() => {
       configureCacheRoot(undefined);
+      rmSync(tempRoot, { recursive: true, force: true });
+    });
+}
+
+function withTempDataRoot<T>(fn: (roots: { cacheRoot: string; dataRoot: string }) => Promise<T> | T): Promise<T> {
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-law-raw-archive-"));
+  const cacheRoot = path.join(tempRoot, "cache");
+  const dataRoot = path.join(tempRoot, "data");
+  configureCacheRoot(cacheRoot);
+  configureDataRoot(dataRoot);
+  return Promise.resolve()
+    .then(() => fn({ cacheRoot, dataRoot }))
+    .finally(() => {
+      configureCacheRoot(undefined);
+      configureDataRoot(undefined);
       rmSync(tempRoot, { recursive: true, force: true });
     });
 }
@@ -2623,6 +2641,310 @@ await test("T11 resolveFetchTimeoutMs falls back and warns when the env deadline
   }
 
   assert.ok(warnings.some((entry) => entry.includes("invalid_fetch_timeout_config")));
+});
+
+await test("T6A raw source archive stores the segment xml and exposes receipt provenance", async () => {
+  const xml = fixture("fixtures/ris/nor40258475-segment.xml");
+  const xmlUrl = "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40258475/NOR40258475.xml";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    await withMockedFetch(async () => new Response(xml, { status: 200, headers: { "content-type": "application/xml" } }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40258475", contentUrl: xmlUrl, refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      const receipt = result.data.receipt!;
+      const sha = computeSha256(xml);
+      assert.equal(receipt.raw_content_sha256, sha);
+      assert.equal(receipt.receipt_version, 2);
+      assert.equal(receipt.raw_source_saved, true);
+      assert.equal(receipt.raw_source_path, `ris/raw/${sha}.xml`);
+      assert.equal(receipt.raw_source_encoding, "utf8-decoded");
+      assert.equal(receipt.content_type, "application/xml");
+      assert.equal(receipt.source_url_official, xmlUrl);
+      assert.equal(receipt.content_url_final, null);
+
+      const rawPath = path.join(dataRoot, "ris", "raw", `${sha}.xml`);
+      assert.equal(existsSync(rawPath), true);
+      assert.equal(computeSha256(readFileSync(rawPath, "utf8")), sha);
+    });
+  });
+});
+
+await test("T6A raw source archive deduplicates identical content without rewriting", async () => {
+  const xml = fixture("fixtures/ris/nor40269397-segment.xml");
+  const xmlUrl = "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40269397/NOR40269397.xml";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    const rawDir = path.join(dataRoot, "ris", "raw");
+    await withMockedFetch(async () => new Response(xml, { status: 200, headers: { "content-type": "application/xml" } }), async () => {
+      const first = await risFetchSegmentStub({ sourceId: "NOR40269397", contentUrl: xmlUrl, refresh: true });
+      assert.equal(first.success, true);
+      if (!first.success) return;
+
+      const second = await risFetchSegmentStub({ sourceId: "NOR40269397", contentUrl: xmlUrl, refresh: true });
+      assert.equal(second.success, true);
+      if (!second.success) return;
+
+      assert.equal(second.data.receipt?.raw_content_sha256, first.data.receipt?.raw_content_sha256);
+      assert.equal(second.data.receipt?.raw_source_saved, true);
+      assert.deepEqual(readdirSync(rawDir), [`${first.data.receipt?.raw_content_sha256}.xml`]);
+    });
+  });
+});
+
+await test("T6A raw source archive stores the html fallback body", async () => {
+  const html = fixture("fixtures/ris/nor40214078-live.html");
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    await withMockedFetch(async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40214078", refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      const receipt = result.data.receipt!;
+      const sha = computeSha256(html);
+      assert.equal(receipt.raw_source_path, `ris/raw/${sha}.html`);
+      assert.equal(receipt.raw_source_saved, true);
+      assert.equal(receipt.content_type, "text/html");
+      assert.equal(existsSync(path.join(dataRoot, "ris", "raw", `${sha}.html`)), true);
+    });
+  });
+});
+
+await test("T6A raw source archive stores the whole-law body", async () => {
+  const heizKgHtml = `<!doctype html><html><head><title>HeizKG - Gesamte Rechtsvorschrift - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Heizkostenabrechnungsgesetz</div>
+    <div class="contentBlock"><h1 class="Titel">Langtitel</h1>Bundesgesetz über die Aufteilung der Heiz- und Warmwasserkosten<br>StF: BGBl. Nr. 827/1992</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>10002894</div>
+    <div class="documentContent"><p>§ 1. Heizkostenabrechnungsgesetz Inhalt.</p></div>
+  </body></html>`;
+  const wholeLawUrl = "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002894";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    await withMockedFetch(async () => new Response(heizKgHtml, { status: 200, headers: { "content-type": "text/html" } }), async () => {
+      const result = await risFetchWholeLawStub({ wholeLawUrl, refresh: true });
+
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      const receipt = result.data.receipt!;
+      const sha = computeSha256(heizKgHtml);
+      assert.equal(receipt.receipt_version, 2);
+      assert.equal(receipt.raw_source_path, `ris/raw/${sha}.html`);
+      assert.equal(receipt.raw_source_saved, true);
+      assert.equal(receipt.source_url_official, wholeLawUrl);
+      assert.equal(existsSync(path.join(dataRoot, "ris", "raw", `${sha}.html`)), true);
+    });
+  });
+});
+
+await test("T6A raw source archive keeps the raw body when parsing fails", async () => {
+  const brokenXml = "<risdok></risdok>";
+  const xmlUrl = "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORRAWPARSE1/NORRAWPARSE1.xml";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    await withMockedFetch(async () => new Response(brokenXml, { status: 200, headers: { "content-type": "application/xml" } }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NORRAWPARSE1", contentUrl: xmlUrl, refresh: true });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      assert.equal(result.error.code, "UPSTREAM_UNAVAILABLE");
+      const sha = computeSha256(brokenXml);
+      assert.equal(existsSync(path.join(dataRoot, "ris", "raw", `${sha}.xml`)), true);
+    });
+  });
+});
+
+await test("T6A cache hits preserve raw source provenance and warn on missing or legacy raw files", async () => {
+  const html = `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz für Rohquellen</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Gesetzesnummer</h1>10004569</div>
+    <div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>NORRAWPROV1</div>
+    <div class="documentContent"><p>Testnormtext für die Rohquellen-Provenienz.</p></div>
+  </body></html>`;
+  const contentUrl = "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORRAWPROV1/NORRAWPROV1.html";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    let fetchCount = 0;
+    await withMockedFetch(async () => {
+      fetchCount += 1;
+      return new Response(html, { status: 200, headers: { "content-type": "text/html" } });
+    }, async () => {
+      const fresh = await risFetchSegmentStub({ sourceId: "NORRAWPROV1", contentUrl, refresh: true });
+      assert.equal(fresh.success, true);
+      if (!fresh.success) return;
+      const original = fresh.data.receipt!;
+      assert.equal(fetchCount, 1);
+      assert.equal(original.raw_source_saved, true);
+      assert.ok(original.raw_source_path);
+
+      rmSync(path.join(dataRoot, original.raw_source_path!), { force: true });
+
+      const hit = await risFetchSegmentStub({ sourceId: "NORRAWPROV1" });
+      assert.equal(hit.success, true);
+      if (!hit.success) return;
+      assert.equal(fetchCount, 1);
+      assert.equal(hit.data.receipt?.cached, true);
+      assert.equal(hit.data.receipt?.raw_source_path, original.raw_source_path);
+      assert.equal(hit.data.receipt?.raw_source_saved, true);
+      assert.ok(hit.data.receipt?.warning?.includes("raw_source_missing"));
+    });
+
+    const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+    const legacyArtifact = {
+      stable_id: "ris:segment:norrawlegacy1",
+      frontmatter: {
+        stable_id: "ris:segment:norrawlegacy1",
+        source: "ris",
+        source_url: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORRAWLEGACY1/NORRAWLEGACY1.html",
+        doc_type: "norm_segment",
+        title: "Legacy ohne Rohquelle",
+        fetched_at: new Date().toISOString(),
+        version_label: "unknown",
+        fassung_typ: "Arbeitsfassung",
+        source_id: "NORRAWLEGACY1",
+        segment_ref: "§ 1",
+      },
+      content: "Legacy Inhalt ohne Rohquelle",
+      metadata: {
+        verification_receipt: {
+          source_id: "NORRAWLEGACY1",
+          dokumentnummer: "NORRAWLEGACY1",
+          raw_content_sha256: computeSha256("Legacy Inhalt ohne Rohquelle"),
+          retrieved_at: "2026-01-01T00:00:00.000Z",
+          retrieval_method: "direct_source_id",
+        },
+      },
+    };
+    await writeThroughCacheForRisArtifact(legacyArtifact as any);
+
+    await withMockedFetch(async () => {
+      throw new Error("network must not be used for a valid cache");
+    }, async () => {
+      const legacyHit = await risFetchSegmentStub({ sourceId: "NORRAWLEGACY1" });
+      assert.equal(legacyHit.success, true);
+      if (!legacyHit.success) return;
+      assert.ok(legacyHit.data.receipt?.warning?.includes("legacy cache receipt: no archived raw source"));
+    });
+  });
+});
+
+await test("T6A raw source archive failure stays honest while the norm fetch succeeds", async () => {
+  const html = `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
+    <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz für Archivfehler</div>
+    <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+    <div class="contentBlock"><h1 class="Titel">Inkrafttretensdatum</h1>01.01.2026</div>
+    <div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>NORRAWFAIL1</div>
+    <div class="documentContent"><p>Inhalt trotz Archivierungsfehler.</p></div>
+  </body></html>`;
+
+  await withTempDataRoot(async () => {
+    await withMockedFetch(async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } }), async () => {
+      await withPatchedRename((_from, to) => to.includes(path.join("ris", "raw")), async () => {
+        const result = await risFetchSegmentStub({ sourceId: "NORRAWFAIL1", refresh: true });
+        assert.equal(result.success, true);
+        if (!result.success) return;
+        assert.equal(result.data.receipt?.raw_source_saved, false);
+        assert.ok(result.data.receipt?.warning?.includes("raw_source_archive_failed"));
+        assert.ok(result.data.artifact.content.includes("Inhalt trotz Archivierungsfehler"));
+      });
+    });
+  });
+});
+
+await test("T6A raw source archive reports a collision when a foreign body occupies the hash path", async () => {
+  const bodyA = "Inhalt A";
+  const bodyB = "Inhalt B";
+  const shaA = computeSha256(bodyA);
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    const rawDir = path.join(dataRoot, "ris", "raw");
+    const rawPath = path.join(rawDir, `${shaA}.xml`);
+
+    const first = await archiveRawSource({ body: bodyA, format: "xml" });
+    assert.equal(first.saved, true);
+    assert.equal(first.sha256, shaA);
+    assert.equal(first.relativePath, `ris/raw/${shaA}.xml`);
+    assert.equal(readFileSync(rawPath, "utf8"), bodyA);
+
+    writeFileSync(rawPath, bodyB);
+
+    const collision = await archiveRawSource({ body: bodyA, format: "xml" });
+    assert.equal(collision.saved, false);
+    assert.equal(collision.sha256, shaA);
+    assert.equal(collision.relativePath, `ris/raw/${shaA}.xml`);
+    assert.ok(collision.warning?.includes("raw archive collision"));
+    assert.equal(readFileSync(rawPath, "utf8"), bodyB);
+    assert.deepEqual(readdirSync(rawDir), [`${shaA}.xml`]);
+  });
+});
+
+await test("T6B receipt contract exposes versioned raw source fields with posix relative path", () => {
+  const sha = computeSha256("<xml>raw</xml>");
+  const receipt = buildVerificationReceipt({
+    sourceId: "NORCONTRACT1",
+    content: "Inhalt",
+    rawContent: "<xml>raw</xml>",
+    retrievalMethod: "norm_document_url",
+    stichtag: "2026-08-28",
+    receiptVersion: 2,
+    rawSourcePath: `ris/raw/${sha}.xml`,
+    rawSourceSaved: true,
+    sourceUrlOfficial: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORCONTRACT1/NORCONTRACT1.html",
+    contentUrlFinal: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORCONTRACT1/NORCONTRACT1.xml",
+    contentType: "application/xml",
+  });
+
+  assert.equal(receipt.receipt_version, 2);
+  assert.equal(receipt.raw_source_path, `ris/raw/${sha}.xml`);
+  assert.equal(receipt.raw_source_saved, true);
+  assert.equal(receipt.raw_source_encoding, "utf8-decoded");
+  assert.equal(receipt.source_url_official, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORCONTRACT1/NORCONTRACT1.html");
+  assert.equal(receipt.content_url_final, "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORCONTRACT1/NORCONTRACT1.xml");
+  assert.equal(receipt.content_type, "application/xml");
+  assert.match(receipt.raw_source_path, /^ris\/raw\/[a-f0-9]{64}\.xml$/);
+  assert.equal(receipt.raw_source_path.includes("\\"), false);
+
+  const defaults = buildVerificationReceipt({
+    content: "Inhalt",
+    retrievalMethod: "direct_source_id",
+  });
+  assert.equal(defaults.receipt_version, 2);
+  assert.equal(defaults.raw_source_path, null);
+  assert.equal(defaults.raw_source_saved, undefined);
+});
+
+await test("T6B raw source paths stay posix relative and isolated across configured data roots", async () => {
+  const xml = fixture("fixtures/ris/nor40258475-segment.xml");
+  const sha = computeSha256(xml);
+  const contentUrl = "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40258475/NOR40258475.xml";
+  let firstPath = "";
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    await withMockedFetch(async () => new Response(xml, { status: 200, headers: { "content-type": "application/xml" } }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40258475", contentUrl, refresh: true });
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      firstPath = result.data.receipt?.raw_source_path ?? "";
+      assert.equal(firstPath.includes("\\"), false);
+      assert.equal(firstPath, `ris/raw/${sha}.xml`);
+      assert.equal(existsSync(path.join(dataRoot, "ris", "raw", `${sha}.xml`)), true);
+    });
+  });
+
+  await withTempDataRoot(async ({ dataRoot }) => {
+    const isolatedRawDir = path.join(dataRoot, "ris", "raw");
+    assert.equal(existsSync(isolatedRawDir), false);
+    await withMockedFetch(async () => new Response(xml, { status: 200, headers: { "content-type": "application/xml" } }), async () => {
+      const result = await risFetchSegmentStub({ sourceId: "NOR40258475", contentUrl, refresh: true });
+      assert.equal(result.success, true);
+      if (!result.success) return;
+      assert.equal(result.data.receipt?.raw_source_path, firstPath);
+      assert.equal(existsSync(path.join(isolatedRawDir, `${sha}.xml`)), true);
+    });
+  });
 });
 
 console.log("tool smoke tests passed");

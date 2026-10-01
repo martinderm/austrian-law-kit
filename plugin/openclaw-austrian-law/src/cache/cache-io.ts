@@ -15,6 +15,10 @@ export function toAbsoluteMetadataPath(relativePath: string): string {
   return path.join(resolveDataRoot(), relativePath);
 }
 
+export function toAbsoluteDataRootPath(relativePath: string): string {
+  return path.join(resolveDataRoot(), relativePath);
+}
+
 async function ensureParentDir(filePath: string): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 }
@@ -80,6 +84,30 @@ async function renameWithRetry(from: string, to: string): Promise<void> {
     }
   }
   await fs.rename(from, to);
+}
+
+export async function dataRootPathExists(relativePath: string): Promise<boolean> {
+  try {
+    await fs.access(toAbsoluteDataRootPath(relativePath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function writeFileAtomically(finalPath: string, content: string): Promise<void> {
+  await ensureParentDir(finalPath);
+  await sweepOrphanedTemps(finalPath);
+  const generationId = createHash("sha256").update(content, "utf8").digest("hex").slice(0, 16);
+  const tempPath = `${finalPath}.tmp-${generationId}`;
+  try {
+    await fs.writeFile(tempPath, content, "utf8");
+    await assertTempWritten(tempPath, content);
+    await renameWithRetry(tempPath, finalPath);
+  } catch (error) {
+    await removeFileBestEffort(tempPath);
+    throw error;
+  }
 }
 
 export async function readArtifactByStableId(params: {

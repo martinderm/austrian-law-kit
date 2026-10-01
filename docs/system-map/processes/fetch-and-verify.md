@@ -28,7 +28,7 @@ Identität, Herkunft und Gültigkeit bleiben bis zur Ausgabe nachvollziehbar. Di
 - **Does not hit:** JUSLINE-Query-TTL.
 
 ## Surfaces
-CLI und OpenClaw rufen die Tool-Funktionen auf; externe Quellen liefern Daten innerhalb einer konfigurierbaren Abort-Deadline (Request und Body-Lesen, Fehlerklassen UPSTREAM_TIMEOUT/CANCELLED/UPSTREAM_UNAVAILABLE); Cache-Helfer persistieren bei Abrufen Artefakte atomar als geprüfte Generation.
+CLI und OpenClaw rufen die Tool-Funktionen auf; externe Quellen liefern Daten innerhalb einer konfigurierbaren Abort-Deadline (Request und Body-Lesen, Fehlerklassen UPSTREAM_TIMEOUT/CANCELLED/UPSTREAM_UNAVAILABLE); die amtliche Rohquelle wird vor der Konvertierung sha-adressiert archiviert und im Receipt referenziert (auch bei Parserfehlern als Diagnosebeleg); Cache-Helfer persistieren bei Abrufen Artefakte atomar als geprüfte Generation.
 
 ## See
 [tools](../objects/tools.md), [ris](../objects/ris.md), [settings](../objects/settings.md), [cache](../objects/cache.md).

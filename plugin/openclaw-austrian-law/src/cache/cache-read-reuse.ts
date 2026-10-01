@@ -1,5 +1,5 @@
 import type { CachedArtifact, VerificationReceipt } from "../types/tool-contracts.js";
-import { readArtifactByStableId } from "./cache-io.js";
+import { dataRootPathExists, readArtifactByStableId } from "./cache-io.js";
 
 export interface CacheReadReuseResult {
   hit: boolean;
@@ -7,10 +7,10 @@ export interface CacheReadReuseResult {
   warning?: string;
 }
 
-export function applyCachedReceiptProvenance(
+export async function applyCachedReceiptProvenance(
   receipt: VerificationReceipt,
   existingReceipt: VerificationReceipt | undefined,
-): void {
+): Promise<void> {
   if (existingReceipt) {
     if (existingReceipt.raw_content_sha256) receipt.raw_content_sha256 = existingReceipt.raw_content_sha256;
     if (existingReceipt.gesetzesnummer) receipt.gesetzesnummer = existingReceipt.gesetzesnummer;
@@ -18,11 +18,32 @@ export function applyCachedReceiptProvenance(
     if (existingReceipt.eli) receipt.eli = existingReceipt.eli;
     if (existingReceipt.retrieval_method) receipt.retrieval_method = existingReceipt.retrieval_method;
     if (existingReceipt.retrieved_at) receipt.retrieved_at = existingReceipt.retrieved_at;
+    if (existingReceipt.receipt_version !== undefined) receipt.receipt_version = existingReceipt.receipt_version;
+    if (existingReceipt.raw_source_path !== undefined) receipt.raw_source_path = existingReceipt.raw_source_path;
+    if (existingReceipt.raw_source_saved !== undefined) receipt.raw_source_saved = existingReceipt.raw_source_saved;
+    if (existingReceipt.source_url_official !== undefined) receipt.source_url_official = existingReceipt.source_url_official;
+    if (existingReceipt.content_url_final !== undefined) receipt.content_url_final = existingReceipt.content_url_final;
+    if (existingReceipt.content_type !== undefined) receipt.content_type = existingReceipt.content_type;
+    if (existingReceipt.raw_source_encoding !== undefined) receipt.raw_source_encoding = existingReceipt.raw_source_encoding;
   }
 
+  const warnings: string[] = [];
   if (!existingReceipt?.raw_content_sha256 || !existingReceipt?.retrieved_at) {
-    const legacyWarning = "legacy cache receipt: provenance incomplete (no original raw hash/retrieval time)";
-    receipt.warning = receipt.warning ? `${receipt.warning}; ${legacyWarning}` : legacyWarning;
+    warnings.push("legacy cache receipt: provenance incomplete (no original raw hash/retrieval time)");
+  }
+
+  const rawSourcePath = existingReceipt?.raw_source_path;
+  if (existingReceipt && (!rawSourcePath || rawSourcePath.trim().length === 0)) {
+    warnings.push("legacy cache receipt: no archived raw source (pre-raw-archive artifact)");
+  } else if (rawSourcePath && rawSourcePath.trim().length > 0) {
+    const rawSourceExists = await dataRootPathExists(rawSourcePath);
+    if (!rawSourceExists) {
+      warnings.push(`raw_source_missing: archived raw source file not found (${rawSourcePath})`);
+    }
+  }
+
+  for (const found of warnings) {
+    receipt.warning = receipt.warning ? `${receipt.warning}; ${found}` : found;
   }
 }
 

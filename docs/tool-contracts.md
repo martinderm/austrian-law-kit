@@ -75,6 +75,13 @@ Regel: mindestens `sourceId`, `sourceUrl` oder `contentUrl` muss vorhanden sein.
   - `retrieval_method` (`direct_source_id`, `eli_url`, `norm_document_url`, `ris_api_discovery`, `ris_html_search`, `web_search_fallback`)
   - `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`, `unverified_fallback`)
   - `fallback_reason`, `warning`
+  - Rohquellen-Provenienz (`receipt_version: 2` — versionierter Vertrag seit Raw-Archivierung):
+    - `raw_source_path` (dataRoot-relativer POSIX-Pfad der archivierten Rohquelle `ris/raw/<sha256>.<ext>`, oder `null`)
+    - `raw_source_saved: boolean` (`true` wenn archiviert/Dedupe-Treffer, `false` bei Archivfehler/Kollision)
+    - `source_url_official` (amtlich angefragte URL) und `content_url_final` (effektive Abruf-URL, falls abweichend)
+    - `content_type` (soweit vom Upstream geliefert), `raw_source_encoding: "utf8-decoded"` (Repräsentationsangabe)
+
+**Rohquellen-Archivierung:** Der unveränderte Antwortkörper wird vor der Konvertierung sha-adressiert unter `<dataRoot>/ris/raw/<sha256>.xml|.html` archiviert (atomarer Schreibpfad, Dedupe nach Prüfsumme, verschiedene Inhalte überschreiben sich niemals; Archivierung bleibt auch bei Parserfehlern als Diagnosebeleg erhalten). Die archivierte Datei und `raw_content_sha256` bezeichnen denselben dekodierten UTF-8-String; Raw-Archivierung ist kein Nachweis vollständiger/korrekter Markdown-Konvertierung.
 
 **Fehlerklassen:**
 - `VALIDATION_ERROR` (inkl. unsichere/fremde Domains, ungültige Stichtage)

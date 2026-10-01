@@ -64,6 +64,13 @@ export interface VerificationReceipt {
   raw_content_sha256: string;
   normalized_content_sha256: string;
   content_sha256: string;
+  receipt_version?: number;
+  raw_source_path?: string | null;
+  raw_source_saved?: boolean;
+  source_url_official?: string | null;
+  content_url_final?: string | null;
+  content_type?: string | null;
+  raw_source_encoding?: "utf8-decoded" | null;
   retrieval_method: RetrievalMethod;
   cached: boolean;
   verification_status: VerificationStatus;

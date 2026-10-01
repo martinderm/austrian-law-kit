@@ -1,6 +1,7 @@
 import { lookupCanonicalLaw } from "../ris/canonical-laws.js";
 import { applyCachedReceiptProvenance, tryReadCachedRisArtifact } from "../cache/cache-read-reuse.js";
 import { writeThroughCacheForRisArtifact } from "../cache/cache-write-through.js";
+import { archiveRawSource } from "../cache/raw-source-archive.js";
 import { lookupRisApiBySourceId } from "../ris-api/lookup.js";
 import { looksLikeRisWholeLawNotFound, parseRisWholeLawHtml } from "../ris/whole-law-parser.js";
 import {
@@ -166,7 +167,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       normStatus: cacheRead.artifact.frontmatter.norm_status,
       fallbackReason,
     });
-    applyCachedReceiptProvenance(receipt, existingReceipt);
+    await applyCachedReceiptProvenance(receipt, existingReceipt);
     cacheRead.artifact.metadata = {
       ...(cacheRead.artifact.metadata ?? {}),
       verification_receipt: receipt,
@@ -244,8 +245,10 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   }
 
   let html: string;
+  let contentType = "";
   try {
     html = await readResponseBodyText(response, abortHandle);
+    contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
   } catch (error) {
     const abortKind = classifyFetchAbort(error, abortHandle);
     if (abortKind) {
@@ -272,6 +275,8 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
     };
   }
+
+  const archivedRaw = await archiveRawSource({ body: html, format: "html", contentType });
 
   try {
     const parsed = parseRisWholeLawHtml(html);
@@ -305,7 +310,17 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       stichtag: input.stichtag,
       normStatus: parsed.normStatus,
       fallbackReason,
+      receiptVersion: 2,
+      rawSourcePath: archivedRaw.relativePath,
+      rawSourceSaved: archivedRaw.saved,
+      sourceUrlOfficial: input.wholeLawUrl ?? input.sourceUrl,
+      contentUrlFinal: effectiveSourceUrl !== (input.wholeLawUrl ?? input.sourceUrl) ? effectiveSourceUrl : undefined,
+      contentType: contentType || undefined,
     });
+
+    if (archivedRaw.warning) {
+      receipt.warning = receipt.warning ? `${receipt.warning}; ${archivedRaw.warning}` : archivedRaw.warning;
+    }
 
     const artifact: CachedArtifact = {
       stable_id: stableId,
@@ -384,6 +399,7 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
       error: {
         code: "UPSTREAM_UNAVAILABLE",
         message: `RIS whole-law response could not be parsed: ${error instanceof Error ? error.message : "Unknown parse error"}`,
+        details: { phase: "parse_whole_law_response", raw_source_path: archivedRaw.relativePath },
       },
       meta: { tool: "ris_fetch_whole_law", source: "ris" },
     };

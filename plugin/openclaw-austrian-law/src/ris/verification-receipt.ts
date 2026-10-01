@@ -23,6 +23,12 @@ export interface ComputeReceiptParams {
   stichtag?: string;
   fallbackReason?: string | null;
   normStatus?: "in_force" | "current" | "historical" | "repealed" | "unknown";
+  receiptVersion?: number;
+  rawSourcePath?: string | null;
+  rawSourceSaved?: boolean;
+  sourceUrlOfficial?: string | null;
+  contentUrlFinal?: string | null;
+  contentType?: string | null;
 }
 
 export function computeSha256(content: string): string {
@@ -295,6 +301,13 @@ export function buildVerificationReceipt(params: ComputeReceiptParams): Verifica
     raw_content_sha256: rawSha,
     normalized_content_sha256: normalizedSha,
     content_sha256: normalizedSha,
+    receipt_version: params.receiptVersion ?? 2,
+    raw_source_path: params.rawSourcePath ?? null,
+    raw_source_saved: params.rawSourceSaved,
+    source_url_official: params.sourceUrlOfficial ?? null,
+    content_url_final: params.contentUrlFinal ?? null,
+    content_type: params.contentType ?? null,
+    raw_source_encoding: "utf8-decoded",
     retrieval_method: params.retrievalMethod,
     cached: params.cached ?? false,
     verification_status: status,

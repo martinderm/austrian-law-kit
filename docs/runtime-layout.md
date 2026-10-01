@@ -4,16 +4,17 @@ Der aktive Cache verteilt Markdown und JSON auf getrennte Wurzeln. Maßgeblich s
 
 ```text
 <workspace>/
-├─ memory/references/austrian-law/       # Standard-cacheRoot: Markdown
-│  ├─ ris/norms/<encoded-stable-id>.md
-│  ├─ ris/documents/<encoded-stable-id>.md
-│  ├─ ris/decisions/<encoded-stable-id>.md
-│  ├─ jusline/materials/<encoded-stable-id>.md
-│  ├─ jusline/decisions/<encoded-stable-id>.md
-│  └─ jusline/query-index/<query-hash>.json  # Query-Reuse, Ausnahme: JSON unter cacheRoot
-└─ data/austrian-law/                    # Standard-dataRoot: JSON
-   ├─ ris/metadata/<encoded-stable-id>.json
-   └─ jusline/metadata/<encoded-stable-id>.json
+├── memory/references/austrian-law/       # Standard-cacheRoot: Markdown
+│  ├── ris/norms/<encoded-stable-id>.md
+│  ├── ris/documents/<encoded-stable-id>.md
+│  ├── ris/decisions/<encoded-stable-id>.md
+│  ├── jusline/materials/<encoded-stable-id>.md
+│  ├── jusline/decisions/<encoded-stable-id>.md
+│  └── jusline/query-index/<query-hash>.json  # Query-Reuse, Ausnahme: JSON unter cacheRoot
+└── data/austrian-law/                    # Standard-dataRoot: JSON + Roharchiv
+   ├── ris/metadata/<encoded-stable-id>.json
+   ├── ris/raw/<sha256>.xml | <sha256>.html   # amtliche Rohquellen, sha-adressiert, dedupe
+   └── jusline/metadata/<encoded-stable-id>.json
 ```
 
 Doppelpunkte der Stable ID werden im Dateinamen durch Unterstriche ersetzt. Das fachliche Identifikatorformat bleibt unverändert. Die Zuordnung von doc_type zu Unterordnern liegt ausschließlich in cache-paths.ts.
