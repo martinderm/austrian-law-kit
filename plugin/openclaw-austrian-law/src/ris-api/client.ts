@@ -1,3 +1,9 @@
+import {
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  raceWithFetchDeadline,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { resolveRisApiBaseUrl } from "./runtime.js";
 import type { RisApiHitsMeta, RisApiSearchResponseEnvelope } from "./types.js";
 
@@ -6,7 +12,7 @@ const RIS_API_HEADERS = {
   "user-agent": "Mozilla/5.0 (compatible; austrian-law-kit/0.18.1)",
 };
 
-export type RisApiErrorCode = "HTTP_ERROR" | "INVALID_JSON" | "API_ERROR";
+export type RisApiErrorCode = "HTTP_ERROR" | "INVALID_JSON" | "API_ERROR" | "TIMEOUT" | "CANCELLED";
 
 export class RisApiError extends Error {
   code: RisApiErrorCode;
@@ -54,13 +60,22 @@ export function hasMoreRisApiPages(meta: RisApiHitsMeta): boolean {
 }
 
 export async function fetchRisApiJson(url: string): Promise<RisApiSearchResponseEnvelope> {
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
   let response: Response;
   try {
     response = await fetch(url, {
       method: "GET",
       headers: RIS_API_HEADERS,
+      signal: abortHandle.signal,
     });
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      throw new RisApiError(abortKind === "timeout" ? "TIMEOUT" : "CANCELLED", `RIS API request ${abortKind === "timeout" ? `timed out after ${timeoutMs}ms` : "aborted by caller"} (${url})`, {
+        details: { phase: "request", url, timeout_ms: timeoutMs },
+      });
+    }
     throw new RisApiError("HTTP_ERROR", `Network error during RIS API request from ${url}: ${error instanceof Error ? error.message : "fetch failed"}`, {
       details: { phase: "fetch_api_http_request", url, error: error instanceof Error ? error.message : String(error) },
     });
@@ -75,8 +90,14 @@ export async function fetchRisApiJson(url: string): Promise<RisApiSearchResponse
 
   let payload: RisApiSearchResponseEnvelope;
   try {
-    payload = await response.json() as RisApiSearchResponseEnvelope;
+    payload = await raceWithFetchDeadline(response.json() as Promise<RisApiSearchResponseEnvelope>, abortHandle);
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      throw new RisApiError(abortKind === "timeout" ? "TIMEOUT" : "CANCELLED", `RIS API response body ${abortKind === "timeout" ? `timed out after ${timeoutMs}ms` : "aborted by caller"} (${url})`, {
+        details: { phase: "body_read", url, timeout_ms: timeoutMs },
+      });
+    }
     throw new RisApiError("INVALID_JSON", `RIS API response was not valid JSON: ${error instanceof Error ? error.message : "Unknown parse error"}`, {
       details: { url },
     });

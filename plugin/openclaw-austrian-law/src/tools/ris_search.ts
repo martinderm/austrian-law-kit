@@ -5,8 +5,18 @@ import { rankRisSearchHits } from "../ris/search-ranking.js";
 import { buildRisSearchUrl } from "../ris/url-builder.js";
 import { parseRisDirectDocumentHit, parseRisSearchHtml } from "../ris/search-parser.js";
 import { extractSectionNumber } from "../ris/section-ref.js";
+import {
+  buildAbortToolError,
+  type FetchAbortHandle,
+  type FetchAbortKind,
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  readResponseBodyText,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { validateStichtag } from "../ris/verification-receipt.js";
 import type { SearchHit, RisSearchInput, RisSearchOutput } from "../types/tool-contracts.js";
+import type { ToolErrorCode } from "../types/shared.js";
 
 const SEARCH_HEADERS = {
   accept: "text/html,application/xhtml+xml",
@@ -66,37 +76,51 @@ function validateInput(input: RisSearchInput): string | null {
   return null;
 }
 
-async function fetchRisSearch(url: string): Promise<Response> {
-  return fetch(url, {
-    method: "GET",
-    headers: SEARCH_HEADERS,
-  });
+interface RisSearchFetchError {
+  message: string;
+  url: string;
+  abortKind?: FetchAbortKind;
+  timeoutMs: number;
 }
 
-async function fetchWithRetry(url: string): Promise<{ response?: Response; error?: unknown; attempts: number }> {
+async function fetchWithRetry(url: string): Promise<{
+  response?: Response;
+  handle?: FetchAbortHandle;
+  error?: RisSearchFetchError;
+  attempts: number;
+  timeoutMs: number;
+}> {
   let attempts = 0;
-  let lastError: unknown;
+  let lastError: RisSearchFetchError | undefined;
+  const timeoutMs = resolveFetchTimeoutMs();
 
   while (attempts <= MAX_RETRIES) {
     attempts += 1;
+    const handle = createFetchAbortSignal(timeoutMs);
     try {
-      const response = await fetchRisSearch(url);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: SEARCH_HEADERS,
+        signal: handle.signal,
+      });
       if (response.status >= 500 && attempts <= MAX_RETRIES) {
         continue;
       }
-      return { response, attempts };
+      return { response, handle, attempts, timeoutMs };
     } catch (error) {
+      const abortKind = classifyFetchAbort(error, handle);
       lastError = {
         message: error instanceof Error ? error.message : "fetch failed",
-        phase: "fetch_html_search_http_request",
         url,
-        error: error instanceof Error ? error.message : String(error),
+        abortKind,
+        timeoutMs,
       };
+      if (abortKind === "cancelled") break;
       if (attempts > MAX_RETRIES) break;
     }
   }
 
-  return { error: lastError, attempts };
+  return { error: lastError, attempts, timeoutMs };
 }
 
 function buildResolverShortcutHit(sourceId: string, scope: "bund" | "land" | "municipal"): SearchHit {
@@ -174,7 +198,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     notices.push(`resolver_variants: ${searchQueries.join(" | ")}`);
   }
 
-  let lastApiFailure: { message: string; retryable?: boolean; details?: Record<string, unknown> } | undefined;
+  let lastApiFailure: { message: string; retryable?: boolean; details?: Record<string, unknown>; code?: ToolErrorCode } | undefined;
 
   for (const searchQuery of searchQueries) {
     const apiResult = await searchRisApi({
@@ -230,10 +254,17 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     }
 
     if (!apiResult.success && apiResult.errorCode === "UPSTREAM_UNAVAILABLE") {
+      const apiErrorType = apiResult.details?.api_error_type;
+      const upgradedCode = apiErrorType === "TIMEOUT"
+        ? "UPSTREAM_TIMEOUT"
+        : apiErrorType === "CANCELLED"
+          ? "CANCELLED"
+          : undefined;
       lastApiFailure = {
         message: apiResult.message,
-        retryable: apiResult.retryable,
+        retryable: upgradedCode === "CANCELLED" ? false : apiResult.retryable,
         details: apiResult.details,
+        code: upgradedCode,
       };
       warnings.push(`api_variant_failed: ${searchQuery}`);
       continue;
@@ -247,7 +278,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
       return {
         success: false,
         error: {
-          code: "UPSTREAM_UNAVAILABLE",
+          code: lastApiFailure.code ?? "UPSTREAM_UNAVAILABLE",
           message: lastApiFailure.message,
           details: lastApiFailure.details,
           retryable: lastApiFailure.retryable,
@@ -267,7 +298,14 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     };
   }
 
-  let lastUpstreamError: { status?: number; url?: string; attempts?: number; message?: string } | undefined;
+  let lastUpstreamError: {
+    status?: number;
+    url?: string;
+    attempts?: number;
+    message?: string;
+    abortKind?: FetchAbortKind;
+    timeoutMs?: number;
+  } | undefined;
 
   for (const searchQuery of searchQueries) {
     const url = resolved.kind === "normRef"
@@ -285,14 +323,21 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     const fetchResult = await fetchWithRetry(url);
 
     if (fetchResult.error) {
-      const message = fetchResult.error instanceof Error ? fetchResult.error.message : "Unknown fetch error";
-      lastUpstreamError = { url, attempts: fetchResult.attempts, message };
+      lastUpstreamError = {
+        url,
+        attempts: fetchResult.attempts,
+        message: fetchResult.error.message,
+        abortKind: fetchResult.error.abortKind,
+        timeoutMs: fetchResult.error.timeoutMs,
+      };
       warnings.push(`html_variant_failed: ${searchQuery}`);
+      if (fetchResult.error.abortKind === "cancelled") break;
       continue;
     }
 
     const response = fetchResult.response;
-    if (!response) continue;
+    const abortHandle = fetchResult.handle;
+    if (!response || !abortHandle) continue;
 
     if (!response.ok) {
       lastUpstreamError = { status: response.status, url, attempts: fetchResult.attempts };
@@ -313,7 +358,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     }
 
     try {
-      const html = await response.text();
+      const html = await readResponseBodyText(response, abortHandle);
       const hits = parseRisSearchHtml(html, limit);
       if (hits.length === 0) {
         const directHit = parseRisDirectDocumentHit(html, url);
@@ -366,6 +411,14 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
         },
       };
     } catch (error) {
+      const abortKind = classifyFetchAbort(error, abortHandle);
+      if (abortKind) {
+        return {
+          success: false,
+          error: buildAbortToolError({ kind: abortKind, phase: "body_read", url, timeoutMs: fetchResult.timeoutMs }),
+          meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
+        };
+      }
       const message = error instanceof Error ? error.message : "Unknown parse error";
       return {
         success: false,
@@ -380,6 +433,18 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
   }
 
   if (lastUpstreamError) {
+    if (lastUpstreamError.abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({
+          kind: lastUpstreamError.abortKind,
+          phase: "request",
+          url: lastUpstreamError.url ?? "",
+          timeoutMs: lastUpstreamError.timeoutMs ?? resolveFetchTimeoutMs(),
+        }),
+        meta: { tool: "ris_search", source: "ris", notices: dedupeStrings(notices), warnings: dedupeStrings(warnings) },
+      };
+    }
     return {
       success: false,
       error: {
@@ -398,7 +463,7 @@ export async function risSearchStub(input: RisSearchInput): Promise<RisSearchOut
     return {
       success: false,
       error: {
-        code: "UPSTREAM_UNAVAILABLE",
+        code: lastApiFailure.code ?? "UPSTREAM_UNAVAILABLE",
         message: lastApiFailure.message,
         details: lastApiFailure.details,
         retryable: lastApiFailure.retryable,

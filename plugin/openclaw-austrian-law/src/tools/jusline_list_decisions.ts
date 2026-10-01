@@ -4,6 +4,13 @@ import { writeThroughCacheForJuslineArtifact } from "../cache/cache-write-throug
 import { buildJuslineArtifactPreviews, deriveContextFromQuery } from "../jusline/artifact-previews.js";
 import { parseJuslineDecisionsHtml, looksLikeJuslineNoDecisions } from "../jusline/decisions-parser.js";
 import { buildJuslineDiscussionsUrl } from "../jusline/url-builder.js";
+import {
+  buildAbortToolError,
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  readResponseBodyText,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { buildCacheHitMeta, buildCacheWarnings, buildRefreshMeta } from "./ris-fetch-common.js";
 import type {
   JuslineListDecisionsInput,
@@ -45,12 +52,23 @@ export async function juslineListDecisionsStub(
   }
 
   let response: Response;
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
   try {
     response = await fetch(url, {
       method: "GET",
       headers: { accept: "text/html,application/xhtml+xml" },
+      signal: abortHandle.signal,
     });
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "request", url, timeoutMs }),
+        meta: { tool: "jusline_list_decisions", source: "jusline" },
+      };
+    }
     return {
       success: false,
       error: {
@@ -85,8 +103,16 @@ export async function juslineListDecisionsStub(
 
   let html: string;
   try {
-    html = await response.text();
+    html = await readResponseBodyText(response, abortHandle);
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "body_read", url, timeoutMs }),
+        meta: { tool: "jusline_list_decisions", source: "jusline" },
+      };
+    }
     return {
       success: false,
       error: {

@@ -7,6 +7,13 @@ import {
   looksLikeJuslineNoDiscussions,
   parseJuslineDiscussionsHtml,
 } from "../jusline/discussions-parser.js";
+import {
+  buildAbortToolError,
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  readResponseBodyText,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { buildCacheHitMeta, buildCacheWarnings, buildRefreshMeta } from "./ris-fetch-common.js";
 import type {
   JuslineFetchDiscussionsInput,
@@ -59,12 +66,23 @@ export async function juslineFetchDiscussionsStub(
   }
 
   let response: Response;
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
   try {
     response = await fetch(url, {
       method: "GET",
       headers: { accept: "text/html,application/xhtml+xml" },
+      signal: abortHandle.signal,
     });
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "request", url, timeoutMs }),
+        meta: { tool: "jusline_fetch_discussions", source: "jusline" },
+      };
+    }
     return {
       success: false,
       error: {
@@ -99,8 +117,16 @@ export async function juslineFetchDiscussionsStub(
 
   let html: string;
   try {
-    html = await response.text();
+    html = await readResponseBodyText(response, abortHandle);
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "body_read", url, timeoutMs }),
+        meta: { tool: "jusline_fetch_discussions", source: "jusline" },
+      };
+    }
     return {
       success: false,
       error: {

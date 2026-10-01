@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1460,6 +1460,8 @@ await test("Stichtag validation differentiates current, historical, and mismatch
 });
 
 await test("ris_fetch_segment derives cache-hit title and receipt status consistently across stichtage", async () => {
+  const { getViennaTodayDate } = await import("../src/ris/verification-receipt.ts");
+  const viennaToday = getViennaTodayDate();
   const cacheConsistencyHtml = `<!doctype html><html><head><title>TestG § 1 - RIS</title></head><body>
     <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Testgesetz für Cache-Konsistenz</div>
     <div class="contentBlock"><h1 class="Titel">Abkürzung</h1>TestG</div>
@@ -1472,7 +1474,7 @@ await test("ris_fetch_segment derives cache-hit title and receipt status consist
 
   await withTempCacheRoot(async () => {
     await withMockedFetch(async () => new Response(cacheConsistencyHtml, { status: 200 }), async () => {
-      const fresh = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: "2026-09-30", refresh: true });
+      const fresh = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: viennaToday, refresh: true });
       assert.equal(fresh.success, true);
       if (!fresh.success) return;
       assert.equal(fresh.data.receipt?.cached, false);
@@ -1480,7 +1482,7 @@ await test("ris_fetch_segment derives cache-hit title and receipt status consist
       assert.equal(fresh.data.artifact.frontmatter.norm_status, "in_force");
       assert.equal(fresh.data.artifact.frontmatter.title?.includes("(historisch/aufgehoben)"), false);
 
-      const cacheHitCurrent = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: "2026-09-30" });
+      const cacheHitCurrent = await risFetchSegmentStub({ sourceId: "NORTESTCACHE1", stichtag: viennaToday });
       assert.equal(cacheHitCurrent.success, true);
       if (!cacheHitCurrent.success) return;
       assert.equal(cacheHitCurrent.data.receipt?.cached, true);
@@ -2117,6 +2119,510 @@ await test("ris_fetch_whole_law fails closed for explicit historical URLs return
       assert.ok(result.data.receipt?.warning?.includes("stichtag_mismatch"));
     });
   });
+});
+
+type SmokeArtifact = {
+  stable_id: string;
+  frontmatter: Record<string, unknown>;
+  content: string;
+  metadata?: Record<string, unknown>;
+};
+
+function buildAtomicArtifact(stableId: string, sourceId: string, fetchedAt: string, content: string): SmokeArtifact {
+  return {
+    stable_id: stableId,
+    frontmatter: {
+      stable_id: stableId,
+      source: "ris",
+      source_url: `https://www.ris.bka.gv.at/Dokumente/Bundesnormen/${sourceId}/${sourceId}.html`,
+      doc_type: "norm_segment",
+      title: `Atomic ${sourceId}`,
+      fetched_at: fetchedAt,
+      version_label: "v1",
+      fassung_typ: "Arbeitsfassung",
+      source_id: sourceId,
+      segment_ref: "§ 1",
+    },
+    content,
+    metadata: {},
+  };
+}
+
+async function withAtomicCacheRoot<T>(fn: (cacheRoot: string) => Promise<T>): Promise<T> {
+  const root = mkdtempSync(path.join(os.tmpdir(), "openclaw-law-atomic-"));
+  const cacheRoot = path.join(root, "memory", "references", "austrian-law");
+  try {
+    return await runWithCacheRoot(cacheRoot, () => fn(cacheRoot));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+async function withPatchedRename(
+  shouldFail: (from: string, to: string) => boolean,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const fsp = (await import("node:fs")).promises as unknown as {
+    rename: (from: string, to: string) => Promise<void>;
+  };
+  const originalRename = fsp.rename;
+  fsp.rename = async (from: string, to: string) => {
+    if (shouldFail(String(from), String(to))) {
+      throw Object.assign(new Error(`EPERM injected for ${to}`), { code: "EPERM" });
+    }
+    return originalRename(from, to);
+  };
+  try {
+    await fn();
+  } finally {
+    fsp.rename = originalRename;
+  }
+}
+
+await test("T10 cache write publishes no partial pair when the metadata rename fails", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { toAbsoluteMarkdownPath } = await import("../src/cache/cache-io.ts");
+  const artifact = buildAtomicArtifact("ris:segment:noratomic001", "NORATOMIC001", "2026-09-30T00:00:00.000Z", "Atomic A content");
+
+  await withAtomicCacheRoot(async () => {
+    await withPatchedRename(
+      (from, to) => from.includes("metadata") || to.includes("metadata"),
+      async () => {
+        const result = await writeThroughCacheForRisArtifact(artifact as any);
+        assert.equal(result.cached, false);
+        assert.ok(result.cacheError);
+
+        const markdownPath = toAbsoluteMarkdownPath("ris/norms/ris_segment_noratomic001.md");
+        assert.equal(existsSync(markdownPath), false);
+        const leftovers = existsSync(path.dirname(markdownPath))
+          ? readdirSync(path.dirname(markdownPath)).filter((entry) => entry.includes(".tmp-"))
+          : [];
+        assert.deepEqual(leftovers, []);
+      },
+    );
+  });
+});
+
+await test("T10 cache write keeps the previous consistent generation readable when the markdown rename fails", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { readArtifactByStableId, toAbsoluteMarkdownPath, toAbsoluteMetadataPath } = await import("../src/cache/cache-io.ts");
+  const oldArtifact = buildAtomicArtifact("ris:segment:noratomic002", "NORATOMIC002", "2026-09-30T00:00:00.000Z", "old generation content");
+  const newArtifact = buildAtomicArtifact("ris:segment:noratomic002", "NORATOMIC002", "2026-09-30T01:00:00.000Z", "new generation content");
+
+  await withAtomicCacheRoot(async () => {
+    const first = await writeThroughCacheForRisArtifact(oldArtifact as any);
+    assert.equal(first.cached, true);
+
+    const markdownPath = toAbsoluteMarkdownPath("ris/norms/ris_segment_noratomic002.md");
+    const previousMarkdown = readFileSync(markdownPath, "utf8");
+    assert.ok(previousMarkdown.includes("old generation content"));
+
+    await withPatchedRename(
+      (_from, to) => to.endsWith(".md"),
+      async () => {
+        const second = await writeThroughCacheForRisArtifact(newArtifact as any);
+        assert.equal(second.cached, false);
+      },
+    );
+
+    assert.equal(readFileSync(markdownPath, "utf8"), previousMarkdown);
+
+    const restored = await readArtifactByStableId({
+      stableId: "ris:segment:noratomic002",
+      source: "ris",
+      docType: "norm_segment",
+      includeMetadata: true,
+    });
+    assert.equal(restored.frontmatter.fetched_at, "2026-09-30T00:00:00.000Z");
+    assert.ok(restored.content.includes("old generation content"));
+
+    const metadataDir = path.dirname(toAbsoluteMetadataPath("ris/metadata/ris_segment_noratomic002.json"));
+    const backupLeftovers = existsSync(metadataDir)
+      ? readdirSync(metadataDir).filter((entry) => entry.includes(".prev-"))
+      : [];
+    assert.deepEqual(backupLeftovers, []);
+  });
+});
+
+await test("T10 readArtifactByStableId fails closed on truncated metadata JSON", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { readArtifactByStableId, toAbsoluteMetadataPath } = await import("../src/cache/cache-io.ts");
+  const artifact = buildAtomicArtifact("ris:segment:noratomic003", "NORATOMIC003", "2026-09-30T00:00:00.000Z", "content three");
+
+  await withAtomicCacheRoot(async () => {
+    assert.equal((await writeThroughCacheForRisArtifact(artifact as any)).cached, true);
+    const metadataPath = toAbsoluteMetadataPath("ris/metadata/ris_segment_noratomic003.json");
+    writeFileSync(metadataPath, '{"stable_id": "ris:segment:noratomic003", "frontmatter":', "utf8");
+
+    await assert.rejects(
+      () => readArtifactByStableId({
+        stableId: "ris:segment:noratomic003",
+        source: "ris",
+        docType: "norm_segment",
+        includeMetadata: true,
+      }),
+      /Cache consistency mismatch/,
+    );
+  });
+});
+
+await test("T10 readArtifactByStableId fails closed on truncated markdown", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { readArtifactByStableId, toAbsoluteMarkdownPath } = await import("../src/cache/cache-io.ts");
+  const artifact = buildAtomicArtifact("ris:segment:noratomic004", "NORATOMIC004", "2026-09-30T00:00:00.000Z", "content four");
+
+  await withAtomicCacheRoot(async () => {
+    assert.equal((await writeThroughCacheForRisArtifact(artifact as any)).cached, true);
+    const markdownPath = toAbsoluteMarkdownPath("ris/norms/ris_segment_noratomic004.md");
+    writeFileSync(markdownPath, "---\nstable_id: ris:segment:noratomic004", "utf8");
+
+    await assert.rejects(
+      () => readArtifactByStableId({
+        stableId: "ris:segment:noratomic004",
+        source: "ris",
+        docType: "norm_segment",
+        includeMetadata: true,
+      }),
+      /Cache consistency mismatch/,
+    );
+  });
+});
+
+await test("T10 readArtifactByStableId fails closed on a stable_id/fetched_at generation mismatch", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { readArtifactByStableId, toAbsoluteMetadataPath } = await import("../src/cache/cache-io.ts");
+  const artifact = buildAtomicArtifact("ris:segment:noratomic005", "NORATOMIC005", "2026-09-30T00:00:00.000Z", "content five");
+
+  await withAtomicCacheRoot(async () => {
+    assert.equal((await writeThroughCacheForRisArtifact(artifact as any)).cached, true);
+    const metadataPath = toAbsoluteMetadataPath("ris/metadata/ris_segment_noratomic005.json");
+    const mismatched = {
+      stable_id: "ris:segment:noratomic005",
+      frontmatter: { ...artifact.frontmatter, fetched_at: "2026-09-30T02:00:00.000Z" },
+      metadata: {},
+    };
+    writeFileSync(metadataPath, JSON.stringify(mismatched, null, 2), "utf8");
+
+    await assert.rejects(
+      () => readArtifactByStableId({
+        stableId: "ris:segment:noratomic005",
+        source: "ris",
+        docType: "norm_segment",
+        includeMetadata: true,
+      }),
+      /Cache consistency mismatch/,
+    );
+  });
+});
+
+await test("T10 cache write/read roundtrip is preserved on the happy path", async () => {
+  const { writeThroughCacheForRisArtifact } = await import("../src/cache/cache-write-through.ts");
+  const { readArtifactByStableId, toAbsoluteMarkdownPath } = await import("../src/cache/cache-io.ts");
+  const artifact = buildAtomicArtifact("ris:segment:noratomic006", "NORATOMIC006", "2026-09-30T00:00:00.000Z", "happy path content");
+
+  await withAtomicCacheRoot(async () => {
+    const written = await writeThroughCacheForRisArtifact(artifact as any);
+    assert.equal(written.cached, true);
+    assert.equal(existsSync(toAbsoluteMarkdownPath("ris/norms/ris_segment_noratomic006.md")), true);
+
+    const read = await readArtifactByStableId({
+      stableId: "ris:segment:noratomic006",
+      source: "ris",
+      docType: "norm_segment",
+      includeMetadata: true,
+    });
+    assert.equal(read.stable_id, "ris:segment:noratomic006");
+    assert.ok(read.content.includes("happy path content"));
+    assert.equal(read.frontmatter.fetched_at, "2026-09-30T00:00:00.000Z");
+  });
+});
+
+const FETCH_TIMEOUT_ENV = "OPENCLAW_AUSTRIAN_LAW_FETCH_TIMEOUT_MS";
+
+async function withFetchTimeoutEnv<T>(value: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const previous = process.env[FETCH_TIMEOUT_ENV];
+  if (value === undefined) {
+    delete process.env[FETCH_TIMEOUT_ENV];
+  } else {
+    process.env[FETCH_TIMEOUT_ENV] = value;
+  }
+  try {
+    return await fn();
+  } finally {
+    if (previous === undefined) {
+      delete process.env[FETCH_TIMEOUT_ENV];
+    } else {
+      process.env[FETCH_TIMEOUT_ENV] = previous;
+    }
+  }
+}
+
+function abortAwareHangingFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  return new Promise<Response>((_resolve, reject) => {
+    const guard = setTimeout(() => {
+      reject(new Error("test guard: fetch did not observe the abort signal"));
+    }, 1500);
+    const fail = (reason?: unknown) => {
+      clearTimeout(guard);
+      reject(reason ?? new DOMException("Aborted", "AbortError"));
+    };
+    const signal = init?.signal;
+    if (!signal) return;
+    if (signal.aborted) {
+      fail(signal.reason);
+      return;
+    }
+    signal.addEventListener("abort", () => fail(signal.reason), { once: true });
+  });
+}
+
+function stalledBodyResponse(): Response {
+  let guard: NodeJS.Timeout;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<html><body>"));
+      guard = setTimeout(() => {
+        try {
+          controller.error(new Error("test guard: body stream did not observe the abort signal"));
+        } catch {
+          return;
+        }
+      }, 1500);
+    },
+    cancel() {
+      clearTimeout(guard);
+    },
+  });
+  return new Response(stream, { status: 200, headers: { "content-type": "text/html" } });
+}
+
+const timeoutSegmentHtml = `<!doctype html><html><head><title>TimeoutG § 1 - RIS</title></head><body>
+  <div class="contentBlock"><h1 class="Titel">Kurztitel</h1>Timeoutgesetz</div>
+  <div class="contentBlock"><h1 class="Titel">§/Artikel/Anlage</h1>§ 1</div>
+  <div class="contentBlock"><h1 class="Titel">Inkrafftretensdatum</h1>01.01.2026</div>
+  <div class="documentContent"><p>Timeout Testinhalt.</p></div>
+</body></html>`;
+
+await test("T11 ris_fetch_segment reports UPSTREAM_TIMEOUT when the request deadline elapses", async () => {
+  await withFetchTimeoutEnv("50", async () => {
+    await withTempCacheRoot(async () => {
+      await withMockedFetch(abortAwareHangingFetch, async () => {
+        const result = await risFetchSegmentStub({
+          sourceId: "NORTIMEOUT1",
+          contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORTIMEOUT1/NORTIMEOUT1.html",
+          refresh: true,
+        });
+
+        assert.equal(result.success, false);
+        if (result.success) return;
+        assert.equal(result.error.code, "UPSTREAM_TIMEOUT");
+        assert.equal(result.error.retryable, true);
+        assert.equal((result.error.details as Record<string, unknown>)?.phase, "request");
+
+        const { toAbsoluteMarkdownPath } = await import("../src/cache/cache-io.ts");
+        assert.equal(existsSync(toAbsoluteMarkdownPath("ris/norms/ris_segment_nortimeout1.md")), false);
+      });
+    });
+  });
+});
+
+await test("T11 ris_fetch_segment reports UPSTREAM_TIMEOUT for a stalled body read", async () => {
+  await withFetchTimeoutEnv("50", async () => {
+    await withTempCacheRoot(async () => {
+      await withMockedFetch(() => stalledBodyResponse(), async () => {
+        const result = await risFetchSegmentStub({
+          sourceId: "NORTIMEOUT2",
+          contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORTIMEOUT2/NORTIMEOUT2.html",
+          refresh: true,
+        });
+
+        assert.equal(result.success, false);
+        if (result.success) return;
+        assert.equal(result.error.code, "UPSTREAM_TIMEOUT");
+        assert.equal((result.error.details as Record<string, unknown>)?.phase, "body_read");
+      });
+    });
+  });
+});
+
+await test("T11 ris_fetch_segment completes normally within a small deadline", async () => {
+  await withFetchTimeoutEnv("1000", async () => {
+    await withTempCacheRoot(async () => {
+      await withMockedFetch(() => new Response(timeoutSegmentHtml, { status: 200 }), async () => {
+        const result = await risFetchSegmentStub({
+          sourceId: "NORTIMEOUT3",
+          contentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORTIMEOUT3/NORTIMEOUT3.html",
+          refresh: true,
+        });
+
+        assert.equal(result.success, true);
+      });
+    });
+  });
+});
+
+await test("T11 ris_sync_laws records a per-item timeout and keeps syncing the remaining items", async () => {
+  await withFetchTimeoutEnv("50", async () => {
+    await withTempCacheRoot(async () => {
+      await withMockedFetch((input, init) => {
+        const url = String(input);
+        if (url.includes("NORBATCHTO1")) return abortAwareHangingFetch(input, init);
+        const docNumber = url.includes("NORBATCHTO2") ? "NORBATCHTO2" : "NORBATCHTO0";
+        const html = timeoutSegmentHtml.replace(
+          "</body>",
+          `<div class="contentBlock"><h1 class="Titel">Dokumentnummer</h1>${docNumber}</div></body>`,
+        );
+        return new Response(html, { status: 200 });
+      }, async () => {
+        const result = await risSyncLawsStub({
+          laws: [
+            { segmentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORBATCHTO1/NORBATCHTO1.html", paragraph: "§ 1" },
+            { segmentUrl: "https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NORBATCHTO2/NORBATCHTO2.html", paragraph: "§ 2" },
+          ],
+        });
+
+        assert.equal(result.success, true);
+        if (!result.success) return;
+        assert.equal(result.data.failed, 1);
+        assert.equal(result.data.synced, 1);
+        assert.equal(result.data.laws[0]?.ok, false);
+        assert.match(result.data.laws[0]?.error ?? "", /timed out/i);
+        assert.equal(result.data.laws[1]?.ok, true);
+      });
+    });
+  });
+});
+
+await test("T11 ris_search bounds retries and reports UPSTREAM_TIMEOUT for repeated HTML timeouts", async () => {
+  await withFetchTimeoutEnv("50", async () => {
+    let htmlAttempts = 0;
+    await withMockedFetch((input, init) => {
+      const url = String(input);
+      if (url.includes("data.bka.gv.at") || url.includes("/ris/api/")) {
+        return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: {} } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      htmlAttempts += 1;
+      return abortAwareHangingFetch(input, init);
+    }, async () => {
+      const result = await risSearchStub({ query: "ABGB" });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      assert.equal(result.error.code, "UPSTREAM_TIMEOUT");
+      assert.equal(htmlAttempts, 3);
+    });
+  });
+});
+
+await test("T11 ris_search does not retry a CANCELLED HTML fetch and breaks the loop after one attempt", async () => {
+  const { FetchAbortError } = await import("../src/ris/fetch-timeout.ts");
+  let htmlAttempts = 0;
+
+  await withFetchTimeoutEnv("1000", async () => {
+    await withMockedFetch((input) => {
+      const url = String(input);
+      if (url.includes("data.bka.gv.at") || url.includes("/ris/api/")) {
+        return new Response(JSON.stringify({ OgdSearchResult: { OgdDocumentResults: {} } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      htmlAttempts += 1;
+      return Promise.reject(new FetchAbortError("cancelled"));
+    }, async () => {
+      const result = await risSearchStub({ query: "ABGB" });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      assert.equal(result.error.code, "CANCELLED");
+      assert.equal(result.error.retryable, false);
+      assert.equal(htmlAttempts, 1);
+    });
+  });
+});
+
+await test("T11 ris_search forces retryable=false and does not retry when the RIS API reports CANCELLED", async () => {
+  const { FetchAbortError } = await import("../src/ris/fetch-timeout.ts");
+
+  await withFetchTimeoutEnv("1000", async () => {
+    await withMockedFetch((input) => {
+      const url = String(input);
+      if (url.includes("data.bka.gv.at") || url.includes("/ris/api/")) {
+        return Promise.reject(new FetchAbortError("cancelled"));
+      }
+      return new Response("", { status: 200, headers: { "content-type": "text/html" } });
+    }, async () => {
+      const result = await risSearchStub({ query: "ABGB" });
+
+      assert.equal(result.success, false);
+      if (result.success) return;
+      assert.equal(result.error.code, "CANCELLED");
+      assert.equal(result.error.retryable, false);
+      assert.ok(result.meta.warnings?.includes("api_error_type: CANCELLED"));
+    });
+  });
+});
+
+await test("T11 external cancellation classifies as CANCELLED and is not retryable", async () => {
+  const { createFetchAbortSignal, classifyFetchAbort, buildAbortToolError } = await import("../src/ris/fetch-timeout.ts");
+  const external = new AbortController();
+  external.abort();
+  const handle = createFetchAbortSignal(1000, external.signal);
+
+  const kind = classifyFetchAbort(new DOMException("Aborted", "AbortError"), handle);
+  assert.equal(kind, "cancelled");
+
+  const error = buildAbortToolError({ kind: "cancelled", phase: "request", url: "https://example.invalid/", timeoutMs: 1000 });
+  assert.equal(error.code, "CANCELLED");
+  assert.equal(error.retryable, false);
+});
+
+await test("T11 resolveFetchTimeoutMs validates env configuration and falls back to the default", async () => {
+  const { resolveFetchTimeoutMs, DEFAULT_FETCH_TIMEOUT_MS } = await import("../src/ris/fetch-timeout.ts");
+
+  await withFetchTimeoutEnv("250", async () => {
+    assert.equal(resolveFetchTimeoutMs(), 250);
+  });
+
+  await withFetchTimeoutEnv("0", async () => {
+    assert.equal(resolveFetchTimeoutMs(), DEFAULT_FETCH_TIMEOUT_MS);
+  });
+
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    warnings.push(String(args[0]));
+  };
+  try {
+    await withFetchTimeoutEnv("not-a-number-xyz", async () => {
+      assert.equal(resolveFetchTimeoutMs(), DEFAULT_FETCH_TIMEOUT_MS);
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.ok(warnings.some((entry) => entry.includes("invalid_fetch_timeout_config")));
+});
+
+await test("T11 resolveFetchTimeoutMs falls back and warns when the env deadline exceeds the maximum", async () => {
+  const { resolveFetchTimeoutMs, DEFAULT_FETCH_TIMEOUT_MS } = await import("../src/ris/fetch-timeout.ts");
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    warnings.push(String(args[0]));
+  };
+  try {
+    await withFetchTimeoutEnv("200000", async () => {
+      assert.equal(resolveFetchTimeoutMs(), DEFAULT_FETCH_TIMEOUT_MS);
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.ok(warnings.some((entry) => entry.includes("invalid_fetch_timeout_config")));
 });
 
 console.log("tool smoke tests passed");

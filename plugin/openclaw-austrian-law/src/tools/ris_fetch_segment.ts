@@ -13,6 +13,13 @@ import {
   normalizeStableIdFromSourceId,
   validateSafeRisUrl,
 } from "../ris/segment-url.js";
+import {
+  buildAbortToolError,
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  readResponseBodyText,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { buildVerificationReceipt, validateStichtag } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
@@ -194,12 +201,23 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   let response: Response;
   let responseFormat: "xml" | "html" = effectiveXmlUrl ? "xml" : "html";
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
   try {
     response = await fetch(effectiveSourceUrl, {
       method: "GET",
       headers: { accept: responseFormat === "xml" ? "application/xml,text/xml,text/html,application/xhtml+xml" : "text/html,application/xhtml+xml,application/xml,text/xml" },
+      signal: abortHandle.signal,
     });
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "request", url: effectiveSourceUrl, timeoutMs }),
+        meta: { tool: "ris_fetch_segment", source: "ris" },
+      };
+    }
     return {
       success: false,
       error: {
@@ -238,12 +256,20 @@ export async function risFetchSegmentStub(input: RisFetchSegmentInput): Promise<
 
   let rawBody: string;
   try {
-    rawBody = await response.text();
+    rawBody = await readResponseBodyText(response, abortHandle);
     const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
     if (contentType.includes("xml") || /^\s*<\?xml\b/i.test(rawBody)) {
       responseFormat = "xml";
     }
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "body_read", url: effectiveSourceUrl, timeoutMs }),
+        meta: { tool: "ris_fetch_segment", source: "ris" },
+      };
+    }
     return {
       success: false,
       error: {

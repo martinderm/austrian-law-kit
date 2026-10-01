@@ -1,3 +1,5 @@
+import { createFetchAbortSignal, readResponseBodyText, resolveFetchTimeoutMs } from "../ris/fetch-timeout.js";
+
 export type DerivedContext = {
   source_path: string | null;
   law_slug: string | null;
@@ -74,9 +76,15 @@ export function parseAustrianDate(raw: string | undefined): { iso?: string; raw?
 }
 
 export async function fetchHtml(url: string): Promise<string> {
-  const response = await fetch(url, { method: "GET", headers: { accept: "text/html,application/xhtml+xml" } });
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { accept: "text/html,application/xhtml+xml" },
+    signal: abortHandle.signal,
+  });
   if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
-  return await response.text();
+  return await readResponseBodyText(response, abortHandle);
 }
 
 export function deriveContextFromQuery(query: string): DerivedContext {

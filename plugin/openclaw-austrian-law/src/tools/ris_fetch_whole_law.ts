@@ -10,6 +10,13 @@ import {
   normalizeWholeLawStableIdFromSourceId,
 } from "../ris/whole-law-url.js";
 import { validateSafeRisUrl } from "../ris/segment-url.js";
+import {
+  buildAbortToolError,
+  classifyFetchAbort,
+  createFetchAbortSignal,
+  readResponseBodyText,
+  resolveFetchTimeoutMs,
+} from "../ris/fetch-timeout.js";
 import { buildVerificationReceipt, getViennaTodayDate, validateStichtag } from "../ris/verification-receipt.js";
 import {
   buildCacheHitMeta,
@@ -183,12 +190,23 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
   const effectiveSourceUrl = apiLookup?.wholeLawUrl ?? sourceUrl;
 
   let response: Response;
+  const timeoutMs = resolveFetchTimeoutMs();
+  const abortHandle = createFetchAbortSignal(timeoutMs);
   try {
     response = await fetch(effectiveSourceUrl, {
       method: "GET",
       headers: { accept: "text/html,application/xhtml+xml" },
+      signal: abortHandle.signal,
     });
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "request", url: effectiveSourceUrl, timeoutMs }),
+        meta: { tool: "ris_fetch_whole_law", source: "ris" },
+      };
+    }
     return {
       success: false,
       error: {
@@ -227,8 +245,16 @@ export async function risFetchWholeLawStub(input: RisFetchWholeLawInput): Promis
 
   let html: string;
   try {
-    html = await response.text();
+    html = await readResponseBodyText(response, abortHandle);
   } catch (error) {
+    const abortKind = classifyFetchAbort(error, abortHandle);
+    if (abortKind) {
+      return {
+        success: false,
+        error: buildAbortToolError({ kind: abortKind, phase: "body_read", url: effectiveSourceUrl, timeoutMs }),
+        meta: { tool: "ris_fetch_whole_law", source: "ris" },
+      };
+    }
     return {
       success: false,
       error: {
