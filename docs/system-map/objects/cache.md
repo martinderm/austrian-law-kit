@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: plugin/openclaw-austrian-law/src/cache/cache-io.ts
 verified_at: 2026-09-30
-revision: 275ff6e
+revision: 28bd48c
 ---
 
 # Cache
