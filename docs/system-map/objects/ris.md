@@ -3,39 +3,34 @@ type: object
 cluster: retrieval
 universe: live
 status: verified
-entity: plugin/openclaw-austrian-law/src/ris/verification-receipt.ts
-verified_at: 2026-09-30
-revision: 28bd48c
+entity: scripts/lib/ris_ogd_client.py
+verified_at: 2026-10-12
 ---
 
 # Ris
 
-RIS-Discovery und Fetch erzeugen Normartefakte samt Stichtagsnachweis.
+RIS-Discovery und Fetch erzeugen Normartefakte samt Stichtagsnachweis (Receipt v2).
 
 ## Why this shape
 Identität, zeitliche Geltung und Abrufrepräsentation müssen getrennt bleiben.
 
 ## Shape
-API-Clients für Bund/Land/Gemeinden; HTML-Fallback und HTML-/XML-Parser. Der XML-Parser rendert den Textabschnitt als Single-Pass-Dokumentwanderer: alle Top-Level-`absatz ct="text"`-, `liste`- und `schlussteil`-Blöcke bleiben in Dokumentreihenfolge erhalten; unbekannte Top-Level-Blöcke schlagen laut fehl statt stiller Auslassung. Metadaten-Kurz-CTs `doknr`/`gesnr` werden zusätzlich zu den Lang-CTs gelesen; Fehlen bleibt `undefined`. Pfadidentität aus RIS-URLs wird nur aus echten Dokumentpfaden (`/Dokumente/`, `/eli/`) oder `Dokumentnummer`-Parametern abgeleitet — Endpunktnamen wie `NormDokument.wxe` erzeugen keine künstliche ID; bei URL-only-Abrufen entscheidet die aus dem Inhalt gelöste amtliche Dokumentnummer über Stable ID, Receipt und Cache, sonst fail closed. Gesamtgesetz-Abrufe über den kanonischen Fast-Path fordern bei historischem Stichtag die amtliche Fassung mit ISO-`FassungVom`-Parameter an und führen versionsuffigierte Stable IDs (`:v<Stichtag>`), während heutige Anfragen unverändert bleiben; ein gelieferter Fassungsstand wird gegen die Anfrage geprüft, nur ohne engere Geltungsgrenzen fail-closed in `evaluateStichtagValidity` (beide Richtungen bei Nicht-heute-Stichtagen). Rechtsstandsableitung (`deriveNormStatus`, HTML- und XML-Parität) ist stichtagsabhängig: `repealed` erst nach Ablauf des Außerkrafttretedatums, vor Inkrafttreten `unknown` — Titel-Beschriftung und Receipt tragen denselben Stichtag. Receipt hält zwei Hashes, Abrufmethode, Cache-Provenienz und Gültigkeitsstatus; der Receipt-Vertrag ist versioniert (`receipt_version: 2` — Schema-Versionierung, nicht Archiv-Vollständigkeit) und referenziert die sha-adressierte Rohquellen-Archivierung (`raw_source_path` dataRoot-relativ POSIX, `raw_source_saved`, `source_url_official`/`content_url_final`, `content_type`, `raw_source_encoding: "utf8-decoded"`); Vertragsrandfall: ein leerer Antwortkörper fällt beim Raw-Hash auf den Content-Hash zurück (in Produktion unerreichbar, weil leere Bodies am Parse scheitern). Die Receipt-Evaluation selbst bleibt in `evaluateStichtagValidity` gebündelt. Query-sourceIds müssen echte NOR/LOO-Ziffernkennungen sein. History ist intern, kein siebentes öffentliches Tool.
+Natives XML-Parsing via Python `xml.etree.ElementTree` für Bundesnormen (`/Dokumente/Bundesnormen/{NOR-ID}/{NOR-ID}.xml`) und Landesnormen. Offizielle OGD REST API v2.6 für gezielte Discovery.
+Verification Receipt v2 erzeugt duale Hashes (`raw_content_sha256` vs. `normalized_content_sha256`), führt Stichtagsvalidierung in `Europe/Vienna` durch und archiviert Rohquellen sha-adressiert unter `data/ris/raw/<sha256>.xml`.
 
-- [plugin/openclaw-austrian-law/src/ris/segment-xml-parser.ts](../../../plugin/openclaw-austrian-law/src/ris/segment-xml-parser.ts) — `plugin/openclaw-austrian-law/src/ris/segment-xml-parser.ts:1`
-- [plugin/openclaw-austrian-law/src/ris/segment-url.ts](../../../plugin/openclaw-austrian-law/src/ris/segment-url.ts) — `plugin/openclaw-austrian-law/src/ris/segment-url.ts:49`
-- [plugin/openclaw-austrian-law/src/ris/whole-law-url.ts](../../../plugin/openclaw-austrian-law/src/ris/whole-law-url.ts) — `plugin/openclaw-austrian-law/src/ris/whole-law-url.ts:58`
-- [plugin/openclaw-austrian-law/src/ris/query-resolver.ts](../../../plugin/openclaw-austrian-law/src/ris/query-resolver.ts) — `plugin/openclaw-austrian-law/src/ris/query-resolver.ts:198`
-- [plugin/openclaw-austrian-law/src/ris/verification-receipt.ts](../../../plugin/openclaw-austrian-law/src/ris/verification-receipt.ts) — `plugin/openclaw-austrian-law/src/ris/verification-receipt.ts:226`
-- [plugin/openclaw-austrian-law/src/ris/verification-receipt.ts](../../../plugin/openclaw-austrian-law/src/ris/verification-receipt.ts) — `plugin/openclaw-austrian-law/src/ris/verification-receipt.ts:163`
-- [plugin/openclaw-austrian-law/src/ris-api/client.ts](../../../plugin/openclaw-austrian-law/src/ris-api/client.ts) — `plugin/openclaw-austrian-law/src/ris-api/client.ts:1`
-- [plugin/openclaw-austrian-law/src/ris/canonical-laws.ts](../../../plugin/openclaw-austrian-law/src/ris/canonical-laws.ts) — `plugin/openclaw-austrian-law/src/ris/canonical-laws.ts:7`
+- [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py)
+- [scripts/lib/receipt.py](../../../scripts/lib/receipt.py)
+- [references/canonical-laws.json](../../../references/canonical-laws.json)
 
 ## Connected to
 [tools](tools.md), [cache](cache.md), [quality](quality.md). Prozesse: [Prozesskatalog](../processes/CONTEXT.md).
 
 ## If you change this
-- **Hits:** RIS-Tools, Suchranking, Batch-Kandidatenprüfung, Receipt-/Cache-Metadaten und Parser-/Rechtsstands-Regressionen; Änderungen an Textabschnitt-Wanderer, Metadaten-CTs oder Stichtagsableitung ziehen Parser-Regressionen (parser-smoke) und Tool-Smoke-Tests nach sich.
-- **Does not hit:** JUSLINE-HTML-Selektoren bei reinem RIS-Ranking.
+- **Hits:** RIS-Client, XML-Parser, Receipt-Generierung, Stichtags-Prüfung und Unittests.
+- **Does not hit:** Reine CLI-Flag-Erweiterungen.
 
 ## Surfaces
-RIS-Upstreams werden gelesen; Tools schreiben Artefakte über Cache-Helfer.
+RIS-Upstreams werden über `urllib.request` gelesen; `storage.py` archiviert Rohdaten.
 
 ## See
-Quelle: [plugin/openclaw-austrian-law/src/ris/verification-receipt.ts](../../../plugin/openclaw-austrian-law/src/ris/verification-receipt.ts). [Änderungsrouting](../effects/CONTEXT.md).
+Quelle: [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py). [Änderungsrouting](../effects/CONTEXT.md).

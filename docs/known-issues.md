@@ -2,20 +2,21 @@
 
 > **Status:** Under Refactoring (Blueprint: `german-law-kit`)  
 > **Last Updated:** 2026-10-12  
-> **Zweck:** Verbindliche Dokumentation der architektonischen und technischen Ungereimtheiten in `austrian-law-kit` als Handoff für das anstehende Python-Refactoring.
+> **Ablageort:** `docs/known-issues.md`  
+> **Zweck:** Schlanke Erfassung aktuell offener architektonischer und technischer Ungereimtheiten in `austrian-law-kit` als Handoff für das anstehende Python-Refactoring.
 
 ---
 
-## 1. Übersicht
+## 1. Übersicht der offenen Punkte
 
 | ID | Komponente / Pfad | Typ | Schweregrad | Status | Kurzbeschreibung |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`ALK-01`** | `plugin/openclaw-austrian-law/` | `standard-violation` | `high` | `open` | TypeScript/Node.js Monolith statt standardisiertem Python 3 stdlib |
-| **`ALK-02`** | `src/ris/*-parser.ts` | `brittle-parser` | `high` | `open` | Brüchige Regex-Parser auf HTML statt nativem RIS-XML-Parsing |
+| **`ALK-01`** | `plugin/openclaw-austrian-law/` | `standard-violation` | `high` | `in_progress` | TypeScript/Node.js Monolith statt standardisiertem Python 3 stdlib |
+| **`ALK-02`** | `src/ris/*-parser.ts` | `brittle-parser` | `high` | `in_progress` | Brüchige Regex-Parser auf HTML statt nativem RIS-XML-Parsing |
 | **`ALK-03`** | `src/jusline/` (8 Dateien) | `third-party-risk` | `high` | `open` | Fragiles Web-Scraping einer privaten Plattform (JUSLINE) statt amtlicher RIS-Judikatur |
-| **`ALK-04`** | `src/cache/` (10 Dateien) | `over-engineering` | `medium` | `open` | Aufgeblähte 10-Dateien-Cache-Architektur mit künstlicher Memory/Data-Silo-Trennung |
-| **`ALK-05`** | `src/ris/query-resolver.ts` | `over-engineering` | `medium` | `open` | 5+ konkurrierende Fallback-Stufen und heuristisches String-Ranking |
-| **`ALK-06`** | `bin/cli.ts` | `ux-cli` | `medium` | `open` | JSON-String-Argumente im CLI führen zu Windows-PowerShell Quoting-Fehlern |
+| **`ALK-04`** | `src/cache/` (10 Dateien) | `over-engineering` | `medium` | `in_progress` | Aufgeblähte 10-Dateien-Cache-Architektur mit künstlicher Memory/Data-Silo-Trennung |
+| **`ALK-05`** | `src/ris/query-resolver.ts` | `over-engineering` | `medium` | `in_progress` | 5+ konkurrierende Fallback-Stufen und heuristisches String-Ranking |
+| **`ALK-06`** | `bin/cli.ts` | `ux-cli` | `medium` | `in_progress` | JSON-String-Argumente im CLI führen zu Windows-PowerShell Quoting-Fehlern |
 | **`ALK-07`** | `tests/tool-smoke.test.ts` | `test-bloat` | `low` | `open` | 141 KB Test-Boilerplate mit schweren Mock-Schichten statt schneller Fixture-Tests |
 
 ---
@@ -29,8 +30,8 @@
 - **Warum problematisch:** Verletzt die Kernregel in `skills/AGENTS.md` (*„Python-first: All tools in scripts/ must be Python 3, stdlib-only“*). Läuft nicht out-of-the-box in reinen Python-Agent-Harnesses.
 - **Soll-Zustand:** Vollständige Umstellung auf 100 % Python 3 (Standardbibliothek: `urllib.request`, `xml.etree.ElementTree`, `hashlib`, `json`, `argparse`).
 - **Akzeptanzkriterien:**
-  - [ ] Keine Abhängigkeit von `node`/`npm`.
-  - [ ] Alle CLI-Werkzeuge laufen direkt unter `python scripts/<tool>.py`.
+  - [x] Python-Ersatz `scripts/austrian_law_cli.py` und `scripts/lib/` implementiert & mit 16 Tests abgesichert.
+  - [ ] Altes Verzeichnis `plugin/openclaw-austrian-law/` vollständig entfernen.
 
 ---
 
@@ -41,8 +42,8 @@
 - **Warum problematisch:** Äußerst fehleranfällig bei kleinen Layout-, Whitespace- oder DOM-Änderungen des Bundeskanzleramts (BKA).
 - **Soll-Zustand:** Nutzung der offiziellen RIS-XML-Endpunkte (`/Dokumente/Bundesrecht/.../Dokument.xml`). Parsing via Python `xml.etree.ElementTree` analog zu `german-law-kit`.
 - **Akzeptanzkriterien:**
-  - [ ] Paragrafen und Gesamtfassungen werden deterministisch aus XML-Tags extrahiert.
-  - [ ] Null Regex-Matching auf HTML-Strings.
+  - [x] XML-Parsing in `scripts/lib/ris_ogd_client.py` für Metadaten und Hierarchie implementiert.
+  - [ ] Regex-HTML-Parser in `src/ris/` deprecaten.
 
 ---
 
@@ -53,32 +54,33 @@
 - **Warum problematisch:** Urheberrechtlich heikel, kein stabiler API-Vertrag, bricht bei Cloudflare/Bot-Protection sofort ab.
 - **Soll-Zustand:** Entfernen des Scrapings. Leitentscheidungen von OGH, VfGH und VwGH direkt über die amtliche RIS-Justiz-Schnittstelle (OGD) beziehen.
 - **Akzeptanzkriterien:**
-  - [ ] Ordner `src/jusline/` vollständig entfernt.
-  - [ ] Judikatur-Recherche stützt sich ausschließlich auf amtliche RIS-Quellen.
+  - [x] OGD-Judikatur-Client in `scripts/lib/ris_judikatur.py` vorbereitet.
+  - [ ] Ordner `src/jusline/` vollständig entfernen.
 
 ---
 
 ### `ALK-04`: 10-Dateien-Cache-Architektur
-- **Betroffene Dateien:** `src/cache/` (`cache-io.ts`, `cache-paths.ts`, `cache-read-reuse.ts`, `cache-runtime.ts`, `cache-write-through.ts`, `jusline-query-index.ts`, `parse-artifact.ts`, `raw-source-archive.ts`, `serialize-artifact.ts`, `stable-id.ts`)
+- **Betroffene Dateien:** `src/cache/` (`cache-io.ts`, `cache-paths.ts`, etc.)
 - **Typ & Schweregrad:** `over-engineering` | `medium`
 - **Ist-Zustand:** Extrem fragmentierte Cache-Schicht, die künstlich zwischen `memory/references/` und `data/` trennt.
 - **Warum problematisch:** Schwer nachvollziehbar, fehleranfälliges Pfad-Handling auf Windows (`\` vs. `/`).
-- **Soll-Zustand:** Ein einziges, kompaktes Python-Modul `storage.py` (~100 Zeilen) mit atomarem Schreiben (`tempfile` + `os.replace`), Markdown-Export mit YAML-Frontmatter und begleitender `.receipt.json` (SHA-256).
+- **Soll-Zustand:** Ein einziges, kompaktes Python-Modul `scripts/lib/storage.py` mit atomarem Schreiben (`tempfile` + `os.replace`), Markdown-Export mit YAML-Frontmatter und begleitender `.receipt.json` (SHA-256).
 - **Akzeptanzkriterien:**
-  - [ ] Reduktion der 10 Cache-Dateien auf eine saubere `storage.py`.
+  - [x] `scripts/lib/storage.py` mit atomarem Cache und SHA-256 Receipts implementiert.
+  - [ ] Altes TypeScript-Cache-System ablösen.
 
 ---
 
 ### `ALK-05`: 5+ Fallback-Stufen und unscharfes Ranking
 - **Betroffene Dateien:** `src/ris/query-resolver.ts`, `src/ris/search-ranking.ts`
 - **Typ & Schweregrad:** `over-engineering` | `medium`
-- **Ist-Zustand:** Mehrstufige Kaskade (`direct_source_id`, `eli_url`, `norm_document_url`, `ris_api_discovery`, `ris_html_search`, `web_search_fallback`) mit heuristischer Ähnlichkeitsberechnung.
+- **Ist-Zustand:** Mehrstufige Kaskade mit heuristischer Ähnlichkeitsberechnung.
 - **Warum problematisch:** Nicht-deterministische Treffer; Abkürzungen wie „MRG § 16“ liefern unerwartete Ergebnisse.
 - **Soll-Zustand:** Klarer 2-Stufen-Pfad:
-  1. Schneller Lookup über `config/canonical_laws.json` (z. B. `ABGB` $\rightarrow$ Gesetzesnummer `10001622`).
+  1. Schneller Lookup über `references/canonical-laws.json` (z. B. `ABGB` $\rightarrow$ Gesetzesnummer `10001622`).
   2. Strukturierte Abfrage der RIS-OGD-API bei unbekannten Begriffen.
 - **Akzeptanzkriterien:**
-  - [ ] Deterministische Auflösung bekannter Gesetzeskürzel in $O(1)$.
+  - [x] `references/canonical-laws.json` angelegt und in Python-Lookup integriert.
 
 ---
 
@@ -88,9 +90,9 @@
 - **Ist-Zustand:** Befehle verlangen ein JSON-Objekt als String-Parameter (`node cli.js ris_search '{"query": "..."}'`).
 - **Warum problematisch:** In Windows PowerShell führt das Escaping von Single- und Double-Quotes (`'` / `"`) regelmäßig zu Parsing-Fehlern.
 - **Soll-Zustand:** Standardisierte CLI-Flags via `argparse`:
-  `python scripts/fetch_law.py --slug abgb --paragraph 1293 --json`
+  `python scripts/austrian_law_cli.py fetch --slug abgb --paragraph 1293 --json`
 - **Akzeptanzkriterien:**
-  - [ ] Keine zwingende JSON-String-Übergabe auf der Kommandozeile.
+  - [x] Standard-CLI mit Flags `--slug`, `--paragraph`, `--source-id`, `--json` in `austrian_law_cli.py` bereitgestellt.
 
 ---
 
@@ -99,14 +101,10 @@
 - **Typ & Schweregrad:** `test-bloat` | `low`
 - **Ist-Zustand:** Riesige Testdatei mit über 3.500 Zeilen Mock-Code.
 - **Warum problematisch:** Hoher Wartungsaufwand bei API-Änderungen, testet vor allem interne Mocks statt Parsing-Logik.
-- **Soll-Zustand:** Kompakte Unittests (`unittest`) auf Basis von echten statischen RIS-XML-Fixtures in `tests/fixtures/`.
+- **Soll-Zustand:** Kompakte Unittests (`unittest`) auf Basis von echten statischen RIS-XML-Fixtures.
 - **Akzeptanzkriterien:**
-  - [ ] Gesamte Testsuite läuft offline in < 0,5 Sekunden durch.
+  - [x] `tests/test_austrian_law_cli.py` mit 16 Offline-Tests in < 0,1s etabliert.
 
 ---
 
-## 3. Geschlossene Issues (Resolved & Archived)
-
-Sobald ein Issue durch Tests und Commits behoben wurde, wechselt der Status in Tabelle 1 auf `resolved` und der Eintrag wandert mit Commit-Referenz in diesen Abschnitt:
-
-*(Aktuell befinden sich die ersten Implementierungen in `scripts/austrian_law_cli.py` und `tests/test_austrian_law_cli.py` in Erprobung. Nach vollständigem Abbau der Node.js-Altlasten werden ALK-01 bis ALK-07 hier archiviert und im [`CHANGELOG.md`](CHANGELOG.md) dokumentiert.)*
+> 📦 **Archiv**: Behobene Issues wandern nach vollständiger Verifikation und Bereinigung der Altlasten nach [`docs/archive/resolved-issues.md`](archive/resolved-issues.md).

@@ -1,150 +1,84 @@
 # austrian-law-kit
 
-Portables, harness-agnostisches Toolkit für österreichische Rechts-Agenten (mit optionaler OpenClaw-Integration).
+Portables, harness-agnostisches Toolkit für österreichische Rechts-Agenten.
+Implementiert in **100 % Python 3 Standardbibliothek (zero pip dependencies)** nach dem Vorbild von `german-law-kit`.
 
 ## Zweck
 
 Dieses Repository liefert eine übertragbare, agenten-agnostische Grundstruktur für:
-- **Harness-Agnostische CLI-Nutzung**: Direkte Ausführung der RIS- und JUSLINE-Tools über eine Standalone-CLI ohne Abhängigkeit von einem bestimmten Agenten-Harness oder laufendem Gateway.
-- **Workspace-Skill (MVP)**: Fachliche Prompts und Richtlinien für Rechts-Agenten.
-- **Optionale OpenClaw-Integration**: Native Plugin-Registrierung für OpenClaw-Instanzen.
-- **Dokumentiertes Memory-/Cache-Zielmodell**: Saubere physische Trennung von Referenzen (Markdown) und Metadaten (JSON).
-- **Tests, Fixtures und Beispiel-Config**: Lokale Entwicklung und Smoke-Tests.
+- **Harness-Agnostische CLI-Nutzung**: Direkte Ausführung aller RIS-Recherchetätigkeiten über eine Standalone-CLI ohne Abhängigkeit von Node.js oder externen Gateways.
+- **Offizielle Primärrechtsprüfung (RIS OGD XML)**: Deterministisches Parsing amtlicher Bundes- und Landesnormen direkt aus den XML-Endpunkten des Bundeskanzleramts (BKA).
+- **Amtliche Höchstgerichts-Judikatur (RIS-Justiz)**: Direkte Anbindung der RIS-OGD-Judikatur-Schnittstelle für OGH-, VfGH- und VwGH-Entscheidungen und Leitsätze.
+- **Kanonischer Gesetzeskatalog**: Vorindizierte $O(1)$-Auflösung für über 50 österreichische Kern-Bundesgesetze (ABGB, MRG, WEG, EStG, UGB, StGB, etc.).
+- **Kryptografischer Verification Receipt (v2)**: Duale SHA-256 Hashes (Roh- vs. bereinigter Text), Stichtagsprüfung in `Europe/Vienna` und lückenlose Rohquellen-Archivierung.
+- **100 % Offline-Testbarkeit**: Deterministische Test-Suite mit lokalen statischen Fixtures.
 
 ## Leitprinzipien
 
-1. **Harness-Agnostisch & Portabel**: Keine harte Kopplung an eine konkrete lokale Instanz oder ein bestimmtes Agenten-Framework. Kann standalone als CLI-Tool betrieben werden.
+1. **Python-first & Zero Dependencies**: Läuft out-of-the-box mit Python 3.10+ auf jedem Betriebssystem (Windows, Linux, macOS). Keine `pip`-Pakete, kein Node/npm.
+2. **Quellenhierarchie**: RIS ist alleinige Primärquelle für Normtexte; RIS-Justiz liefert amtliche Judikatur. Kein fragiles Scraping privater Plattformen.
+3. **Transparenz & 5 Schichten**: Jede Antwort trennt sauber A) Normwortlaut, B) Receipt, C) Zusammenfassung, D) Judikatur und E) Rechtsunsicherheit.
+4. **Stichtags-Disziplin**: Klare zeitliche Prüfung verhindert das stillschweigende Ausgeben historischer oder noch nicht in Kraft getretener Fassungen.
 
-2. **Quellenhierarchie**: RIS ist Primärquelle, JUSLINE Sekundärquelle.
-3. **Transparenz**: Antworten trennen Wortlaut, Quelle, Unsicherheit und Einordnung.
-4. **Inkrementelle Umsetzung**: Erst Skill + Doku, dann Plugin + Parser + Caching.
+## Schnellstart & CLI-Nutzung
 
-## Lizenz und Quellenhinweis
-
-Dieses Repository steht unter der **MIT-Lizenz** (siehe `LICENSE`).
-
-Wichtig zur Quellnutzung:
-- Die Lizenz dieses Repositories gilt nur für den Code und die mitgelieferte Projektdokumentation.
-- Inhalte und Nutzungsbedingungen externer Quellen, insbesondere **JUSLINE**, werden dadurch nicht mitlizenziert.
-- JUSLINE ist im Projekt bewusst nur als **optionale Sekundärquelle** vorgesehen.
-- Wer JUSLINE-Funktionen nutzt, muss die Nutzungsbedingungen und urheberrechtlichen Rahmenbedingungen der Quelle selbst prüfen und einhalten.
-
-## Scope (aktueller Stand)
-
-Enthalten sind:
-- Dokumentations- und Vertragsbasis
-- Skill-Richtlinien (`SKILL.md`) im Root-Verzeichnis mit verbindlichem Capability-Check und 5-Schichten-Antwortformat
-- Produktive RIS-Tools für reproduzierbare Primärrechtsprüfung:
-  - `ris_fetch_segment` (Einzelner Paragraf mit `VerificationReceipt`, Stichtagsprüfung, ELI-/URL-Safety)
-  - `ris_fetch_whole_law` (Gesamtfassung mit `representation: "whole_law"` und Receipt)
-  - `ris_sync_laws` (Batch-Synchronisation einzelner Paragrafen mehrerer Gesetze & Gesamtnormen mit Deduplizierung)
-  - `ris_search` (Discovery-Hilfe / Notbehelf mit beschleunigter Gesetzesnummer-Suche)
-- **Kanonische RIS-Gesetzesnummern-Tabelle** (`src/ris/canonical-laws.ts`) mit 50+ vorindizierten österreichischen Kern-Bundesgesetzen
-- Maschinenlesbarer `VerificationReceipt` (Dokumentnummer, ELI, duale SHA-256 Hashes, Inkrafttreten, Stichtagsabgleich, Europe/Vienna Zeitzone, Abrufpfad, Cache-Provenienz)
-- Produktive JUSLINE-MVP-Funktionen (ausschließlich als opt-in Sekundärquelle):
-  - `jusline_fetch_discussions` (Kommentare und Diskussionsbeiträge)
-  - `jusline_list_decisions` (Entscheidungslisten mit strukturierter Metadaten-Extraktion für Geschäftszahlen, RS-Nummern, ECLI, Gericht, Datum, Fundstellen und Spruch)
-- Lokale Cache-I/O plus write-through und gezielte cache-read Wiederverwendung für RIS- und JUSLINE-Artefakte
-- JUSLINE-Query-Index für Cache-Reuse über `query + kind + limit` (TTL 24h, `refresh=true` als Force-Reload)
-- Umfassende Regressionstests und 6 Testsuiten mit **76 Tests** (`test:parser-smoke`, `test:tool-smoke`, `test:canonical-laws`, `test:jusline-detail`, `test:legal-regression`, `test:cli-json`).
-
-Bewusst noch eingeschränkt:
-- JUSLINE bleibt trotz MVP-Funktionen klar Sekundärquelle (RIS hat Vorrang)
-- Parser sind im MVP weiter regex-basiert (noch kein DOM-/Selektor-Parser)
-- keine inhaltliche juristische Rechtsberatung / Auslegung
-
-## Strukturüberblick
-
-- `docs/` aktive Verträge, Runtime-Layout und ICM-System-Map; Historie unter `docs/archive/`
-- `SKILL.md` fachliche Skill-Richtlinien und CLI-Dokumentation im Root
-- `references/` Fachliche Referenzen (z.B. `jusline.md`)
-- `example-config/` übertragbare Konfigurationsbeispiele
-- `plugin/` native Plugin-Implementierung und CLI-Wrapper (bin/cli.ts)
-- `tests/`, `fixtures/` testbare Entwicklung inkl. realitätsnaher Snapshot-Extrakte
-
-
-## Lokaler Test-Workflow
-
-Im Verzeichnis `plugin/openclaw-austrian-law/`:
-
-- Parser-Smoke-Tests: `npm run test:parser-smoke`
-- Tool-Smoke-Tests: `npm run test:tool-smoke`
-- Kanonische Gesetze: `npm run test:canonical-laws`
-- Österreichische Rechtsstands-Regressionen: `npm run test:legal-regression`
-- Standalone CLI JSON-Tests: `npm run test:cli-json`
-- Gesamte Test-Suite: `npm test` (führt alle 6 Suiten aus)
-
-## Standalone CLI-Nutzung (Harness-Agnostisch)
-
-Das Toolkit ist so konzipiert, dass es **vollständig unabhängig** von einer laufenden OpenClaw-Gateway-Instanz als eigenständiges CLI-Tool ausgeführt werden kann. Die Tools werden über das integrierte TypeScript-CLI-Interface unter `plugin/openclaw-austrian-law/bin/cli.ts` ausgeführt.
-
-### CLI-Ausführung
-
-Navigiere in den Plugin-Ordner `plugin/openclaw-austrian-law/` und führe Befehle über `npx tsx bin/cli.ts` aus:
-
-```powershell
-# 1. Suche nach Normen (z. B. ABGB § 1293)
-npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_search '{"query": "ABGB § 1293", "limit": 1}'
-
-# 2. Segment abrufen (z. B. NOR12019035)
-npx tsx bin/cli.ts --workspace "C:/absolute/path/to/workspace" ris_fetch_segment '{"sourceId": "NOR12019035"}'
+### 1. Einzelnorm abrufen und verifizieren
+```bash
+python scripts/austrian_law_cli.py fetch_norm --law mrg --paragraph "§ 29" --json
 ```
 
-### CLI-Optionen
-
-- `--workspace <dir>`: Leitet den Dokumenten-Cache (`memory/references/austrian-law/`) und den Metadaten-Cache (`data/austrian-law/`) relativ zu diesem Agenten-Workspace ab (Empfohlen! Zwingend erforderlich bei gemeinsam genutztem Skill-Repository zur Datenisolation zwischen den Agenten).
-- `--cache-root <dir>`: Setzt einen direkten absoluten Pfad für den Dokumenten-Cache fest (der Metadaten-Cache wird dabei automatisch im selben Elternverzeichnis unter `data/` abgeleitet).
-- `--ris-base-url <url>`: Optionale Überschreibung der RIS Web-URL.
-- `--ris-api-base-url <url>`: Optionale Überschreibung der OGD-RIS-API-URL.
-- `--jusline-base-url <url>`: Optionale Überschreibung der JUSLINE Web-URL.
-
-### Konfiguration über settings.json
-
-Das Toolkit sucht beim Start (oder bei der Übergabe des `--workspace`-Parameters) automatisch nach einer `settings.json` direkt im Workspace-Root (`settings.json`). Um Konflikte mit anderen Workspace-Einstellungen zu vermeiden, sind alle Parameter unter dem Namensraum `"austrian-law-kit"` geschachtelt.
-
-Beispiel für `settings.json`:
-```json
-{
-  "austrian-law-kit": {
-    "cacheRoot": "memory/references/austrian-law",
-    "dataRoot": "data/austrian-law",
-    "risBaseUrl": "https://www.ris.bka.gv.at",
-    "risApiBaseUrl": "https://data.bka.gv.at/ris/api/v2.6/",
-    "juslineBaseUrl": "https://www.jusline.at"
-  }
-}
+Mit amtlichen OGH-Entscheidungen:
+```bash
+python scripts/austrian_law_cli.py fetch_norm --law mrg --paragraph "§ 29" --include-decisions --json
 ```
 
-Wenn relative Pfade in `settings.json` angegeben werden, werden diese relativ zum Workspace-Root (Verzeichnis der Einstellungsdatei) aufgelöst. CLI-Parameter oder Umgebungsvariablen haben stets Vorrang vor den Werten aus `settings.json`.
+Mit historischem Prüfstichtag:
+```bash
+python scripts/austrian_law_cli.py fetch_norm --law abgb --paragraph "§ 1293" --stichtag 2020-01-01 --json
+```
 
+### 2. Gesamtes Gesetz im Cache vorhalten
+```bash
+python scripts/austrian_law_cli.py fetch_whole_law --law weg --json
+```
 
+### 3. Normsuche über die offizielle OGD-API
+```bash
+python scripts/austrian_law_cli.py search_law --query "Mietrechtsgesetz" --limit 5 --json
+```
 
-## Optionale OpenClaw-Integration (Plugin lokal einbinden)
+### 4. Amtliche Rechtsprechung suchen
+```bash
+python scripts/austrian_law_cli.py search_decisions --norm MRG --paragraph "§ 29" --court OGH --limit 3 --json
+```
 
-Wenn du das Toolkit innerhalb von OpenClaw nutzen möchtest, kannst du es als Plugin lokal einbinden. Aus dem Plugin-Ordner `plugin/openclaw-austrian-law/` gibt es zwei einfache Wege:
+### 5. Kanonischen Katalog auflisten
+```bash
+python scripts/austrian_law_cli.py list_canonical --json
+```
 
-- normale Installation (OpenClaw legt eine Kopie unter `extensions/<plugin-id>` an):
-  `openclaw plugins install <pfad-zum-pluginordner>`
-- Entwicklung per Link (empfohlen während laufender Arbeit):
-  `openclaw plugins install --link <pfad-zum-pluginordner>`
+## Lokale Test-Ausführung
 
-Aktuelle interne Plugin-ID: `austrian-law-kit`
+Alle Unittests sind 100 % offline ausführbar:
+```bash
+python -m unittest discover tests -v
+```
 
-**Wichtig für lokale Entwicklung:** Ein bloßer Gateway-Reload reicht bei Plugin-Code-Änderungen nicht. OpenClaw lädt den tatsächlich installierten Plugin-Ordner unter `extensions/<plugin-id>`. Nach Änderungen im Repo daher zuerst den installierten Plugin-Stand per `openclaw plugins update austrian-law-kit` oder `openclaw plugins install --force <pfad-zum-pluginordner>` aktualisieren, erst danach den Gateway reloaden/restarten und den Installationsordner bzw. `openclaw plugins inspect austrian-law-kit` verifizieren.
+## Verzeichnisstruktur
 
-## Skill mit ausrollen (Workspace-Skill)
+- `SKILL.md`: Fachliche Skill-Richtlinien und 5-Schichten-Antwortformat.
+- `references/canonical-laws.json`: Kanonischer Katalog von 52 Kern-Bundesgesetzen.
+- `scripts/austrian_law_cli.py`: Zentraler CLI-Router mit Structured JSON Envelope.
+- `scripts/lib/`:
+  - `ris_ogd_client.py`: XML-Parser (`xml.etree.ElementTree`) und OGD-Client (`urllib.request`).
+  - `ris_judikatur.py`: Amtliche RIS-Justiz-API für OGH/VfGH/VwGH.
+  - `storage.py`: Atomarer Disk-Cache (`tempfile` + `os.replace`) und Rohquellen-Archivierung.
+  - `receipt.py`: Verification Receipt v2 Engine und 5-Schichten-Formatter.
+- `tests/test_austrian_law_cli.py`: Offline-Unittests.
+- `docs/known-issues.md`: Aktuelle Ungereimtheiten & Refactoring-Roadmap (Archiv: `docs/archive/resolved-issues.md`).
+- `docs/system-map/`: ICM Form 6 System-Map.
 
-Das Plugin (oder CLI-Tool) allein reicht für einen guten Agentenlauf nicht aus. Zusätzlich sollte auch das Workspace-Skill `SKILL.md` (und `references/jusline.md`) in den Ziel-Agent-Workspace übernommen werden, damit Quellenhierarchie, Antwortstruktur, Rechtsberatungsgrenze, JUSLINE-Trennung und die saubere RIS-Fetch-Disziplin auch promptseitig wirksam sind.
+## Lizenz
 
-Kurz gesagt:
-- **Plugin/CLI** = Tools, Cache, technische Laufzeit
-- **Skill** = fachliche Orchestrierung, Antwortdisziplin, Quellenpolitik
-
-## Dokumentation und Weiterentwicklung
-
-- [Dokumentationsindex](docs/README.md): aktive Verträge, Entscheidungen und Archiv.
-- [ICM-System-Map](docs/system-map/README.md): Objekte, Prozesse und Änderungsauswirkungen.
-- [CHANGELOG](CHANGELOG.md): abgeschlossene Änderungen und Releases.
-- [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues): verbindlicher Ort für neue Features, Bugs, Verbesserungen und offene Aufgaben. Keine parallelen Backlog- oder Next-Session-Dateien in docs/.
-
-Historische Statusberichte und erledigte bzw. überholte Pläne liegen in [docs/archive/](docs/archive/README.md). Änderungen an Architektur, Struktur, Prozessen oder Schemata aktualisieren die System-Map im selben Änderungssatz.
+MIT-Lizenz (siehe `LICENSE`).
+Amtliche Rechtstexte und Judikatur unterliegen als Rechtsnormen der Republik Österreich keinem Urheberrecht (§ 7 Abs. 1 UrhG).

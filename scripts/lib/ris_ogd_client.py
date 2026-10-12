@@ -242,46 +242,57 @@ def search_ris_ogd_api(
     paragraph: Optional[str] = None,
     scope: str = "bund",
     timeout: int = DEFAULT_TIMEOUT,
+    max_pages: int = 5,
 ) -> List[Dict[str, Any]]:
     """
     Sucht Normen über die offizielle OGD REST API v2.6 des Bundeskanzleramts.
     Liefert eine Liste gefundener Treffer mit Dokument-Referenzen zurück.
     """
     api_url = RIS_BUNDESRECHT_API if scope == "bund" else RIS_LANDESRECHT_API
-    params = {
+    base_params = {
         "Applikation": "BrKons" if scope == "bund" else "LrKons",
         "ImRisSeit": "Undefined",
     }
 
     if gesetzesnummer:
-        params["Gesetzesnummer"] = gesetzesnummer
+        base_params["Gesetzesnummer"] = gesetzesnummer
 
+    clean_para = ""
     if paragraph:
-        # Paragraf-Ziffer extrahieren (z. B. "§ 29" -> "29", "§ 67a" -> "67a")
         clean_para = re.sub(r"^[§\s\.]+", "", paragraph.strip())
         num_m = re.match(r"^(\d+[a-z]?)", clean_para, re.IGNORECASE)
         if num_m:
-            params["VonParagraf"] = num_m.group(1)
+            base_params["Suchworte"] = num_m.group(1)
 
     if query and not gesetzesnummer:
-        params["Titel"] = query
-
-    full_url = f"{api_url}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(
-        full_url,
-        headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
-    )
-
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+        base_params["Titel"] = query
 
     results: List[Dict[str, Any]] = []
-    try:
+
+    for page in range(1, max_pages + 1):
+        params = dict(base_params)
+        params["Seitennummer"] = str(page)
+
+        full_url = f"{api_url}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(
+            full_url,
+            headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except Exception:
+            break
+
         doc_results = data.get("OgdSearchResult", {}).get("OgdDocumentResults", {})
         doc_refs = doc_results.get("OgdDocumentReference", [])
+        if not doc_refs:
+            break
         if isinstance(doc_refs, dict):
             doc_refs = [doc_refs]
 
+        page_matched = False
         for ref in doc_refs:
             d_data = ref.get("Data", {})
             meta = d_data.get("Metadaten", {})
@@ -304,7 +315,7 @@ def search_ris_ogd_api(
                     xml_url = u.get("Url")
                     break
 
-            results.append({
+            hit_entry = {
                 "source_id": tech.get("ID", ""),
                 "dokumentnummer": tech.get("ID", ""),
                 "gesetzesnummer": br_kons.get("Gesetzesnummer", ""),
@@ -313,9 +324,20 @@ def search_ris_ogd_api(
                 "paragraph_number": br_kons.get("Paragraphnummer", ""),
                 "document_url": allg.get("DokumentUrl", ""),
                 "xml_url": xml_url,
-            })
-    except Exception:
-        pass
+            }
+            results.append(hit_entry)
+
+            # Wenn wir nach einem Paragrafen suchen und ihn finden
+            if paragraph and clean_para:
+                hit_p = hit_entry["paragraph"].replace(" ", "").lower()
+                target_p = f"§{clean_para}".lower()
+                if hit_p == target_p:
+                    page_matched = True
+
+        # Wenn wir Treffer für den gesuchten Paragrafen auf dieser Seite gefunden haben
+        # und die Folgeseite wahrscheinlich andere Paragrafen hat, können wir abbrechen
+        if paragraph and page_matched and page > 1:
+            break
 
     return results
 
@@ -375,14 +397,14 @@ def fetch_norm(
             scope="bund",
         )
 
-        target_source_id = None
-        for hit in hits:
-            # Exakter Treffer auf Paragraph
-            hit_p = hit.get("paragraph", "").replace(" ", "")
-            if clean_para.replace(" ", "") in hit_p:
-                target_source_id = hit.get("source_id")
-                break
+        matching_hits = [
+            hit for hit in hits
+            if hit.get("paragraph", "").replace(" ", "").lower() == clean_para.replace(" ", "").lower()
+        ]
+        # Neueste Normfassung bevorzugen (höchste NOR-ID = jüngste Novelle)
+        matching_hits.sort(key=lambda h: h.get("source_id", ""), reverse=True)
 
+        target_source_id = matching_hits[0].get("source_id") if matching_hits else None
         if not target_source_id and hits:
             target_source_id = hits[0].get("source_id")
 
