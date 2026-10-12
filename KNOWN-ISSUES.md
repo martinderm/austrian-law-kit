@@ -102,3 +102,11 @@
 - **Soll-Zustand:** Kompakte Unittests (`unittest`) auf Basis von echten statischen RIS-XML-Fixtures in `tests/fixtures/`.
 - **Akzeptanzkriterien:**
   - [ ] Gesamte Testsuite läuft offline in < 0,5 Sekunden durch.
+
+---
+
+## 3. Geschlossene Issues (Resolved & Archived)
+
+Sobald ein Issue durch Tests und Commits behoben wurde, wechselt der Status in Tabelle 1 auf `resolved` und der Eintrag wandert mit Commit-Referenz in diesen Abschnitt:
+
+*(Aktuell befinden sich die ersten Implementierungen in `scripts/austrian_law_cli.py` und `tests/test_austrian_law_cli.py` in Erprobung. Nach vollständigem Abbau der Node.js-Altlasten werden ALK-01 bis ALK-07 hier archiviert und im [`CHANGELOG.md`](CHANGELOG.md) dokumentiert.)*
