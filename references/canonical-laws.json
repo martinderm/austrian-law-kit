@@ -1,0 +1,662 @@
+[
+  {
+    "slug": "abgb",
+    "abbreviation": "ABGB",
+    "title": "Allgemeines bürgerliches Gesetzbuch",
+    "gesetzesnummer": "10001622",
+    "aliases": [
+      "abgb",
+      "allgemeinesbuergerlichesgesetzbuch",
+      "allgemeinesbürgerlichesgesetzbuch"
+    ],
+    "scope": "bund",
+    "stammfassung": "JGS Nr. 946/1811"
+  },
+  {
+    "slug": "mrg",
+    "abbreviation": "MRG",
+    "title": "Mietrechtsgesetz",
+    "gesetzesnummer": "10002531",
+    "aliases": [
+      "mrg",
+      "mietrechtsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 520/1981"
+  },
+  {
+    "slug": "weg",
+    "abbreviation": "WEG",
+    "title": "Wohnungseigentumsgesetz 2002",
+    "gesetzesnummer": "20001921",
+    "aliases": [
+      "weg",
+      "weg2002",
+      "wohnungseigentumsgesetz",
+      "wohnungseigentumsgesetz2002"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 70/2002"
+  },
+  {
+    "slug": "wgg",
+    "abbreviation": "WGG",
+    "title": "Wohnungsgemeinnützigkeitsgesetz",
+    "gesetzesnummer": "10002540",
+    "aliases": [
+      "wgg",
+      "wohnungsgemeinnuetzigkeitsgesetz",
+      "wohnungsgemeinnützigkeitsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 139/1979"
+  },
+  {
+    "slug": "heizkg",
+    "abbreviation": "HeizKG",
+    "title": "Heizkostenabrechnungsgesetz",
+    "gesetzesnummer": "10002894",
+    "aliases": [
+      "heizkg",
+      "heizkostenabrechnungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 827/1992"
+  },
+  {
+    "slug": "mieweg",
+    "abbreviation": "MieWeG",
+    "title": "Mieten-Wertsicherungs-Begrenzungsgesetz",
+    "gesetzesnummer": "20012543",
+    "aliases": [
+      "mieweg",
+      "mietenwertsicherungsbegrenzungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 154/2023"
+  },
+  {
+    "slug": "eheg",
+    "abbreviation": "EheG",
+    "title": "Ehegesetz",
+    "gesetzesnummer": "10001871",
+    "aliases": [
+      "eheg",
+      "ehegesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "dRGBl. I S 807/1938"
+  },
+  {
+    "slug": "kschg",
+    "abbreviation": "KSchG",
+    "title": "Konsumentenschutzgesetz",
+    "gesetzesnummer": "10002462",
+    "aliases": [
+      "kschg",
+      "konsumentenschutzgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 140/1979"
+  },
+  {
+    "slug": "fagg",
+    "abbreviation": "FAGG",
+    "title": "Fern- und Auswärtsgeschäfte-Gesetz",
+    "gesetzesnummer": "20008855",
+    "aliases": [
+      "fagg",
+      "fernundauswaertsgeschaeftegesetz",
+      "fernundauswärtsgeschäftegesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 33/2014"
+  },
+  {
+    "slug": "vrug",
+    "abbreviation": "VRUG",
+    "title": "Verbraucherrechte-Richtlinie-Umsetzungsgesetz",
+    "gesetzesnummer": "20008854",
+    "aliases": [
+      "vrug",
+      "verbraucherrechterichtlinieumsetzungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 33/2014"
+  },
+  {
+    "slug": "vkrg",
+    "abbreviation": "VKrG",
+    "title": "Verbraucherkreditgesetz",
+    "gesetzesnummer": "20006841",
+    "aliases": [
+      "vkrg",
+      "verbraucherkreditgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 28/2010"
+  },
+  {
+    "slug": "hikrg",
+    "abbreviation": "HIKrG",
+    "title": "Hypothekar- und Immobilienkreditgesetz",
+    "gesetzesnummer": "20009477",
+    "aliases": [
+      "hikrg",
+      "hypothekarundimmobilienkreditgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 35/2016"
+  },
+  {
+    "slug": "ugb",
+    "abbreviation": "UGB",
+    "title": "Unternehmensgesetzbuch",
+    "gesetzesnummer": "10001702",
+    "aliases": [
+      "ugb",
+      "unternehmensgesetzbuch",
+      "hgb",
+      "handelsgesetzbuch"
+    ],
+    "scope": "bund",
+    "stammfassung": "dRGBl. S 219/1897"
+  },
+  {
+    "slug": "gmbhg",
+    "abbreviation": "GmbHG",
+    "title": "Gesetz über Gesellschaften mit beschränkter Haftung",
+    "gesetzesnummer": "10001720",
+    "aliases": [
+      "gmbhg",
+      "gmbhgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "RGBl. Nr. 58/1906"
+  },
+  {
+    "slug": "aktg",
+    "abbreviation": "AktG",
+    "title": "Aktiengesetz 1965",
+    "gesetzesnummer": "10002070",
+    "aliases": [
+      "aktg",
+      "aktiengesetz",
+      "aktg1965"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 98/1965"
+  },
+  {
+    "slug": "gewo",
+    "abbreviation": "GewO",
+    "title": "Gewerbeordnung 1994",
+    "gesetzesnummer": "10007565",
+    "aliases": [
+      "gewo",
+      "gewo1994",
+      "gewerbeordnung",
+      "gewerbeordnung1994"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 194/1994"
+  },
+  {
+    "slug": "estg",
+    "abbreviation": "EStG",
+    "title": "Einkommensteuergesetz 1988",
+    "gesetzesnummer": "10004570",
+    "aliases": [
+      "estg",
+      "estg1988",
+      "einkommensteuergesetz",
+      "einkommensteuergesetz1988"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 400/1988"
+  },
+  {
+    "slug": "ustg",
+    "abbreviation": "UStG",
+    "title": "Umsatzsteuergesetz 1994",
+    "gesetzesnummer": "10004873",
+    "aliases": [
+      "ustg",
+      "ustg1994",
+      "umsatzsteuergesetz",
+      "umsatzsteuergesetz1994"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 663/1994"
+  },
+  {
+    "slug": "bao",
+    "abbreviation": "BAO",
+    "title": "Bundesabgabenordnung",
+    "gesetzesnummer": "10004407",
+    "aliases": [
+      "bao",
+      "bundesabgabenordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 194/1961"
+  },
+  {
+    "slug": "gebg",
+    "abbreviation": "GebG",
+    "title": "Gebührengesetz 1957",
+    "gesetzesnummer": "10003923",
+    "aliases": [
+      "gebg",
+      "gebg1957",
+      "gebuehrengesetz",
+      "gebührengesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 267/1957"
+  },
+  {
+    "slug": "grestg",
+    "abbreviation": "GrEStG",
+    "title": "Grunderwerbsteuergesetz 1987",
+    "gesetzesnummer": "10004513",
+    "aliases": [
+      "grestg",
+      "grestg1987",
+      "grunderwerbsteuergesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 309/1987"
+  },
+  {
+    "slug": "b-vg",
+    "abbreviation": "B-VG",
+    "title": "Bundes-Verfassungsgesetz",
+    "gesetzesnummer": "10000138",
+    "aliases": [
+      "b-vg",
+      "bvg",
+      "bundesverfassungsgesetz",
+      "bundes-verfassungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 1/1930"
+  },
+  {
+    "slug": "avg",
+    "abbreviation": "AVG",
+    "title": "Allgemeines Verwaltungsverfahrensgesetz 1991",
+    "gesetzesnummer": "10005780",
+    "aliases": [
+      "avg",
+      "avg1991",
+      "allgemeinesverwaltungsverfahrensgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 51/1991"
+  },
+  {
+    "slug": "vstg",
+    "abbreviation": "VStG",
+    "title": "Verwaltungsstrafgesetz 1991",
+    "gesetzesnummer": "10005782",
+    "aliases": [
+      "vstg",
+      "vstg1991",
+      "verwaltungsstrafgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 52/1991"
+  },
+  {
+    "slug": "vvg",
+    "abbreviation": "VVG",
+    "title": "Verwaltungsvollstreckungsgesetz 1991",
+    "gesetzesnummer": "10005784",
+    "aliases": [
+      "vvg",
+      "vvg1991",
+      "verwaltungsvollstreckungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 53/1991"
+  },
+  {
+    "slug": "vwgvg",
+    "abbreviation": "VwGVG",
+    "title": "Verwaltungsgerichtsverfahrensgesetz",
+    "gesetzesnummer": "20008255",
+    "aliases": [
+      "vwgvg",
+      "verwaltungsgerichtsverfahrensgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 33/2013"
+  },
+  {
+    "slug": "vwgg",
+    "abbreviation": "VwGG",
+    "title": "Verwaltungsgerichtshofgesetz 1985",
+    "gesetzesnummer": "10000729",
+    "aliases": [
+      "vwgg",
+      "vwgg1985",
+      "verwaltungsgerichtshofgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 10/1985"
+  },
+  {
+    "slug": "vfgg",
+    "abbreviation": "VfGG",
+    "title": "Verfassungsgerichtshofgesetz 1953",
+    "gesetzesnummer": "10000261",
+    "aliases": [
+      "vfgg",
+      "vfgg1953",
+      "verfassungsgerichtshofgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 85/1953"
+  },
+  {
+    "slug": "spg",
+    "abbreviation": "SPG",
+    "title": "Sicherheitspolizeigesetz",
+    "gesetzesnummer": "10005792",
+    "aliases": [
+      "spg",
+      "sicherheitspolizeigesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 562/1991"
+  },
+  {
+    "slug": "dsg",
+    "abbreviation": "DSG",
+    "title": "Datenschutzgesetz",
+    "gesetzesnummer": "10001597",
+    "aliases": [
+      "dsg",
+      "datenschutzgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 165/1999"
+  },
+  {
+    "slug": "stgb",
+    "abbreviation": "StGB",
+    "title": "Strafgesetzbuch",
+    "gesetzesnummer": "10002296",
+    "aliases": [
+      "stgb",
+      "strafgesetzbuch"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 60/1974"
+  },
+  {
+    "slug": "stpo",
+    "abbreviation": "StPO",
+    "title": "Strafprozeßordnung 1975",
+    "gesetzesnummer": "10002326",
+    "aliases": [
+      "stpo",
+      "stpo1975",
+      "strafprozessordnung",
+      "strafprozeßordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 631/1975"
+  },
+  {
+    "slug": "stvo",
+    "abbreviation": "StVO",
+    "title": "Straßenverkehrsordnung 1960",
+    "gesetzesnummer": "10002177",
+    "aliases": [
+      "stvo",
+      "stvo1960",
+      "strassenverkehrsordnung",
+      "straßenverkehrsordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 159/1960"
+  },
+  {
+    "slug": "kfg",
+    "abbreviation": "KFG",
+    "title": "Kraftfahrgesetz 1967",
+    "gesetzesnummer": "10002206",
+    "aliases": [
+      "kfg",
+      "kfg1967",
+      "kraftfahrgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 267/1967"
+  },
+  {
+    "slug": "zpo",
+    "abbreviation": "ZPO",
+    "title": "Zivilprozessordnung",
+    "gesetzesnummer": "10001699",
+    "aliases": [
+      "zpo",
+      "zivilprozessordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "RGBl. Nr. 113/1895"
+  },
+  {
+    "slug": "jn",
+    "abbreviation": "JN",
+    "title": "Jurisdiktionsnorm",
+    "gesetzesnummer": "10001698",
+    "aliases": [
+      "jn",
+      "jurisdiktionsnorm"
+    ],
+    "scope": "bund",
+    "stammfassung": "RGBl. Nr. 111/1895"
+  },
+  {
+    "slug": "eo",
+    "abbreviation": "EO",
+    "title": "Exekutionsordnung",
+    "gesetzesnummer": "10001700",
+    "aliases": [
+      "eo",
+      "exekutionsordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "RGBl. Nr. 79/1896"
+  },
+  {
+    "slug": "io",
+    "abbreviation": "IO",
+    "title": "Insolvenzordnung",
+    "gesetzesnummer": "10001736",
+    "aliases": [
+      "io",
+      "insolvenzordnung",
+      "ko",
+      "konkursordnung"
+    ],
+    "scope": "bund",
+    "stammfassung": "RGBl. Nr. 337/1914"
+  },
+  {
+    "slug": "asgg",
+    "abbreviation": "ASGG",
+    "title": "Arbeits- und Sozialgerichtsgesetz",
+    "gesetzesnummer": "10008620",
+    "aliases": [
+      "asgg",
+      "arbeitsundsozialgerichtsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 104/1985"
+  },
+  {
+    "slug": "asvg",
+    "abbreviation": "ASVG",
+    "title": "Allgemeines Sozialversicherungsgesetz",
+    "gesetzesnummer": "10008147",
+    "aliases": [
+      "asvg",
+      "allgemeinessozialversicherungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 189/1955"
+  },
+  {
+    "slug": "angg",
+    "abbreviation": "AngG",
+    "title": "Angestelltengesetz",
+    "gesetzesnummer": "10008069",
+    "aliases": [
+      "angg",
+      "angestelltengesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 292/1921"
+  },
+  {
+    "slug": "arbvg",
+    "abbreviation": "ArbVG",
+    "title": "Arbeitsverfassungsgesetz",
+    "gesetzesnummer": "10008329",
+    "aliases": [
+      "arbvg",
+      "arbeitsverfassungsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 22/1974"
+  },
+  {
+    "slug": "azg",
+    "abbreviation": "AZG",
+    "title": "Arbeitszeitgesetz",
+    "gesetzesnummer": "10008238",
+    "aliases": [
+      "azg",
+      "arbeitszeitgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 461/1969"
+  },
+  {
+    "slug": "arg",
+    "abbreviation": "ARG",
+    "title": "Arbeitsruhegesetz",
+    "gesetzesnummer": "10008544",
+    "aliases": [
+      "arg",
+      "arbeitsruhegesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 144/1983"
+  },
+  {
+    "slug": "urlg",
+    "abbreviation": "UrlG",
+    "title": "Urlaubsgesetz",
+    "gesetzesnummer": "10008390",
+    "aliases": [
+      "urlg",
+      "urlaubsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 390/1976"
+  },
+  {
+    "slug": "dhg",
+    "abbreviation": "DHG",
+    "title": "Dienstnehmerhaftpflichtgesetz",
+    "gesetzesnummer": "10008182",
+    "aliases": [
+      "dhg",
+      "dienstnehmerhaftpflichtgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 80/1965"
+  },
+  {
+    "slug": "uwg",
+    "abbreviation": "UWG",
+    "title": "Bundesgesetz gegen den unlauteren Wettbewerb 1984",
+    "gesetzesnummer": "10002670",
+    "aliases": [
+      "uwg",
+      "unlautererwettbewerb"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 448/1984"
+  },
+  {
+    "slug": "kartg",
+    "abbreviation": "KartG",
+    "title": "Kartellgesetz 2005",
+    "gesetzesnummer": "20004386",
+    "aliases": [
+      "kartg",
+      "kartg2005",
+      "kartellgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 61/2005"
+  },
+  {
+    "slug": "urhg",
+    "abbreviation": "UrhG",
+    "title": "Urheberrechtsgesetz",
+    "gesetzesnummer": "10001848",
+    "aliases": [
+      "urhg",
+      "urheberrechtsgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 111/1936"
+  },
+  {
+    "slug": "patg",
+    "abbreviation": "PatG",
+    "title": "Patentgesetz 1970",
+    "gesetzesnummer": "10002167",
+    "aliases": [
+      "patg",
+      "patg1970",
+      "patentgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 259/1970"
+  },
+  {
+    "slug": "mschg",
+    "abbreviation": "MSchG",
+    "title": "Markenschutzgesetz 1970",
+    "gesetzesnummer": "10002168",
+    "aliases": [
+      "mschg",
+      "mschg1970",
+      "markenschutzgesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. Nr. 260/1970"
+  },
+  {
+    "slug": "bvergg",
+    "abbreviation": "BVergG",
+    "title": "Bundesvergabegesetz 2018",
+    "gesetzesnummer": "20010295",
+    "aliases": [
+      "bvergg",
+      "bverg",
+      "bvergg2018",
+      "bundesvergabegesetz"
+    ],
+    "scope": "bund",
+    "stammfassung": "BGBl. I Nr. 65/2018"
+  }
+]
