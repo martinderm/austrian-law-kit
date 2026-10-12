@@ -265,6 +265,23 @@ class TestFetchNormEndToEnd(unittest.TestCase):
             self.assertTrue(was_cached2)
             self.assertEqual(receipt2.verification_status, "historical_valid_for_stichtag")
 
+    def test_migration_guide_command(self):
+        import argparse
+        import io
+        from contextlib import redirect_stdout
+        from austrian_law_cli import cmd_migration_guide
+
+        args = argparse.Namespace(json=True)
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = cmd_migration_guide(args)
+        self.assertEqual(ret, 0)
+        envelope = json.loads(f.getvalue())
+        self.assertTrue(envelope["success"])
+        self.assertEqual(envelope["action"], "migration_guide")
+        self.assertIn("Migrationsanleitung", envelope["data"]["guide_markdown"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

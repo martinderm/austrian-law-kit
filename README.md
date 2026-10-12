@@ -57,6 +57,12 @@ python scripts/austrian_law_cli.py search_decisions --norm MRG --paragraph "§ 2
 python scripts/austrian_law_cli.py list_canonical --json
 ```
 
+### 6. Migrationsanleitung für bestehende Workspaces
+```bash
+python scripts/austrian_law_cli.py migration_guide
+```
+*Ausführlicher Leitfaden:* Siehe [docs/migration-guide.md](docs/migration-guide.md).
+
 ## Lokale Test-Ausführung
 
 Alle Unittests sind 100 % offline ausführbar:
@@ -76,6 +82,7 @@ python -m unittest discover tests -v
   - `receipt.py`: Verification Receipt v2 Engine und 5-Schichten-Formatter.
 - `tests/test_austrian_law_cli.py`: Offline-Unittests.
 - `docs/known-issues.md`: Aktuelle Ungereimtheiten & Refactoring-Roadmap (Archiv: `docs/archive/resolved-issues.md`).
+- `docs/migration-guide.md`: Anleitung zur schrittweisen Umstellung historischer TypeScript/Workspace-Workflows.
 - `docs/system-map/`: ICM Form 6 System-Map.
 
 ## Lizenz

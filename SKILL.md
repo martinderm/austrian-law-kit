@@ -73,6 +73,13 @@ Listet alle über 50 vorindizierten österreichischen Bundesgesetze auf:
 python scripts/austrian_law_cli.py list_canonical --json
 ```
 
+### 6. Migrationsanleitung für Altsysteme (`migration_guide`)
+Zeigt die vollständige Anleitung zur Migration historischer Workspaces und Befehle an:
+```bash
+python scripts/austrian_law_cli.py migration_guide
+```
+*Detaillierte Dokumentation:* Siehe [docs/migration-guide.md](docs/migration-guide.md).
+
 ## Kanonische RIS-Gesetzesnummern-Tabelle (`references/canonical-laws.json`)
 
 Für über 50 Kern-Bundesgesetze existiert ein vorindizierter $O(1)$-Katalog:

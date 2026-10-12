@@ -72,6 +72,8 @@ def output_envelope(
         else:
             if isinstance(data, dict) and "formatted_output" in data:
                 print(data["formatted_output"])
+            elif isinstance(data, dict) and "guide_markdown" in data:
+                print(data["guide_markdown"])
             elif isinstance(data, str):
                 print(data)
             else:
@@ -292,6 +294,25 @@ def cmd_list_canonical(args) -> int:
         return 1
 
 
+def cmd_migration_guide(args) -> int:
+    guide_path = SKILL_DIR / "docs" / "migration-guide.md"
+    content = ""
+    if guide_path.is_file():
+        content = guide_path.read_text(encoding="utf-8")
+    else:
+        content = "Migrationsanleitung unter docs/migration-guide.md nicht gefunden."
+
+    output_envelope(
+        action="migration_guide",
+        success=True,
+        state="success",
+        message="Migrationsanleitung für austrian-law-kit",
+        data={"guide_markdown": content},
+        as_json=args.json,
+    )
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="austrian_law_cli.py",
@@ -338,6 +359,10 @@ def main():
     p_lc = subparsers.add_parser("list_canonical", help="Vorindizierte Kern-Bundesgesetze auflisten")
     p_lc.add_argument("--json", action="store_true", help="Ausgabe als Structured JSON Envelope")
 
+    # 6. migration_guide
+    p_mg = subparsers.add_parser("migration_guide", help="Kurze Migrationsanleitung für bestehende Workspaces anzeigen")
+    p_mg.add_argument("--json", action="store_true", help="Ausgabe als Structured JSON Envelope")
+
     args = parser.parse_args()
 
     dispatch = {
@@ -346,6 +371,7 @@ def main():
         "search_law": cmd_search_law,
         "search_decisions": cmd_search_decisions,
         "list_canonical": cmd_list_canonical,
+        "migration_guide": cmd_migration_guide,
     }
 
     fn = dispatch.get(args.command)
