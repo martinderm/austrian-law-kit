@@ -37,7 +37,7 @@ from lib.storage import AtomicDiskCache
 
 
 def get_default_cache_dir() -> Path:
-    return SKILL_DIR / "data" / "cache"
+    return Path.cwd() / "data" / "cache"
 
 
 def get_default_canonical_file() -> Path:

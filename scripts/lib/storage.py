@@ -26,7 +26,7 @@ class AtomicDiskCache:
         if data_dir:
             self.data_dir = Path(data_dir).resolve()
         else:
-            self.data_dir = self.cache_dir.parent / "data"
+            self.data_dir = self.cache_dir.parent
         self.raw_dir = self.data_dir / "ris" / "raw"
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -102,7 +102,7 @@ class AtomicDiskCache:
         target_path = self.raw_dir / f"{sha}.{clean_ext}"
 
         if not target_path.exists():
-            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=self.raw_dir, delete=False) as tf:
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="", dir=self.raw_dir, delete=False) as tf:
                 tf.write(raw_content)
                 temp_path = Path(tf.name)
             for attempt in range(3):

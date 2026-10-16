@@ -18,11 +18,11 @@ Reine Python 3 Standardbibliothek (Zero Dependencies), deterministisches XML-Par
 
 ## Steps
 1. Validiert Gesetzesabkürzung über `references/canonical-laws.json` und prüft lokalen Disk-Cache (`data/cache/`).
-2. Ruft bei Cache-Miss das amtliche XML der Bundes- oder Landesnorm ab und archiviert die Rohdaten unter `data/ris/raw/<sha256>.xml`. Quelle: [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py).
+2. Cache-Treffer werden wie neue XML-Kandidaten auf Identität, Inhalt und (bei Gesetzesabfragen) Geltung geprüft. Ungültige Cache-Treffer lösen OGD-Neuauflösung mit Abschnittsfilter und `Fassung.FassungVom` aus; kein Fallback auf beliebige Treffer. Quelle: [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py).
 3. Parst den Normtext hierarchisch mit `xml.etree.ElementTree` in Dokumentreihenfolge.
 4. Generiert das `VerificationReceipt` (v2) mit dualen SHA-256 Prüfsummen und Stichtagsprüfung in `Europe/Vienna`. Quelle: [scripts/lib/receipt.py](../../../scripts/lib/receipt.py).
 5. Fragt optional amtliche Höchstgerichts-Entscheidungen über die RIS-Judikatur API ab. Quelle: [scripts/lib/ris_judikatur.py](../../../scripts/lib/ris_judikatur.py).
-6. Schreibt das Ergebnis atomar in den Cache und formatiert die 5-Schichten-Ausgabe.
+6. Archiviert akzeptiertes XML (auch bei Cache-Hits) unter `data/ris/raw/<sha256>.xml`, referenziert es per POSIX-Pfad und schreibt neue Ergebnisse atomar in den Cache. CLI formatiert die 5-Schichten-Ausgabe.
 
 ## Surfaces
 CLI (`scripts/austrian_law_cli.py`) wird von Agenten oder Terminals aufgerufen; liefert Text oder Structured JSON Envelope (`--json`).

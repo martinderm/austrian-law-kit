@@ -2,8 +2,8 @@
 type: object
 cluster: configuration
 universe: live
-status: verified
-entity: plugin/openclaw-austrian-law/src/config/settings.ts
+status: stale
+entity: scripts/austrian_law_cli.py
 verified_at: 2026-09-30
 revision: 2a94740e69a38706d0a57fcaceab8c6122b60a82
 ---
@@ -16,6 +16,11 @@ Settings und Ausführungskontext bestimmen Upstreams und Datenwurzeln.
 Mehrere Agent-Workspaces benötigen explizite Kontextauflösung.
 
 ## Shape
+Aktuelle Python-CLI: `get_default_cache_dir()` nutzt `Path.cwd()/data/cache`;
+`--cache-dir` überschreibt diesen Pfad. Datenwurzel ist der Cache-Elternordner.
+Quelle: [scripts/austrian_law_cli.py](../../../scripts/austrian_law_cli.py),
+[scripts/lib/storage.py](../../../scripts/lib/storage.py).
+Die folgenden Plugin-Angaben sind historisch und nicht aktuell verifiziert:
 settings.json-Namensraum austrian-law-kit, optionaler Env-Settings-Pfad und Workspace-/cwd-Fallback. cacheRoot nutzt AsyncLocalStorage; dataRoot nutzt Overrides/Env/Settings/Default. Diese Mechanismen sind nicht identisch.
 
 - [plugin/openclaw-austrian-law/src/config/settings.ts](../../../plugin/openclaw-austrian-law/src/config/settings.ts) — `plugin/openclaw-austrian-law/src/config/settings.ts:38`

@@ -16,6 +16,11 @@ Identität, zeitliche Geltung und Abrufrepräsentation müssen getrennt bleiben.
 
 ## Shape
 Natives XML-Parsing via Python `xml.etree.ElementTree` für Bundesnormen (`/Dokumente/Bundesnormen/{NOR-ID}/{NOR-ID}.xml`) und Landesnormen. Offizielle OGD REST API v2.6 für gezielte Discovery.
+Issue #12: Abschnittssuche nutzt `Abschnitt.Von/Bis/Typ` und `Fassung.FassungVom`.
+Ein einfacher Paragraph matcht auch artikelqualifizierte Kennungen. Gesetzesabrufe
+akzeptieren nur XML mit passender Gesetzes-/Abschnittsidentität, nichtleerem Text
+und gültigem Stichtag; ungeeignete Kandidaten und Cache-Treffer werden übersprungen.
+Direkt-IDs behalten die Stichtagswarnung statt automatischer Fassungsersetzung.
 Verification Receipt v2 erzeugt duale Hashes (`raw_content_sha256` vs. `normalized_content_sha256`), führt Stichtagsvalidierung in `Europe/Vienna` durch und archiviert Rohquellen sha-adressiert unter `data/ris/raw/<sha256>.xml`.
 
 - [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py)

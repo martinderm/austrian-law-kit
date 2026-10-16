@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — Python-Normauflösung (Issue #12)
+- OGD-Abschnittsfilter und `Fassung.FassungVom` statt Volltextsuche nach der Paragraphnummer; `Art. 2 § 7` wird bei Abfrage von § 7 erkannt. XML-Identität, Inhalt und Geltung werden vor Cache-Publikation geprüft; ungültige Cache-Treffer lösen Neuauflösung aus, kein Rückfall auf beliebige Treffer.
+- Workspace-lokaler Standardcache; Roharchiv ohne doppeltes `data`, POSIX-Receipt-Pfade auch bei Cache-Hits und bytegetreue UTF-8-Archivierung ohne Windows-Newline-Übersetzung.
+- PowerShell-UTF-8-Hinweis und Bedeutung von `consolidated_as_of` dokumentiert. Offline-Regressionen in `tests/test_issue12.py`.
+
 ## Unreleased - Rohquellen-Archivierung (Batch E, v0.18.1-Basis)
 - **Zentrale Rohquellen-Ablage (Issue #6)**: Neu `src/cache/raw-source-archive.ts` — der unveränderte Antwortkörper amtlicher RIS-Abrufe (Segment XML, HTML-Fallback, Gesamtdokumente) wird vor der Normtext-Konvertierung sha-adressiert unter `<dataRoot>/ris/raw/<sha256>.xml|.html` archiviert: atomarer Schreibpfad über die Batch-D-Primitiven (`writeFileAtomically`), Dedupe nach Prüfsumme (gleicher Inhalt → kein Rewrite; Kollisionsinvariante: verschiedene Inhalte überschreiben sich niemals, getestet), Rohquelle bleibt auch bei Parserfehlern als Diagnosebeleg erhalten (Fehler-Envelope mit `details.raw_source_path`); Archiv-Fehlschläge → `raw_source_saved: false` + ehrliche Warnung statt unbelegter Archivierungsbehauptung, die Normabfrage selbst bleibt erfolgreich.
 - **Versionierter Receipt-Vertrag (v2)**: `VerificationReceipt` um additive Felder erweitert — `receipt_version: 2` (Schema-Versionierung, nicht Archiv-Vollständigkeit), `raw_source_path` (dataRoot-relativer POSIX-Pfad), `raw_source_saved`, `source_url_official` (amtlich angefragte URL) / `content_url_final` (effektive Abruf-URL, falls abweichend), `content_type`, `raw_source_encoding: "utf8-decoded"` (Repräsentationsangabe: gespeicherte Datei und `raw_content_sha256` bezeichnen denselben dekodierten UTF-8-String). Vertragsrandfall dokumentiert: leerer Antwortkörper fällt beim Raw-Hash auf den Content-Hash zurück (in Produktion unerreichbar).

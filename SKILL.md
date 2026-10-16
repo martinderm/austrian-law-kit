@@ -102,7 +102,16 @@ Jede Rechtsprüfung erzeugt einen maschinenlesbaren **Verification Receipt** nac
 - `cached` (`true`, wenn aus dem lokalen Cache bedient)
 - `retrieval_method` (`ris_xml_direct`, `cached_disk`, etc.)
 - `verification_status` (`verified_current`, `historical_valid_for_stichtag`, `stichtag_mismatch`, `insufficient_metadata`)
-- `raw_source_path` (Pfad zur archivierten Rohquelle unter `data/ris/raw/<sha256>.xml`)
+- `raw_source_path` (POSIX-Pfad zur archivierten Rohquelle unter `data/ris/raw/<sha256>.xml`, relativ zum aufrufenden Workspace bei Standardkonfiguration, auch bei Cache-Hits)
+
+Cache/Raw werden standardmäßig im aufrufenden Arbeitsverzeichnis statt im Skill-Verzeichnis
+gespeichert. Bei `--cache-dir` liegt die Datenwurzel direkt über dem Cache und der
+Receipt-Pfad ist relativ zu deren Elternverzeichnis. Alte Caches werden nicht migriert.
+PowerShell: bevorzugt `--paragraph 7` ohne `§`; Unicode-Aufrufe mit `python -X utf8`.
+Gesetzesabfragen prüfen XML-Identität, nichtleeren Text und Geltung und überspringen
+ungeeignete Treffer; direkte NOR-/LOO-Abfragen behalten den Stichtags-Guard.
+`consolidated_as_of` übernimmt `geaendert` (ersatzweise `fassung_vom`) aus dem XML,
+nicht den Abfragestichtag; die Geltung folgt separat aus `ikra`/`akra`.
 
 > [!IMPORTANT]
 > **Stichtags-Disziplin**: Treffer mit abgelaufenem `Außerkrafttretensdatum` oder vor `Inkrafttretensdatum` werden bei aktuellem Stichtag als `stichtag_mismatch` ausgewiesen und dürfen niemals stillschweigend als tagesaktuell ausgegeben werden.

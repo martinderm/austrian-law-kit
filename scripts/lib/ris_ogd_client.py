@@ -18,6 +18,7 @@ from .receipt import (
     NormSegment,
     VerificationReceipt,
     create_verification_receipt,
+    evaluate_stichtag_status,
     get_vienna_today_iso,
     parse_date_to_iso,
 )
@@ -243,6 +244,7 @@ def search_ris_ogd_api(
     scope: str = "bund",
     timeout: int = DEFAULT_TIMEOUT,
     max_pages: int = 5,
+    stichtag: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Sucht Normen über die offizielle OGD REST API v2.6 des Bundeskanzleramts.
@@ -257,12 +259,18 @@ def search_ris_ogd_api(
     if gesetzesnummer:
         base_params["Gesetzesnummer"] = gesetzesnummer
 
-    clean_para = ""
+    # Suchworte searches content, not paragraph identity (including old ToCs).
+    # Use the documented section range, then check exact identity locally.
     if paragraph:
-        clean_para = re.sub(r"^[§\s\.]+", "", paragraph.strip())
-        num_m = re.match(r"^(\d+[a-z]?)", clean_para, re.IGNORECASE)
-        if num_m:
-            base_params["Suchworte"] = num_m.group(1)
+        section = re.search(r"§\s*(\d+[a-z]?)", paragraph, re.IGNORECASE)
+        if not section:
+            section = re.fullmatch(r"\s*(\d+[a-z]?)\s*", paragraph, re.IGNORECASE)
+        if section:
+            base_params.update({"Abschnitt.Von": section.group(1),
+                                "Abschnitt.Bis": section.group(1),
+                                "Abschnitt.Typ": "Paragraph"})
+    if stichtag:
+        base_params["Fassung.FassungVom"] = stichtag
 
     if query and not gesetzesnummer:
         base_params["Titel"] = query
@@ -292,7 +300,6 @@ def search_ris_ogd_api(
         if isinstance(doc_refs, dict):
             doc_refs = [doc_refs]
 
-        page_matched = False
         for ref in doc_refs:
             d_data = ref.get("Data", {})
             meta = d_data.get("Metadaten", {})
@@ -327,19 +334,24 @@ def search_ris_ogd_api(
             }
             results.append(hit_entry)
 
-            # Wenn wir nach einem Paragrafen suchen und ihn finden
-            if paragraph and clean_para:
-                hit_p = hit_entry["paragraph"].replace(" ", "").lower()
-                target_p = f"§{clean_para}".lower()
-                if hit_p == target_p:
-                    page_matched = True
-
-        # Wenn wir Treffer für den gesuchten Paragrafen auf dieser Seite gefunden haben
-        # und die Folgeseite wahrscheinlich andere Paragrafen hat, können wir abbrechen
-        if paragraph and page_matched and page > 1:
+        total = int(doc_results.get("Hits", {}).get("#text", "0"))
+        if total and page * int(doc_results["Hits"].get("@pageSize", "20")) >= total:
             break
 
-    return results
+    return [hit for hit in results if not paragraph or _matches_section(hit["paragraph"], paragraph)]
+
+
+def _matches_section(actual: str, requested: str) -> bool:
+    """A bare paragraph may have an article prefix; explicit articles must match."""
+    compact = lambda value: re.sub(r"[\s.]", "", value).lower()
+    target = compact(requested)
+    if target.isalnum():
+        target = "§" + target
+    value = compact(actual)
+    if target.startswith("§"):
+        match = re.fullmatch(r"(?:art\d+[a-z]?)?(§\d+[a-z]?)", value)
+        return bool(match and match.group(1) == target)
+    return value == target
 
 
 def fetch_norm(
@@ -370,64 +382,71 @@ def fetch_norm(
     clean_para_slug = re.sub(r"[^a-zA-Z0-9]+", "_", clean_para).strip("_")
     cache_key = f"{clean_law}_{clean_para_slug}_{stichtag_iso}.xml"
 
+    direct_id = law_query.upper().startswith(("NOR", "LOO"))
+
+    def acceptable(norm: NormSegment) -> bool:
+        if not norm.content.strip() or not _matches_section(norm.artikel_anlage, clean_para):
+            return False
+        if direct_id:
+            return norm.source_id == law_query.upper()
+        if canonical and norm.gesetzesnummer != canonical["gesetzesnummer"]:
+            return False
+        return evaluate_stichtag_status(
+            stichtag_iso, parse_date_to_iso(norm.ikra), parse_date_to_iso(norm.akra)
+        ) in ("verified_current", "historical_valid_for_stichtag")
+
+    def finish(norm: NormSegment, cached: bool):
+        raw_path, _ = cache.archive_raw_source(norm.raw_xml, ext="xml")
+        receipt = create_verification_receipt(
+            norm, stichtag=stichtag_iso, cached=cached,
+            retrieval_method="cached_disk" if cached else "ris_xml_direct",
+            raw_source_path=raw_path.relative_to(cache.data_dir.parent).as_posix(),
+        )
+        return norm, receipt, cached
+
     # Cache prüfen
     if not force_refresh and cache.has(cache_key):
         cached_xml = cache.get_text(cache_key)
         if cached_xml:
             norm = parse_ris_segment_xml(cached_xml)
-            receipt = create_verification_receipt(
-                norm,
-                stichtag=stichtag_iso,
-                cached=True,
-                retrieval_method="cached_disk"
-            )
-            return norm, receipt, True
+            if acceptable(norm):
+                return finish(norm, True)
 
     # Wenn direkte SourceId (NOR... / LOO...)
     raw_xml: Optional[str] = None
-    if law_query.upper().startswith(("NOR", "LOO")):
+    if direct_id:
         raw_xml = fetch_segment_xml_by_id(law_query.upper())
     else:
         # RIS OGD Suche
         gesnr = canonical.get("gesetzesnummer") if canonical else None
         hits = search_ris_ogd_api(
-            query=canonical.get("title") if not gesnr else None,
+            query=(canonical.get("title") if canonical else law_query) if not gesnr else None,
             gesetzesnummer=gesnr,
             paragraph=clean_para,
             scope="bund",
+            stichtag=stichtag_iso,
         )
 
         matching_hits = [
             hit for hit in hits
-            if hit.get("paragraph", "").replace(" ", "").lower() == clean_para.replace(" ", "").lower()
+            if _matches_section(hit.get("paragraph", ""), clean_para)
         ]
         # Neueste Normfassung bevorzugen (höchste NOR-ID = jüngste Novelle)
         matching_hits.sort(key=lambda h: h.get("source_id", ""), reverse=True)
 
-        target_source_id = matching_hits[0].get("source_id") if matching_hits else None
-        if not target_source_id and hits:
-            target_source_id = hits[0].get("source_id")
-
-        if target_source_id:
-            raw_xml = fetch_segment_xml_by_id(target_source_id)
+        for hit in matching_hits:
+            candidate_xml = fetch_segment_xml_by_id(hit["source_id"])
+            candidate = parse_ris_segment_xml(candidate_xml)
+            if candidate.source_id == hit["source_id"] and acceptable(candidate):
+                raw_xml = candidate_xml
+                break
 
     if not raw_xml:
         return None, None, False
 
-    # Rohquelle archivieren
-    raw_path, raw_sha = cache.archive_raw_source(raw_xml, ext="xml")
-
-    # In Disk-Cache schreiben
-    cache.put_text(cache_key, raw_xml)
-
-    # Parsen & Receipt erstellen
     norm = parse_ris_segment_xml(raw_xml)
-    receipt = create_verification_receipt(
-        norm,
-        stichtag=stichtag_iso,
-        cached=False,
-        retrieval_method="ris_xml_direct",
-        raw_source_path=str(raw_path.relative_to(cache.data_dir))
-    )
-
-    return norm, receipt, False
+    if not acceptable(norm):
+        return None, None, False
+    result = finish(norm, False)
+    cache.put_text(cache_key, raw_xml)
+    return result

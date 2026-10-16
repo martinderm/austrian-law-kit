@@ -65,6 +65,25 @@ python scripts/austrian_law_cli.py migration_guide
 
 ## Lokale Test-Ausführung
 
+### Speicherpfade und PowerShell
+
+Cache und Rohquellen liegen standardmäßig im **aufrufenden Arbeitsverzeichnis**:
+`data/cache/` und `data/ris/raw/<sha256>.xml`. Der Skill-Installationsort bleibt unverändert.
+`--cache-dir <ordner>` überschreibt den Cache; Rohquellen liegen dann unter
+`<ordner>/../ris/raw/`. `raw_source_path` ist ein POSIX-Pfad relativ zum
+Elternverzeichnis der Datenwurzel (standardmäßig dem aufrufenden Workspace),
+auch bei Cache-Hits. Bestehende Installations-Caches werden nicht automatisch migriert.
+
+In PowerShell bevorzugt die Nummer ohne `§` übergeben, etwa `--paragraph 7`.
+Für Unicode-Aufrufe `python -X utf8 scripts/austrian_law_cli.py ...` verwenden;
+ein bereits von der Shell beschädigtes Zeichen wird nicht erraten oder repariert.
+
+Bei Gesetzesabfragen werden nur nichtleere, identitätsgleiche und am Stichtag
+gültige XML-Segmente übernommen. Direkte Dokumentkennungen behalten dagegen
+ihren expliziten historischen Bezug und können `stichtag_mismatch` ausweisen.
+`consolidated_as_of` stammt aus dem RIS-XML-Feld „Zuletzt aktualisiert am“
+(`geaendert`), ersatzweise `fassung_vom`: kein Beleg für Geltung am Abruftag.
+
 Alle Unittests sind 100 % offline ausführbar:
 ```bash
 python -m unittest discover tests -v

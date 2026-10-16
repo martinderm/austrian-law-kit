@@ -16,9 +16,13 @@ Reine Python 3 Standardbibliothek (Zero Dependencies), unterbrechungsfreies atom
 
 ## Shape
 `AtomicDiskCache` verwaltet zwei Verzeichnisse:
-- `data/cache/`: Bereinigte und geparste Normtexte im Dateisystem mit Stichtagsbezug.
+- `data/cache/`: XML-Segmente mit Stichtagsbezug, standardmäßig relativ zum aufrufenden Arbeitsverzeichnis.
 - `data/ris/raw/`: Unveränderte Roh-XML-Dateien, sha-adressiert (`<sha256>.xml`), automatisch dedupliziert.
 Schreiboperationen erfolgen über temporäre Dateien im selben Verzeichnis mit anschließendem atomarem `os.replace` und Retry-Strategie bei Windows-Locks.
+Die Datenwurzel ist standardmäßig der Cache-Elternordner, ohne zusätzliches `data`.
+Receipt-Pfade sind POSIX und relativ zum Elternverzeichnis der Datenwurzel;
+auch Cache-Hits archivieren das gespeicherte XML und liefern einen auflösbaren Pfad.
+Raw-XML wird ohne Newline-Übersetzung geschrieben, passend zum UTF-8-Hash.
 
 - [scripts/lib/storage.py](../../../scripts/lib/storage.py)
 

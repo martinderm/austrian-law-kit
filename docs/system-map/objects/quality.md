@@ -2,8 +2,8 @@
 type: object
 cluster: verification
 universe: live
-status: verified
-entity: plugin/openclaw-austrian-law/package.json
+status: stale
+entity: tests/test_austrian_law_cli.py
 verified_at: 2026-09-30
 revision: 28bd48c
 ---
@@ -16,6 +16,11 @@ Sechs ausführbare Testsuiten und statische Vertragsnotizen sichern unterschiedl
 Offline-Fixtures machen Abruf- und Parserfehler reproduzierbar.
 
 ## Shape
+Aktuelle Python-Suite: `python -B -m unittest discover tests`.
+[tests/test_issue12.py](../../../tests/test_issue12.py) prüft falsche/abgelaufene
+Kandidaten, artikelqualifizierte Paragraphen, vergifteten Cache, Raw-Pfade und
+OGD-Request-Parameter offline. Die folgenden npm-Angaben sind historisch und
+nicht aktuell verifiziert:
 npm test aggregiert sechs Suiten; npm run check prüft TypeScript, build erzeugt dist. tests/skill/ und tests/plugin/ enthalten Markdown-Akzeptanznotizen; tests/live/ ist ein separater manueller Upstream-Check. Parser-Regressionen pinnen reale amtliche XML-Snapshots unter fixtures/ris/ (z. B. NOR40258475, NOR40269397) und die stichtagsabhängige Rechtsstandsableitung; historische Testzahlen sind keine neue Ausführungsevidenz.
 
 - [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json) — `plugin/openclaw-austrian-law/package.json:19`
