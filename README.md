@@ -100,7 +100,7 @@ python -m unittest discover tests -v
   - `storage.py`: Atomarer Disk-Cache (`tempfile` + `os.replace`) und Rohquellen-Archivierung.
   - `receipt.py`: Verification Receipt v2 Engine und 5-Schichten-Formatter.
 - `tests/test_austrian_law_cli.py`: Offline-Unittests.
-- `docs/known-issues.md`: Aktuelle Ungereimtheiten & Refactoring-Roadmap (Archiv: `docs/archive/resolved-issues.md`).
+- `docs/known-issues.md`: Eingefrorener Refactoring-Handoff (2026-10-12); offene Aufgaben werden zukünftig ausschließlich als [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues) geführt (Archiv: `docs/archive/resolved-issues.md`).
 - `docs/migration-guide.md`: Anleitung zur schrittweisen Umstellung historischer TypeScript/Workspace-Workflows.
 - `docs/system-map/`: ICM Form 6 System-Map.
 

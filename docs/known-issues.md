@@ -1,9 +1,11 @@
 # Known Issues & Technical Debt: austrian-law-kit
 
 > **Status:** Under Refactoring (Blueprint: `german-law-kit`)  
-> **Last Updated:** 2026-10-12  
+> **Last Updated:** 2026-10-18  
 > **Ablageort:** `docs/known-issues.md`  
 > **Zweck:** Schlanke Erfassung aktuell offener architektonischer und technischer Ungereimtheiten in `austrian-law-kit` als Handoff für das anstehende Python-Refactoring.
+
+> ⚠️ **Tracking-Richtlinie (2026-10-18):** Diese Datei ist ein **eingefrorener Schnappschuss** des Refactoring-Handoffs und wird **nicht mehr weitergeführt**. Offene Aufgaben, Bugs und Verbesserungen werden zukünftig **ausschließlich als GitHub Issues** geführt (<https://github.com/martinderm/austrian-law-kit/issues>). Ablösung der hier offenen Punkte: #13, #14, #15. Keine parallelen Backlogs oder Statusdateien in `docs/`.
 
 ---
 
