@@ -1,10 +1,10 @@
 ---
 type: process
 universe: live
-status: stale
+status: verified
 entity: scripts/lib/ris_ogd_client.py
-verified_at: 2026-09-30
-revision: 2a94740e69a38706d0a57fcaceab8c6122b60a82
+verified_at: 2026-10-19
+revision: 2af21a4
 consumes: [../objects/tools.md, ../objects/ris.md]
 produces: [../objects/ris.md]
 ---
@@ -12,28 +12,21 @@ produces: [../objects/ris.md]
 # discovery
 
 ## Input → Movement → Output
-Suchanfrage → direkte Auflösung oder API-/HTML-Discovery → gerankte SearchHits.
+Suchanfrage → direkte Auflösung oder OGD-API-Discovery → gefilterte Treffer mit amtlichen Referenzen.
 
 ## Why this shape
 Identität, Herkunft und Gültigkeit bleiben bis zur Ausgabe nachvollziehbar. Die technische Bewegung setzt die fachliche Freigabe durch den Agenten voraus.
 
 ## Steps
-Aktueller Python-Pfad: kanonische Gesetzesnummer → OGD mit Abschnittsbereich und
-Fassungsstichtag → seitenweise Treffer → exakte Abschnittsfilterung einschließlich
-Artikelpräfix → XML-Validierung beim Fetch. Quelle:
-[scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py).
-Die folgenden Plugin-Schritte sind historisch und nicht aktuell verifiziert:
-1. Validiert Scope, Landesfilter und Stichtag, normalisiert die Query und erkennt direkte Dokumentkennungen. Quelle: [plugin/openclaw-austrian-law/src/tools/ris_search.ts](../../../plugin/openclaw-austrian-law/src/tools/ris_search.ts) — `plugin/openclaw-austrian-law/src/tools/ris_search.ts:1`.
-2. Löst Kurzzitate und kanonische Gesetzeskennungen auf; nutzt die offizielle API und den verfügbaren HTML-Fallback. Quelle: [plugin/openclaw-austrian-law/src/ris/query-resolver.ts](../../../plugin/openclaw-austrian-law/src/ris/query-resolver.ts) — `plugin/openclaw-austrian-law/src/ris/query-resolver.ts:72`.
-3. Filtert exakte Abschnittskennungen, bewertet Treffer und gibt SearchHits zurück. Quelle: [plugin/openclaw-austrian-law/src/ris/search-ranking.ts](../../../plugin/openclaw-austrian-law/src/ris/search-ranking.ts) — `plugin/openclaw-austrian-law/src/ris/search-ranking.ts:205`.
+Aktueller Python-Pfad: `search_ris_ogd_api()` baut die OGD-Abfrage mit Abschnittstyp-Filter (`Abschnitt.Typ: Paragraph`) bei Paragrafenangabe und `Fassung.FassungVom`-Stichtagsfilter (`ris_ogd_client.py:264-273`), iteriert seitenweise über `Seitennummer` (`ris_ogd_client.py:280-282`) und mappt die Treffer inklusive Paragraphen- und Artikelkennungen (`ris_ogd_client.py:330-331`). Kanonische Gesetzeskürzel löst `resolve_canonical_law()` über `references/canonical-laws.json` vorab auf (`ris_ogd_client.py:41-57`). Die XML-Validierung erfolgt beim nachgelagerten Fetch (`fetch_norm`).
 
 ## If you change this
-- **Hits:** Suchschemas, API-Mapping, Ranking und Suchfixtures.
-- **Does not hit:** JUSLINE-Detailparser.
+- **Hits:** Suchschemas, API-Mapping, Kanonische Auflösung und Suchfixtures.
+- **Does not hit:** Judikatur-Discovery (`ris_judikatur.py`).
 
 ## Surfaces
-CLI und OpenClaw rufen die Tool-Funktionen auf; externe Quellen liefern Daten; Cache-Helfer persistieren bei Abrufen Artefakte.
+CLI (`search_law`) ruft die Discovery auf; externe OGD-Quellen liefern Daten; der Disk-Cache persistiert beim Fetch Artefakte.
 
 ## See
 [tools](../objects/tools.md), [ris](../objects/ris.md).
-Quelle: [plugin/openclaw-austrian-law/src/tools/ris_search.ts](../../../plugin/openclaw-austrian-law/src/tools/ris_search.ts).
+Quelle: [scripts/lib/ris_ogd_client.py](../../../scripts/lib/ris_ogd_client.py).

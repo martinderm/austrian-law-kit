@@ -1,26 +1,18 @@
 # Runtime-Layout
 
-Der aktive Cache verteilt Markdown und JSON auf getrennte Wurzeln. Maßgeblich sind [cache-runtime.ts](../plugin/openclaw-austrian-law/src/cache/cache-runtime.ts), [cache-paths.ts](../plugin/openclaw-austrian-law/src/cache/cache-paths.ts) und [cache-io.ts](../plugin/openclaw-austrian-law/src/cache/cache-io.ts).
+Der aktive Cache liegt standardmäßig unter `<cwd>/data/cache/`; die Datenwurzel ist der Cache-Elternordner. Maßgeblich sind [`scripts/austrian_law_cli.py`](../scripts/austrian_law_cli.py) (`get_default_cache_dir()`, `--cache-dir`) und [`scripts/lib/storage.py`](../scripts/lib/storage.py).
 
 ```text
 <workspace>/
-├── memory/references/austrian-law/       # Standard-cacheRoot: Markdown
-│  ├── ris/norms/<encoded-stable-id>.md
-│  ├── ris/documents/<encoded-stable-id>.md
-│  ├── ris/decisions/<encoded-stable-id>.md
-│  ├── jusline/materials/<encoded-stable-id>.md
-│  ├── jusline/decisions/<encoded-stable-id>.md
-│  └── jusline/query-index/<query-hash>.json  # Query-Reuse, Ausnahme: JSON unter cacheRoot
-└── data/austrian-law/                    # Standard-dataRoot: JSON + Roharchiv
-   ├── ris/metadata/<encoded-stable-id>.json
-   ├── ris/raw/<sha256>.xml | <sha256>.html   # amtliche Rohquellen, sha-adressiert, dedupe
-   └── jusline/metadata/<encoded-stable-id>.json
+└── data/                                  # Datenwurzel (Elternverzeichnis des Caches)
+   ├── cache/<law>_<para>_<stichtag>.xml   # Cache: unveränderte amtliche XML-Antworten je Norm und Stichtag
+   └── ris/raw/<sha256>.xml                # amtliche Rohquellen, sha-adressiert, Dedupe nach Prüfsumme
 ```
 
-Doppelpunkte der Stable ID werden im Dateinamen durch Unterstriche ersetzt. Das fachliche Identifikatorformat bleibt unverändert. Die Zuordnung von doc_type zu Unterordnern liegt ausschließlich in cache-paths.ts.
-
-Die Wurzeln können durch CLI-/Plugin-Kontext, Umgebungsvariablen oder settings.json überschrieben werden; die genaue Präzedenz steht in cache-runtime.ts. Relative Einstellungen werden anhand des Settings-Verzeichnisses bzw. des übergebenen Workspace-Kontexts aufgelöst. cacheRoot und dataRoot haben unterschiedliche Kontextmechanismen; ihre Isolation darf nicht gleichgesetzt werden.
-
-Der JUSLINE-Query-Index ist ein eigener Cache-Reuse-Mechanismus: [jusline-query-index.ts](../plugin/openclaw-austrian-law/src/cache/jusline-query-index.ts). Allgemeine by-stable-id.json-/by-source-id.json-Indizes und ein templates/memory/-Scaffold aus dem alten Zielmodell sind nicht als aktive Implementierung vorhanden.
+- Cache-Schreibvorgänge sind atomar (`tempfile` + `os.replace`); der Cache-Key ergibt sich aus bereinigtem Gesetzeskürzel, Paragrafen-Slug und Stichtag (`ris_ogd_client.py`, `cache_key`).
+- Cached XML wird vor Ausgabe erneut geparst und auf Identität, Inhalt und Geltung geprüft — Cache-Hits durchlaufen dieselbe Validierung wie frische Kandidaten.
+- Die Rohquellen-Archivierung (`archive_raw_source()`) bewahrt den unveränderten Upstream-Antwortkörper auch bei Parserfehlern als Diagnosebeleg; archivierte Datei und `raw_content_sha256` bezeichnen denselben dekodierten UTF-8-String.
+- `--cache-dir` legt den Cache-Ordner direkt fest; die Datenwurzel (und damit `ris/raw/`) ist dessen Elternverzeichnis. Alte Caches werden nicht migriert.
+- Ein Markdown-Frontmatter-Cache, JUSLINE-Query-Index und by-stable-id-Indizes aus der TypeScript-Ära sind nicht Bestandteil der Python-Laufzeit.
 
 Formate: [Frontmatter](frontmatter-schema.md), [Stable-ID-Strategie](stable-id-strategy.md). Änderungsauswirkungen: [Cache-Karte](system-map/objects/cache.md).

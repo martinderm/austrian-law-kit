@@ -1,6 +1,8 @@
 # Frontmatter Schema (Markdown Cache)
 
-Diese Spezifikation gilt für gecachte Markdown-Dateien unter `memory/references/austrian-law/`.
+> ⚠️ **Status (2026-10-19):** Diese Spezifikation beschreibt den Markdown-Cache der entfernten TypeScript-Laufzeit (`memory/references/austrian-law/`). Die Python-Laufzeit cachet unveränderte amtliche XML-Antworten (siehe [runtime-layout](runtime-layout.md)) und erzeugt kein Frontmatter-Cache-Layout; für einen Wiedereinstieg dieses Contracts ist eine Neubewertung nötig — Tracking: [#15](https://github.com/martinderm/austrian-law-kit/issues/15).
+
+Diese Spezifikation gilt f�r gecachte Markdown-Dateien unter `memory/references/austrian-law/`.
 
 ## Pflichtfelder
 

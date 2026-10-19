@@ -2,9 +2,10 @@
 type: object
 cluster: retrieval
 universe: live
-status: deprecated
+status: verified
 entity: scripts/lib/ris_judikatur.py
-verified_at: 2026-10-12
+verified_at: 2026-10-19
+revision: 2af21a4
 ---
 
 # Jusline (Deprecated) / RIS-Judikatur
@@ -15,7 +16,7 @@ Das frühere Web-Scraping privater JUSLINE-Seiten wurde im Python-Refactoring vo
 Rechtsprechung (OGH, VfGH, VwGH) wird direkt aus den amtlichen RIS-OGD-Endpunkten des Bundeskanzleramts bezogen, um Urheberrechtsfragen, Bot-Protection und HTML-Scraping-Fragilität auszuschließen.
 
 ## Shape
-Abfrage über `search_case_law()` gegen `https://data.bka.gv.at/ris/api/v2.6/Judikatur?Applikation=Justiz`.
+Abfrage über `search_case_law()` gegen `https://data.bka.gv.at/ris/api/v2.6/Judikatur?Applikation=Justiz` (`ris_judikatur.py:18,42`).
 Extrahiert strukturierte `CourtDecision`-Objekte mit Geschäftszahlen, Rechtssatznummern, ECLI, Entscheidungsdaten und Leitsatztexten aus dem amtlichen XML.
 
 - [scripts/lib/ris_judikatur.py](../../../scripts/lib/ris_judikatur.py)

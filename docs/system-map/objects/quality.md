@@ -2,32 +2,25 @@
 type: object
 cluster: verification
 universe: live
-status: stale
+status: verified
 entity: tests/test_austrian_law_cli.py
-verified_at: 2026-09-30
-revision: 28bd48c
+verified_at: 2026-10-19
+revision: 2af21a4
 ---
 
 # Quality
 
-Sechs ausführbare Testsuiten und statische Vertragsnotizen sichern unterschiedliche Oberflächen.
+Zwei Offline-Python-Unittestsuiten und statische Vertragsnotizen sichern die CLI-Oberfläche.
 
 ## Why this shape
-Offline-Fixtures machen Abruf- und Parserfehler reproduzierbar.
+Offline-Fixtures und synthetische XML-Snapshots machen Abruf- und Parserfehler reproduzierbar, ohne Upstream-Abrufe zu brauchen.
 
 ## Shape
-Aktuelle Python-Suite: `python -B -m unittest discover tests`.
-[tests/test_issue12.py](../../../tests/test_issue12.py) prüft falsche/abgelaufene
-Kandidaten, artikelqualifizierte Paragraphen, vergifteten Cache, Raw-Pfade und
-OGD-Request-Parameter offline. Die folgenden npm-Angaben sind historisch und
-nicht aktuell verifiziert:
-npm test aggregiert sechs Suiten; npm run check prüft TypeScript, build erzeugt dist. tests/skill/ und tests/plugin/ enthalten Markdown-Akzeptanznotizen; tests/live/ ist ein separater manueller Upstream-Check. Parser-Regressionen pinnen reale amtliche XML-Snapshots unter fixtures/ris/ (z. B. NOR40258475, NOR40269397) und die stichtagsabhängige Rechtsstandsableitung; historische Testzahlen sind keine neue Ausführungsevidenz.
-
-- [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json) — `plugin/openclaw-austrian-law/package.json:19`
-- [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json) — `plugin/openclaw-austrian-law/package.json:10`
-- [fixtures/ris/nor40258475-segment.xml](../../../fixtures/ris/nor40258475-segment.xml) — `fixtures/ris/nor40258475-segment.xml:1`
-- [fixtures/ris/nor40269397-segment.xml](../../../fixtures/ris/nor40269397-segment.xml) — `fixtures/ris/nor40269397-segment.xml:1`
-- [tests/live/README.md](../../../tests/live/README.md) — `tests/live/README.md:1`
+Aktuelle Suite: `python -B -m unittest discover tests` — 25 Tests, OK in < 0,3 s (Ausführungsnachweis 2026-10-19).
+- [tests/test_austrian_law_cli.py](../../../tests/test_austrian_law_cli.py) — CLI-, Receipt- und Parsing-Tests, u. a. gegen den amtlichen XML-Snapshot [fixtures/ris/nor40258475-segment.xml](../../../fixtures/ris/nor40258475-segment.xml) (`test_austrian_law_cli.py:88`).
+- [tests/test_issue12.py](../../../tests/test_issue12.py) — Regressions aus Issue #12: falsche/abgelaufene Kandidaten, artikelqualifizierte Paragraphen, vergifteter Cache, Raw-Pfade und OGD-Request-Parameter, offline mit synthetischem XML (`test_issue12.py:1`).
+- [tests/skill/](../../../tests/skill) — textuelle Vertragsnotizen (Frontmatter, Quellenpolitik, Stable IDs, Response-Struktur); sprachunabhängige Verhaltensspezifikation.
+- [fixtures/ris/](../../../fixtures/ris) — reale amtliche XML-/HTML-Snapshots als Regression-Anker; [fixtures/ris-api/](../../../fixtures/ris-api) dokumentiert echte OGD-API-Antworten.
 
 ## Connected to
 [tools](tools.md), [ris](ris.md), [jusline](jusline.md), [cache](cache.md). Prozesse: [Prozesskatalog](../processes/CONTEXT.md).
@@ -37,7 +30,7 @@ npm test aggregiert sechs Suiten; npm run check prüft TypeScript, build erzeugt
 - **Does not hit:** Produktivcode allein durch Änderung einer Testbeschreibung.
 
 ## Surfaces
-Maintainer/CI führen aus; Live-Checks greifen auf externe Quellen zu.
+Maintainer/Agenten führen die Suite lokal aus; es gibt kein npm/CI-Gate. Live-Checks gegen externe Quellen sind nicht Teil der Suite.
 
 ## See
-Quelle: [plugin/openclaw-austrian-law/package.json](../../../plugin/openclaw-austrian-law/package.json). [Änderungsrouting](../effects/CONTEXT.md).
+Quelle: [tests/test_austrian_law_cli.py](../../../tests/test_austrian_law_cli.py). [Änderungsrouting](../effects/CONTEXT.md).

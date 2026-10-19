@@ -1,33 +1,25 @@
 ---
 type: process
-universe: live
-status: verified
+universe: leftover
+status: stale
 entity: plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts
-verified_at: 2026-09-30
-revision: 28bd48c
+verified_at: 2026-10-19
+revision: 2af21a4
 consumes: [../objects/tools.md, ../objects/ris.md]
 produces: [../objects/ris.md, ../objects/cache.md]
 ---
 
-# batch-sync
+# batch-sync (entfernt)
 
-## Input → Movement → Output
-Liste von Normanfragen → Deduplizierung und Kandidatenprüfung je Stichtag → Einzelresultate und getrennte I/O-/Gültigkeitszähler.
+Historischer Prozess der TypeScript-Laufzeit: Batch-Synchronisation einzelner Paragrafen mehrerer Gesetze oder ganzer Gesetze (`ris_sync_laws`) mit Deduplizierung über `${representation}::${sourceIdOrUrl}::${paragraph}::${stichtag}` und getrennten I/O-/Gültigkeitszählern (`discarded_candidates`, `NO_VALID_VERSION_FOR_STICHTAG`). Die TypeScript-Implementierung wurde mit dem Python-Refactoring entfernt (`cc2103c`); ein Python-Ersatz wurde nicht übernommen.
 
-## Why this shape
-Identität, Herkunft und Gültigkeit bleiben bis zur Ausgabe nachvollziehbar. Die technische Bewegung setzt die fachliche Freigabe durch den Agenten voraus.
-
-## Steps
-1. Leitet Stichtag und Abrufrepräsentation je Item ab, dedupliziert und prüft Suchkandidaten durch die Fetch-Tools; fachfremde Kandidaten (abweichende Gesetzes- oder Paragraphidentität, ohne aufzulösende Identität) werden vor der zeitlichen Prüfung verworfen und mit Grund in `discarded_candidates` ausgewiesen — kein stiller Erfolg allein wegen zeitlicher Gültigkeit. Quelle: [plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts](../../../plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts) — `plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts:1`.
-2. Aggregiert getrennte I/O- und Gültigkeitszähler (Identitätsverwerfungen getrennt von `stichtag_mismatch`); Batches ohne identitätspassenden, zeitlich gültigen Kandidaten erhalten NO_VALID_VERSION_FOR_STICHTAG (Message unterscheidet reine Stichtags- von Identitätsfällen). Quelle: [plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts](../../../plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts) — `plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts:495`.
+**Heutiger Ersatzweg:** Einzelne `fetch_norm`-Aufrufe je Paragraf (`fetch-and-verify`); der Disk-Cache dedupliziert über den Prüfsummen-/Key-Mechanismus (`storage.py`).
 
 ## If you change this
-- **Hits:** Batch-Verträge, Kandidatenranking, Deduplizierung und Tool-/Rechtsstands-Tests.
-- **Does not hit:** JUSLINE-HTML-Extraktion.
+Kein aktiver Code — Karte dient nur der Historie.
 
 ## Surfaces
-CLI und OpenClaw rufen die Tool-Funktionen auf; externe Quellen liefern Daten; Cache-Helfer persistieren bei Abrufen Artefakte.
+Keine aktive Oberfläche; Tracking von Wiedereinführungswünschen: [GitHub Issues](https://github.com/martinderm/austrian-law-kit/issues).
 
 ## See
-[tools](../objects/tools.md), [ris](../objects/ris.md), [cache](../objects/cache.md).
-Quelle: [plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts](../../../plugin/openclaw-austrian-law/src/tools/ris_sync_laws.ts).
+[fetch-and-verify](fetch-and-verify.md), [tools](../objects/tools.md).
