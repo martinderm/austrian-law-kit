@@ -1,11 +1,12 @@
 # Known Issues & Technical Debt: austrian-law-kit
 
-> **Status:** Under Refactoring (Blueprint: `german-law-kit`)  
-> **Last Updated:** 2026-10-18  
+> **Status:** Closed — Resolved 2026-10-19 (Blueprint: `german-law-kit`)  
+> **Last Updated:** 2026-10-19  
 > **Ablageort:** `docs/known-issues.md`  
 > **Zweck:** Schlanke Erfassung aktuell offener architektonischer und technischer Ungereimtheiten in `austrian-law-kit` als Handoff für das anstehende Python-Refactoring.
 
-> ⚠️ **Tracking-Richtlinie (2026-10-18):** Diese Datei ist ein **eingefrorener Schnappschuss** des Refactoring-Handoffs und wird **nicht mehr weitergeführt**. Offene Aufgaben, Bugs und Verbesserungen werden zukünftig **ausschließlich als GitHub Issues** geführt (<https://github.com/martinderm/austrian-law-kit/issues>). Ablösung der hier offenen Punkte: #13, #14, #15. Keine parallelen Backlogs oder Statusdateien in `docs/`.
+> ⚠️ **Tracking-Richtlinie (2026-10-18):** Diese Datei ist ein **eingefrorener Schnappschuss** des Refactoring-Handoffs und wird **nicht mehr weitergeführt**. Offene Aufgaben, Bugs und Verbesserungen werden zukünftig **ausschließlich als GitHub Issues** geführt (<https://github.com/martinderm/austrian-law-kit/issues>). Ablösung der hier offenen Punkte: #13, #14, #15. Keine parallelen Backlogs oder Statusdateien in `docs/`.  
+> ✅ **Abgeschlossen (2026-10-19):** ALK-01 bis ALK-07 sind vollständig aufgelöst und nach [`docs/archive/resolved-issues.md`](archive/resolved-issues.md) archiviert (Close-out via #13).
 
 ---
 
@@ -13,13 +14,13 @@
 
 | ID | Komponente / Pfad | Typ | Schweregrad | Status | Kurzbeschreibung |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`ALK-01`** | `plugin/openclaw-austrian-law/` | `standard-violation` | `high` | `in_progress` | TypeScript/Node.js Monolith statt standardisiertem Python 3 stdlib |
-| **`ALK-02`** | `src/ris/*-parser.ts` | `brittle-parser` | `high` | `in_progress` | Brüchige Regex-Parser auf HTML statt nativem RIS-XML-Parsing |
-| **`ALK-03`** | `src/jusline/` (8 Dateien) | `third-party-risk` | `high` | `open` | Fragiles Web-Scraping einer privaten Plattform (JUSLINE) statt amtlicher RIS-Judikatur |
-| **`ALK-04`** | `src/cache/` (10 Dateien) | `over-engineering` | `medium` | `in_progress` | Aufgeblähte 10-Dateien-Cache-Architektur mit künstlicher Memory/Data-Silo-Trennung |
-| **`ALK-05`** | `src/ris/query-resolver.ts` | `over-engineering` | `medium` | `in_progress` | 5+ konkurrierende Fallback-Stufen und heuristisches String-Ranking |
-| **`ALK-06`** | `bin/cli.ts` | `ux-cli` | `medium` | `in_progress` | JSON-String-Argumente im CLI führen zu Windows-PowerShell Quoting-Fehlern |
-| **`ALK-07`** | `tests/tool-smoke.test.ts` | `test-bloat` | `low` | `open` | 141 KB Test-Boilerplate mit schweren Mock-Schichten statt schneller Fixture-Tests |
+| **`ALK-01`** | `plugin/openclaw-austrian-law/` | `standard-violation` | `high` | `resolved` | TypeScript/Node.js Monolith statt standardisiertem Python 3 stdlib |
+| **`ALK-02`** | `src/ris/*-parser.ts` | `brittle-parser` | `high` | `resolved` | Brüchige Regex-Parser auf HTML statt nativem RIS-XML-Parsing |
+| **`ALK-03`** | `src/jusline/` (8 Dateien) | `third-party-risk` | `high` | `resolved` | Fragiles Web-Scraping einer privaten Plattform (JUSLINE) statt amtlicher RIS-Judikatur |
+| **`ALK-04`** | `src/cache/` (10 Dateien) | `over-engineering` | `medium` | `resolved` | Aufgeblähte 10-Dateien-Cache-Architektur mit künstlicher Memory/Data-Silo-Trennung |
+| **`ALK-05`** | `src/ris/query-resolver.ts` | `over-engineering` | `medium` | `resolved` | 5+ konkurrierende Fallback-Stufen und heuristisches String-Ranking |
+| **`ALK-06`** | `bin/cli.ts` | `ux-cli` | `medium` | `resolved` | JSON-String-Argumente im CLI führen zu Windows-PowerShell Quoting-Fehlern |
+| **`ALK-07`** | `tests/tool-smoke.test.ts` | `test-bloat` | `low` | `resolved` | 141 KB Test-Boilerplate mit schweren Mock-Schichten statt schneller Fixture-Tests |
 
 ---
 
@@ -33,7 +34,7 @@
 - **Soll-Zustand:** Vollständige Umstellung auf 100 % Python 3 (Standardbibliothek: `urllib.request`, `xml.etree.ElementTree`, `hashlib`, `json`, `argparse`).
 - **Akzeptanzkriterien:**
   - [x] Python-Ersatz `scripts/austrian_law_cli.py` und `scripts/lib/` implementiert & mit 16 Tests abgesichert.
-  - [ ] Altes Verzeichnis `plugin/openclaw-austrian-law/` vollständig entfernen.
+  - [x] Altes Verzeichnis `plugin/openclaw-austrian-law/` vollständig entfernen.
 
 ---
 
@@ -45,7 +46,7 @@
 - **Soll-Zustand:** Nutzung der offiziellen RIS-XML-Endpunkte (`/Dokumente/Bundesrecht/.../Dokument.xml`). Parsing via Python `xml.etree.ElementTree` analog zu `german-law-kit`.
 - **Akzeptanzkriterien:**
   - [x] XML-Parsing in `scripts/lib/ris_ogd_client.py` für Metadaten und Hierarchie implementiert.
-  - [ ] Regex-HTML-Parser in `src/ris/` deprecaten.
+  - [x] Regex-HTML-Parser in `src/ris/` deprecaten.
 
 ---
 
@@ -57,7 +58,7 @@
 - **Soll-Zustand:** Entfernen des Scrapings. Leitentscheidungen von OGH, VfGH und VwGH direkt über die amtliche RIS-Justiz-Schnittstelle (OGD) beziehen.
 - **Akzeptanzkriterien:**
   - [x] OGD-Judikatur-Client in `scripts/lib/ris_judikatur.py` vorbereitet.
-  - [ ] Ordner `src/jusline/` vollständig entfernen.
+  - [x] Ordner `src/jusline/` vollständig entfernen.
 
 ---
 
@@ -69,7 +70,7 @@
 - **Soll-Zustand:** Ein einziges, kompaktes Python-Modul `scripts/lib/storage.py` mit atomarem Schreiben (`tempfile` + `os.replace`), Markdown-Export mit YAML-Frontmatter und begleitender `.receipt.json` (SHA-256).
 - **Akzeptanzkriterien:**
   - [x] `scripts/lib/storage.py` mit atomarem Cache und SHA-256 Receipts implementiert.
-  - [ ] Altes TypeScript-Cache-System ablösen.
+  - [x] Altes TypeScript-Cache-System ablösen.
 
 ---
 
