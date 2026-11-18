@@ -47,3 +47,8 @@ Alle Versionen paginieren (`/Bundesrecht?Applikation=BrKons&Gesetzesnummer=<ID>&
 ## Verification Receipt — belastbare Felder
 
 `Zuletzt aktualisiert` (`geaendert`/`consolidated_as_of`) ist **kein** Fassungsstand und kein Beleg für Geltung am Abruftag. Die einzigen belastbaren Geltungsfelder in den BrKons-Metadaten sind **`Inkrafttretensdatum` und `Ausserkrafttretensdatum`**; daraus folgt der `verification_status` (`verified_current` | `historical_valid_for_stichtag` | `stichtag_mismatch` | `insufficient_metadata`, Stichtag default: heute, Zeitzone `Europe/Vienna`).
+
+## Ergänzungen aus dem zweiten Live-Test (2026-11-18)
+
+- **HTTP 500 jenseits der letzten Trefferseite:** Die OGD-API liefert für `Seitennummer` > letzte Seite einen 500er (kein leerer 200; verifiziert: MRG Seiten 12/13). Nie überpaginieren — Seitenzahl exakt aus `Hits.#text` der ersten Seite: `seiten = ceil(hits / 20)`. Andernfalls bricht ein `curl -sfL`-Fetch mit Exit 22 ab.
+- **„Art. …“-Einträge trotz `Abschnitt.Typ=Paragraph`:** Treffer können Änderungs-/Übergangsartikel enthalten (mit leerem `Ausserkrafttretensdatum`; z. B. MRG: 92 eindeutige Paragrafen + je 2× „Art. 2"/„Art. 9"). Verbraucher sollten auf `Dokumenttyp == "Paragraph"` filtern oder deduplizieren.
