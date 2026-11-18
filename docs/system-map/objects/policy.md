@@ -20,7 +20,7 @@ RIS bleibt Primärquelle; JUSLINE ist opt-in. Fünf Antwortschichten liegen in S
 
 - [SKILL.md](../../../SKILL.md) — `SKILL.md:16`
 - [SKILL.md](../../../SKILL.md) — `SKILL.md:65`
-- [docs/README.md](../../../docs/README.md) — `docs/README.md:15`
+- [docs/README.md](../../../docs/README.md) — `docs/README.md:5`
 
 ## Connected to
 [tools](tools.md), [quality](quality.md). Prozesse: [Prozesskatalog](../processes/CONTEXT.md).
